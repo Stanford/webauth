@@ -252,6 +252,11 @@ sub request_token_request {
     if ($wreq->authz_subject) {
         $webkdc_doc->start ('authzSubject', undef, $wreq->authz_subject)->end;
     }
+
+    if ($wreq->login_state) {
+        $webkdc_doc->start ('loginState', undef, $wreq->login_state)->end;
+    }
+
     if ($wreq->local_ip_addr || $wreq->remote_user) {
         $webkdc_doc->start('requestInfo');
         if ($wreq->local_ip_addr) {
@@ -322,6 +327,7 @@ sub request_token_request {
         my $error_message = get_child_value ($root, 'loginErrorMessage', 1);
         my $user_message = get_child_value ($root, 'userMessage', 1);
         my $pass_expires = get_child_value ($root, 'passwordExpires', 1);
+        my $login_state = get_child_value ($root, 'loginState', 1);
 
         # Expand each of the proxy tokens, which contain a type and value.
         my $proxy_tokens = $root->find_child ('proxyTokens');
@@ -393,6 +399,7 @@ sub request_token_request {
         $wresp->password_expiration ($pass_expires)
             if defined $pass_expires;
         $wresp->user_message ($user_message) if defined $user_message;
+        $wresp->login_state ($login_state) if defined $login_state;
 
         if ($error_code) {
             my $wk_err = $pec_mapping{$error_code}

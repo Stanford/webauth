@@ -85,6 +85,7 @@ struct webauth_webkdc_login_request {
     const struct webauth_token_webkdc_service *service;
     const WA_APR_ARRAY_HEADER_T *creds; /* Array of webauth_token pointers. */
     const char *authz_subject;          /* Requested authorization identity. */
+    const char *login_state;            /* Opaque object for multifactor. */
     const struct webauth_token_request *request;
     const char *remote_user;
     const char *local_ip;
@@ -105,6 +106,7 @@ struct webauth_webkdc_login_response {
     int login_error;
     const char *login_message;
     const char *user_message;
+    const char *login_state;
     const WA_APR_ARRAY_HEADER_T *factors_wanted;     /* char * factors. */
     const WA_APR_ARRAY_HEADER_T *factors_configured; /* char * factors. */
     const WA_APR_ARRAY_HEADER_T *proxies;         /* webkdc_proxy_data. */
@@ -190,6 +192,7 @@ struct webauth_user_info {
     const WA_APR_ARRAY_HEADER_T *logins;  /* Array of struct webauth_login. */
     const char *error;                  /* Error returned from userinfo. */
     const char *user_message;           /* Message to pass along to a user. */
+    const char *login_state;            /* Opaque state object for WebLogin. */
 };
 
 /*
@@ -207,6 +210,7 @@ struct webauth_user_validate {
     time_t valid_threshold;             /* Cutoff for persistent validity. */
     unsigned long loa;                  /* Level of assurance. */
     const char *user_message;           /* Message to pass along to a user. */
+    const char *login_state;            /* Opaque state object for WebLogin. */
 };
 
 BEGIN_DECLS
@@ -263,6 +267,7 @@ int webauth_user_info(struct webauth_context *, const char *user,
  */
 int webauth_user_validate(struct webauth_context *, const char *user,
                           const char *ip, const char *code, const char *type,
+                          const char *state,
                           struct webauth_user_validate **)
     __attribute__((__nonnull__(1, 2, 4, 6)));
 

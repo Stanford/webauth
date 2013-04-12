@@ -1532,6 +1532,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     apr_xml_elem *child;
     static const char *mwk_func="handle_requestTokenRequest";
     char *request_token = NULL;
+    void *ls_data;
+    size_t ls_len;
     int i, status;
     const char *req_token_info;
     const char *login_type = NULL;
@@ -1564,6 +1566,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         } else if (strcmp(child->name, "authzSubject") == 0) {
             request.authz_subject = get_elem_text(rc, child, mwk_func);
             if (request.authz_subject == NULL)
+                return MWK_ERROR;
+        } else if (strcmp(child->name, "loginState") == 0) {
+            request.login_state = get_elem_text(rc, child, mwk_func);
+            if (request.login_state == NULL)
                 return MWK_ERROR;
         } else if (strcmp(child->name, "requestInfo") == 0) {
             if (!parse_requestInfo(rc, child, &request))
@@ -1620,6 +1626,13 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                  "not authorized to get a proxy token",
                                  mwk_func, true);
         }
+    }
+
+    /* need to base64 decode loginState */
+    if (request.login_state != NULL) {
+        ls_data = apr_palloc(rc->r->pool, apr_base64_decode_len(request.login_state));
+        ls_len = apr_base64_decode(ls_data, request.login_state);
+        request.login_state = ls_data;
     }
 
     /*
@@ -1701,6 +1714,17 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     if (response->user_message != NULL)
         ap_rprintf(rc->r, "<userMessage><![CDATA[%s]]></userMessage>",
                    response->user_message);
+
+    if (response->login_state != NULL) {
+        char *out_login_state =
+            apr_palloc(rc->r->pool,
+                       apr_base64_encode_len(strlen(response->login_state)));
+        apr_base64_encode(out_login_state, response->login_state,
+                          strlen(response->login_state));
+        ap_rvputs(rc->r,
+                  "<loginState>", out_login_state , "</loginState>",
+                  NULL);
+    }
 
     if (response->factors_configured != NULL) {
         ap_rvputs(rc->r, "<multifactorRequired>", NULL);

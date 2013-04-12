@@ -41,7 +41,7 @@ use strict;
 use warnings;
 
 use CGI::Cookie ();
-use MIME::Base64 qw(encode_base64);
+use MIME::Base64 qw(encode_base64 decode_base64);
 use POSIX qw(strftime);
 use Template ();
 use Time::Duration;
@@ -247,6 +247,19 @@ sub is_factor_set {
 
     return 1 if exists $cookies->{webauth_wft};
     return 0;
+}
+
+# If there's a function pointer set in LOGIN_STATE_UNSERIALIZE, use that
+# to parse and return the value of $login_state, else return the raw value.
+sub parse_login_state {
+    my ($self, $login_state) = @_;
+
+    $login_state = decode_base64($login_state);
+    if ( ref($WebKDC::Config::LOGIN_STATE_UNSERIALIZE) eq "CODE" ) {
+        my $decoder = $WebKDC::Config::LOGIN_STATE_UNSERIALIZE;
+        $login_state = &{$decoder}($login_state);
+    }
+    return $login_state;
 }
 
 ##############################################################################
@@ -772,6 +785,13 @@ sub print_confirm_page {
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
 
+    # Create the login_state object for use in templates
+    if ($self->{response}->login_state) {
+        my $login_state = $self->{response}->login_state;
+        $params->{LS} = $login_state;
+        $params->{login_state} = $self->parse_login_state($login_state);
+    }
+
     # If there is a login cancel option, handle creating the link for it.
     my $lc = $resp->login_canceled_token;
     if (defined $lc) {
@@ -852,6 +872,7 @@ sub redisplay_confirm_page {
     $params->{public_computer} = $q->param ('public_computer');
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
+    $params->{LS} = $q->param ('LS');
 
     # If there is a login cancel option, handle creating the link for it.
     my $cancel_url = $q->param ('cancel_url');
@@ -967,6 +988,13 @@ sub print_multifactor_page {
             next unless $factor =~ /^o\d+$/;
             $params->{factor_type} = $factor;
         }
+    }
+
+    # Create the login_state object for use in templates
+    if ($self->{response}->login_state) {
+        my $login_state = $self->{response}->login_state;
+        $params->{LS} = $login_state;
+        $params->{login_state} = $self->parse_login_state($login_state);
     }
 
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
@@ -1524,6 +1552,8 @@ sub setup_kdc_request {
         if $q->param ('factor_type');
     $self->{request}->authz_subject ($q->param ('authz_subject'))
         if $q->param ('authz_subject');
+    $self->{request}->login_state ($q->param ('LS'))
+        if $q->param ('LS');
 
     # For the initial login page, we may need to map the username.  For OTP,
     # we've already done this, so we don't need to do it again.  Also check

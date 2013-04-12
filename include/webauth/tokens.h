@@ -176,6 +176,7 @@ struct webauth_token_login {
     const char *password;               /* encode: p, optional */
     const char *otp;                    /* encode: otp, optional */
     const char *otp_type;               /* encode: ott, optional */
+    const char *login_state;            /* encode: lgs, optional */
     time_t creation;                    /* encode: ct, creation */
 };
 

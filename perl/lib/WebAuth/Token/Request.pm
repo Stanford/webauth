@@ -40,6 +40,7 @@ sub type            { my $t = shift; $t->_attr ('type',            @_) }
 sub auth            { my $t = shift; $t->_attr ('auth',            @_) }
 sub proxy_type      { my $t = shift; $t->_attr ('proxy_type',      @_) }
 sub state           { my $t = shift; $t->_attr ('state',           @_) }
+sub login_state     { my $t = shift; $t->_attr ('login_state',     @_) }
 sub return_url      { my $t = shift; $t->_attr ('return_url',      @_) }
 sub options         { my $t = shift; $t->_attr ('options',         @_) }
 sub initial_factors { my $t = shift; $t->_attr ('initial_factors', @_) }
@@ -139,6 +140,12 @@ returned by the WebKDC to the WebAuth Application Server as a second
 element in the URL.  It is normally used to hold an app token that
 contains the session key used for WebKDC communication, encrypted in the
 private key of a WebAuth Application Server pool.
+
+=item login_state ([STATE])
+
+Get or sets an opaque state object to be passed along to the validation
+service to support complex login interactions.  It may be left unset if
+not required.
 
 =item return_url ([URL])
 

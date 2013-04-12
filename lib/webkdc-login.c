@@ -145,7 +145,8 @@ realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc,
 static int
 do_otp(struct webauth_context *ctx,
        struct webauth_webkdc_login_response *response,
-       struct webauth_token_login *login, const char *ip,
+       struct webauth_token_login *login,
+       const char *ip, const char *login_state,
        struct webauth_token **wkproxy, struct webauth_token **wkfactor)
 {
     int status;
@@ -160,24 +161,25 @@ do_otp(struct webauth_context *ctx,
         return WA_ERR_UNIMPLEMENTED;
     }
     status = webauth_user_validate(ctx, login->username, ip, login->otp,
-                                   login->otp_type, &validate);
+                                   login->otp_type, login_state, &validate);
     if (status != WA_ERR_NONE)
         return status;
 
     /*
      * If validation failed, set the login error code and return.  If we have
-     * a user message, use WA_PEC_LOGIN_REJECTED instead so that mod_webkdc
-     * will pass a <requestTokenResponse> back to the WebLogin server,
-     * including that message.
+     * a user message or login state, use WA_PEC_LOGIN_REJECTED instead so that
+     * mod_webkdc will pass a <requestTokenResponse> back to the WebLogin
+     * server, including the message and/or state.
      */
     if (!validate->success) {
-        if (validate->user_message == NULL) {
+        if (validate->user_message == NULL && validate->login_state == NULL) {
             response->login_error = WA_PEC_LOGIN_FAILED;
             response->login_message = "login incorrect";
         } else {
             response->login_error = WA_PEC_LOGIN_REJECTED;
             response->login_message = "login rejected by validation service";
             response->user_message = validate->user_message;
+            response->login_state = validate->login_state;
         }
         return WA_ERR_NONE;
     }
@@ -549,6 +551,7 @@ add_user_info(struct webauth_context *ctx,
         (*response)->logins = (*info)->logins;
     (*response)->password_expires = (*info)->password_expires;
     (*response)->user_message = (*info)->user_message;
+    (*response)->login_state = (*info)->login_state;
 
     /* Cap the user's LoA at the maximum allowed by the service. */
     if (wkp->loa > (*info)->max_loa)
@@ -1075,7 +1078,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
         wkfactor = NULL;
         if (cred->token.login.otp != NULL)
             status = do_otp(ctx, *response, &cred->token.login,
-                            request->remote_ip, &token, &wkfactor);
+                            request->remote_ip, request->login_state,
+                            &token, &wkfactor);
         else
             status = do_login(ctx, *response, &cred->token.login, &token);
         if (status != WA_ERR_NONE)

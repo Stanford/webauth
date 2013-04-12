@@ -62,6 +62,7 @@ sub requester_subject    { my $r = shift; $r->_attr ('requester_subject', @_) }
 sub password_expiration  { my $r = shift; $r->_attr ('pwd_expiration',    @_) }
 sub response_token       { my $r = shift; $r->_attr ('response_token',    @_) }
 sub user_message         { my $r = shift; $r->_attr ('user_message',      @_) }
+sub login_state          { my $r = shift; $r->_attr ('login_state',       @_) }
 sub response_token_type {
     my $r = shift;
     $r->_attr ('response_token_type', @_);

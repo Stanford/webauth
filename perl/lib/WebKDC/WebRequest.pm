@@ -58,6 +58,7 @@ sub local_ip_addr  { my $r = shift; $r->_attr ('local_ip_addr',  @_) }
 sub local_ip_port  { my $r = shift; $r->_attr ('local_ip_port',  @_) }
 sub otp            { my $r = shift; $r->_attr ('otp',            @_) }
 sub otp_type       { my $r = shift; $r->_attr ('otp_type',       @_) }
+sub login_state    { my $r = shift; $r->_attr ('login_state',    @_) }
 sub pass           { my $r = shift; $r->_attr ('pass',           @_) }
 sub remote_ip_addr { my $r = shift; $r->_attr ('remote_ip_addr', @_) }
 sub remote_ip_port { my $r = shift; $r->_attr ('remote_ip_port', @_) }
@@ -178,6 +179,12 @@ Retrieve or set the one-time password type sent by the user.  This should
 be a WebAuth factor code corresponding to the type of one-time password
 that this login token represents.  It may be left unset if the caller
 doesn't know.
+
+=item login_state ([STATE])
+
+Get or set the login-state of the request.  This field can contain any
+data the implementor choses to place - usually used to indicate the token
+type.  It may be left unset if unneeded.
 
 =item pass ([PASSWORD])
 

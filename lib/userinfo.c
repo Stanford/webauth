@@ -292,6 +292,8 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
             }
         } else if (strcmp(child->name, "user-message") == 0)
             s = wai_xml_content(ctx, child, &info->user_message);
+        else if (strcmp(child->name, "login-state") == 0)
+            s = wai_xml_content(ctx, child, &info->login_state);
         if (s != WA_ERR_NONE)
             return s;
     }
@@ -353,6 +355,8 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
                 status = convert_number(ctx, content, &validate->loa);
         } else if (strcmp(child->name, "user-message") == 0)
             status = wai_xml_content(ctx, child, &validate->user_message);
+        else if (strcmp(child->name, "login-state") == 0)
+            status = wai_xml_content(ctx, child, &validate->login_state);
         if (status != WA_ERR_NONE)
             return status;
     }
@@ -567,11 +571,11 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
  */
 static int
 remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
-                const char *code, const char *type,
+                const char *code, const char *type, const char *state,
                 struct webauth_user_validate **validate)
 {
     int status;
-    const char *argv[7];
+    const char *argv[8];
     apr_xml_doc *doc;
     struct webauth_user_config *c = ctx->user;
 
@@ -581,7 +585,8 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
     argv[3] = ip;
     argv[4] = code;
     argv[5] = type;
-    argv[6] = NULL;
+    argv[6] = state;
+    argv[7] = NULL;
     status = remctl_generic(ctx, argv, &doc);
     if (status != WA_ERR_NONE)
         return status;
@@ -688,6 +693,7 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
 int
 webauth_user_validate(struct webauth_context *ctx, const char *user,
                       const char *ip, const char *code, const char *type,
+                      const char *state,
                       struct webauth_user_validate **result)
 {
     int status;
@@ -700,7 +706,7 @@ webauth_user_validate(struct webauth_context *ctx, const char *user,
         ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        return remctl_validate(ctx, user, ip, code, type, result);
+        return remctl_validate(ctx, user, ip, code, type, state, result);
     case WA_PROTOCOL_NONE:
     default:
         /* This should be impossible due to webauth_user_config checks. */
