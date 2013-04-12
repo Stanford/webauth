@@ -16,13 +16,10 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
-#include <time.h>
-
 #include <tests/tap/basic.h>
 #include <tests/tap/webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
-#include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 
 /* Test cases to run without an identity file. */
