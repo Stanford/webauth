@@ -20,36 +20,86 @@
 
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
-#include <tests/tap/remctl.h>
 #include <tests/tap/string.h>
+#include <tests/tap/webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
 #include <webauth/webkdc.h>
+
+/* Test cases to run without any local realms. */
+static const struct wat_login_test tests_no_local[] = {
+
+    /* Basic test for obtaining an id token with a username and password. */
+    {
+        "Login with password",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, "data", 4, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "<userprinc>", "krb5", "<webkdc-principal>", NULL, 0,
+                    "p", 0, 0, 0, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            { "<userprinc>", NULL, "webkdc", NULL, 0, "p", "p", 0, 0, 0 },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    }
+};
 
 
 int
 main(void)
 {
     apr_pool_t *pool = NULL;
+    struct kerberos_config *krbconf;
+    struct webauth_context *ctx;
     struct webauth_keyring *ring, *session;
     struct webauth_key *session_key;
-    struct kerberos_config *krbconf;
-    int status;
-    char *keyring, *err, *tmpdir;
-    time_t now;
-    struct webauth_context *ctx;
-    struct webauth_webkdc_config config;
-    struct webauth_user_config user_config;
-    struct webauth_webkdc_login_request request;
-    struct webauth_webkdc_login_response *response;
     struct webauth_token *token, login, wkproxy;
     struct webauth_token_request req;
     struct webauth_token_webkdc_proxy *pt;
     struct webauth_token_webkdc_service service;
+    struct webauth_webkdc_config config;
+    struct webauth_webkdc_login_request request;
+    struct webauth_webkdc_login_response *response;
     struct webauth_webkdc_proxy_data *pd;
+    int status;
+    char *keyring, *err, *tmpdir;
+    time_t now;
     time_t expiration = 0;
     FILE *id_acl;
+    size_t i;
+
+    /* Load the Kerberos configuration. */
+    krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
+
+    /* Use lazy planning so that test counts can vary on some errors. */
+    plan_lazy();
 
     /* Initialize APR and WebAuth. */
     if (apr_initialize() != APR_SUCCESS)
@@ -59,15 +109,6 @@ main(void)
     if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    /* Load the Kerberos configuration. */
-    krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
-    memset(&config, 0, sizeof(config));
-    config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
-    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
-    memset(&user_config, 0, sizeof(user_config));
-    config.keytab_path = krbconf->keytab;
-    config.principal = krbconf->principal;
-
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
     status = webauth_keyring_read(ctx, keyring, &ring);
@@ -76,11 +117,19 @@ main(void)
              webauth_error_message(ctx, status));
     test_file_path_free(keyring);
 
-    plan(115);
-
     /* Provide basic configuration to the WebKDC code. */
+    memset(&config, 0, sizeof(config));
+    config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
+    APR_ARRAY_PUSH(config.local_realms, const char *) = "none";
+    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
+    config.keytab_path = krbconf->keytab;
+    config.principal = krbconf->principal;
     status = webauth_webkdc_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
+
+    /* Run the tests that assume no local realm. */
+    for (i = 0; i < ARRAY_SIZE(tests_no_local); i++)
+        run_login_test(ctx, &tests_no_local[i], ring, krbconf);
 
     /* Flesh out the absolute minimum required in the request. */
     now = time(NULL);
@@ -105,88 +154,13 @@ main(void)
     request.request = &req;
     request.creds = apr_array_make(pool, 1, sizeof(struct token *));
 
-    /* Send a login token and see if we can get an id token in response. */
-    config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
-    APR_ARRAY_PUSH(config.local_realms, const char *) = "none";
+    /* Get an id token with a Kerberos authenticator and test forced auth. */
     memset(&login, 0, sizeof(login));
     login.type = WA_TOKEN_LOGIN;
     login.token.login.username = krbconf->userprinc;
     login.token.login.password = krbconf->password;
     login.token.login.creation = now;
     APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Login w/password returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    ok(response->proxies != NULL, "...and now we have proxy tokens");
-    pt = NULL;
-    if (response->proxies == NULL)
-        ok_block(11, 0, "...no proxy tokens");
-    else {
-        is_int(1, response->proxies->nelts, "...one proxy token");
-        pd = &APR_ARRAY_IDX(response->proxies, 0,
-                            struct webauth_webkdc_proxy_data);
-        is_string("krb5", pd->type, "...of type krb5");
-        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
-                                      ring, &token);
-        is_int(WA_ERR_NONE, status, "...which decodes properly");
-        pt = &token->token.webkdc_proxy;
-        is_string(krbconf->userprinc, pt->subject, "...with correct subject");
-        is_string("krb5", pt->proxy_type, "...and correct type");
-        ok(strncmp("WEBKDC:krb5:", pt->proxy_subject, 12) == 0,
-           "...and correct proxy subject prefix");
-        ok(strcmp(config.principal, pt->proxy_subject + 12) == 0,
-           "...and correct proxy subject identity");
-        ok(pt->data != NULL, "...and data is not NULL");
-        is_string("p", pt->initial_factors, "...and factors is password");
-        ok(pt->creation - now < 5, "...and creation is okay");
-        ok(pt->expiration > now, "...and expiration is sane");
-    }
-    is_string(krbconf->userprinc, response->subject, "...subject is correct");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(9, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string(krbconf->userprinc, token->token.id.subject,
-                  "...result subject is right");
-        is_string(NULL, token->token.id.authz_subject,
-                  "...and there is no authz subject");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        ok(token->token.id.auth_data == NULL, "...and there is no auth data");
-        is_string("p", token->token.id.initial_factors,
-                  "...result initial factors is right");
-        is_string("p", token->token.id.session_factors,
-                  "...result session factors is right");
-        is_int(0, token->token.id.loa, "...and no LoA");
-        ok(token->token.id.creation - now < 5, "...and creation is sane");
-        if (pt == NULL)
-            ok(false, "...no proxy token to check");
-        else
-            is_int(pt->expiration, token->token.id.expiration,
-                   "...and expiration matches expiration of proxy token");
-    }
-    is_int(0, response->password_expires, "...and no password expire date");
-    is_string("p", response->initial_factors, "...initial factors");
-    is_string("p", response->session_factors, "...session factors");
-    is_int(0, response->loa, "...level of assurance");
-
-    /* The login process should not have modified request.creds. */
-    is_int(1, request.creds->nelts, "Still one token in request.creds");
-    ok(&login == APR_ARRAY_IDX(request.creds, 0, struct webauth_token *),
-       "...which is the login token");
-
-    /* Get an id token with a Kerberos authenticator and test forced auth. */
     req.options = "lc,fa";
     service.subject = apr_pstrcat(pool, "krb5:", config.principal, NULL);
     req.auth = "krb5";
@@ -215,6 +189,11 @@ main(void)
                   "...result auth type is right");
         ok(token->token.id.auth_data != NULL, "...and there is auth data");
     }
+
+    /* The login process should not have modified request.creds. */
+    is_int(1, request.creds->nelts, "Still one token in request.creds");
+    ok(&login == APR_ARRAY_IDX(request.creds, 0, struct webauth_token *),
+       "...which is the login token");
 
     /* Test permitted realm support with a realm that is allowed. */
     APR_ARRAY_PUSH(config.permitted_realms, const char *) = krbconf->realm;
