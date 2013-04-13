@@ -957,7 +957,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
 static enum mwk_status
 parse_request_token(MWK_REQ_CTXT *rc,
                     char *token,
-                    struct webauth_token_webkdc_service *st,
+                    const struct webauth_token_webkdc_service *st,
                     const struct webauth_token_request **rt)
 {
     int status;
@@ -1396,10 +1396,7 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     char *data;
     struct webauth_token *token;
     struct webauth_token_webkdc_proxy *wkproxy;
-
-    if (request->creds == NULL)
-        request->creds = apr_array_make(rc->r->pool, 2,
-                                        sizeof(struct webauth_token *));
+    apr_array_header_t *creds;
 
     /*
      * Just quietly ignore invalid webkdc-proxy tokens for right now.
@@ -1415,6 +1412,7 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
      * shouldn't be.  Right now, we ignore all errors other than reporting
      * them (but still set the error message).
      */
+    creds = apr_array_make(rc->r->pool, 2, sizeof(struct webauth_token *));
     for (child = e->first_child; child != NULL; child = child->next) {
         if (strcmp(child->name, "proxyToken") == 0) {
             data = get_elem_text(rc, child, mwk_func);
@@ -1430,7 +1428,7 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                     wkproxy->session_factors = a->value;
                     break;
                 }
-            APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
+            APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
         } else if (strcmp(child->name, "loginToken") == 0) {
             data = get_elem_text(rc, child, mwk_func);
             if (data == NULL)
@@ -1439,19 +1437,20 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             token->type = WA_TOKEN_LOGIN;
             if (!parse_login_token(rc, data, &token->token.login))
                 return MWK_ERROR;
-            APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
+            APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
         } else if (strcmp(child->name, "factorToken") == 0) {
             data = get_elem_text(rc, child, mwk_func);
             if (data == NULL)
                 return MWK_ERROR;
             if (!parse_webkdc_factor_token(rc, data, &token))
                 continue;
-            APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
+            APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
         } else {
             unknown_element(rc, mwk_func, e->name, child->name);
             return MWK_ERROR;
         }
     }
+    request->creds = creds;
     return MWK_OK;
 }
 
@@ -1508,7 +1507,8 @@ parse_requestInfo(MWK_REQ_CTXT *rc, apr_xml_elem *e,
  * array is NULL, prints out nothing.
  */
 static void
-print_xml_array(MWK_REQ_CTXT *rc, const char *tag, apr_array_header_t *array)
+print_xml_array(MWK_REQ_CTXT *rc, const char *tag,
+                const apr_array_header_t *array)
 {
     int i;
     const char *string;

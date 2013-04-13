@@ -735,9 +735,10 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     struct webauth_token *token;
     struct webauth_webkdc_login_request request;
     struct webauth_webkdc_login_response *response;
+    apr_array_header_t *creds;
     const char *message;
     int s;
-    size_t size, i;
+    size_t i;
     time_t now;
 
     /* Use a common time basis for everything that follows. */
@@ -759,15 +760,14 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     request.service = &token->token.webkdc_service;
 
     /* Create an array for credentials. */
-    size = sizeof(struct webauth_token *);
-    request.creds = apr_array_make(ctx->pool, 3, size);
+    creds = apr_array_make(ctx->pool, 3, sizeof(struct webauth_token *));
 
     /* Add the login tokens to the array. */
     for (i = 0; i < ARRAY_SIZE(test->request.logins); i++) {
         if (test->request.logins[i].username == NULL)
             break;
         token = build_token_login(ctx, &test->request.logins[i], now, krbconf);
-        APR_ARRAY_PUSH(request.creds, struct webauth_token *) = token;
+        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
     }
 
     /* Add the webkdc-proxy tokens to the array. */
@@ -776,7 +776,7 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
             break;
         token = build_token_webkdc_proxy(ctx, &test->request.wkproxies[i], now,
                                          krbconf);
-        APR_ARRAY_PUSH(request.creds, struct webauth_token *) = token;
+        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
     }
 
     /* Add the webkdc-factor tokens to the array. */
@@ -786,13 +786,12 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
         token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
         token->type = WA_TOKEN_WEBKDC_FACTOR;
         token->token.webkdc_factor = test->request.wkfactors[i];
-        APR_ARRAY_PUSH(request.creds, struct webauth_token *) = token;
+        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
     }
 
-    /* Set a pointer to the request token. */
-    request.request = &test->request.request;
-
-    /* Copy the remaining data. */
+    /* Add the remaining data to the request. */
+    request.creds         = creds;
+    request.request       = &test->request.request;
     request.authz_subject = test->request.authz_subject;
 
     /* Make the actual call. */

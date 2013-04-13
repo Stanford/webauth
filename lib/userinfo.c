@@ -42,6 +42,20 @@
 
 
 /*
+ * Helper function to apr_pstrdup a string if non-NULL or return NULL if the
+ * string is NULL.
+ */
+static const char *
+pstrdup_null(apr_pool_t *pool, const char *string)
+{
+    if (string == NULL)
+        return string;
+    else
+        return apr_pstrdup(pool, string);
+}
+
+
+/*
  * Configure how to access the user information service.  Takes the method,
  * the host, an optional port (may be 0 to use the default for that method),
  * an optional authentication identity for the remote service (may be NULL to
@@ -52,10 +66,11 @@
  */
 int
 webauth_user_config(struct webauth_context *ctx,
-                    struct webauth_user_config *user)
+                    const struct webauth_user_config *user)
 {
     int status = WA_ERR_NONE;;
 
+    /* Verify that the new configuration is sane. */
     if (user->protocol != WA_PROTOCOL_REMCTL) {
         status = WA_ERR_UNIMPLEMENTED;
         wai_error_set(ctx, status, "unknown protocol %d", user->protocol);
@@ -72,27 +87,17 @@ webauth_user_config(struct webauth_context *ctx,
                       "keytab must be configured for remctl protocol");
         goto done;
     }
-    ctx->user = apr_palloc(ctx->pool, sizeof(struct webauth_user_config));
-    ctx->user->protocol = user->protocol;
-    ctx->user->host = apr_pstrdup(ctx->pool, user->host);
-    ctx->user->port = user->port;
-    if (user->identity != NULL)
-        ctx->user->identity = apr_pstrdup(ctx->pool, user->identity);
-    else
-        ctx->user->identity = NULL;
-    if (user->command != NULL)
-        ctx->user->command = apr_pstrdup(ctx->pool, user->command);
-    else
-        ctx->user->command = NULL;
-    if (user->keytab != NULL)
-        ctx->user->keytab = apr_pstrdup(ctx->pool, user->keytab);
-    else
-        ctx->user->keytab = NULL;
-    if (user->principal != NULL)
-        ctx->user->principal = apr_pstrdup(ctx->pool, user->principal);
-    else
-        ctx->user->principal = NULL;
-    ctx->user->timeout = user->timeout;
+
+    /* Copy the configuration into the context. */
+    ctx->user = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_config));
+    ctx->user->protocol       = user->protocol;
+    ctx->user->host           = apr_pstrdup(ctx->pool, user->host);
+    ctx->user->port           = user->port;
+    ctx->user->identity       = pstrdup_null(ctx->pool, user->identity);
+    ctx->user->command        = pstrdup_null(ctx->pool, user->command);
+    ctx->user->keytab         = pstrdup_null(ctx->pool, user->keytab);
+    ctx->user->principal      = pstrdup_null(ctx->pool, user->principal);
+    ctx->user->timeout        = user->timeout;
     ctx->user->ignore_failure = user->ignore_failure;
 
 done:
@@ -131,19 +136,31 @@ convert_number(struct webauth_context *ctx, const char *string,
  */
 static int UNUSED
 parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
-              apr_array_header_t **factors, time_t *expiration,
+              const apr_array_header_t **result, time_t *expiration,
               time_t *valid_threshold)
 {
     apr_xml_elem *child;
+    apr_array_header_t *factors = NULL;
     const char **type, *content;
     unsigned long value;
     int status;
 
+    /* Ensure the output variables are initialized in case of error. */
+    if (result != NULL)
+        *result = NULL;
+    if (expiration != NULL)
+        *expiration = 0;
+    if (valid_threshold != NULL)
+        *valid_threshold = 0;
+
+    /* Parse the XML element and store the results. */
     for (child = root->first_child; child != NULL; child = child->next) {
         if (strcmp(child->name, "factor") == 0) {
-            if (*factors == NULL)
-                *factors = apr_array_make(ctx->pool, 2, sizeof(const char *));
-            type = apr_array_push(*factors);
+            if (result == NULL)
+                continue;
+            if (factors == NULL)
+                factors = apr_array_make(ctx->pool, 2, sizeof(const char *));
+            type = apr_array_push(factors);
             status = wai_xml_content(ctx, child, type);
             if (status != WA_ERR_NONE)
                 return status;
@@ -170,6 +187,10 @@ parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
         }
     }
 
+    /* Save the factors if we found any and the caller wants them. */
+    if (factors != NULL && result != NULL)
+        *result = factors;
+
     /* FIXME: Warn if expiration != NULL but no expiration was found. */
     return WA_ERR_NONE;
 }
@@ -181,10 +202,11 @@ parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
  */
 static int UNUSED
 parse_history(struct webauth_context *ctx, apr_xml_elem *root,
-              apr_array_header_t **logins)
+              const apr_array_header_t **result)
 {
     apr_xml_elem *child;
     apr_xml_attr *attr;
+    apr_array_header_t *logins = NULL;
     struct webauth_login *login;
     int status;
     size_t size;
@@ -193,11 +215,11 @@ parse_history(struct webauth_context *ctx, apr_xml_elem *root,
     for (child = root->first_child; child != NULL; child = child->next) {
         if (strcmp(child->name, "host") != 0)
             continue;
-        if (*logins == NULL) {
+        if (logins == NULL) {
             size = sizeof(struct webauth_login);
-            *logins = apr_array_make(ctx->pool, 5, size);
+            logins = apr_array_make(ctx->pool, 5, size);
         }
-        login = apr_array_push(*logins);
+        login = apr_array_push(logins);
         status = wai_xml_content(ctx, child, &login->ip);
         if (status != WA_ERR_NONE)
             return status;
@@ -211,6 +233,7 @@ parse_history(struct webauth_context *ctx, apr_xml_elem *root,
                 login->timestamp = timestamp;
             }
     }
+    *result = logins;
     return WA_ERR_NONE;
 }
 
@@ -230,7 +253,6 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
     struct webauth_user_info *info;
     unsigned long value;
     const char *content;
-    apr_array_header_t *junk = NULL;
     bool multifactor_required = false;
 
     /* We currently don't check that the user parameter is correct. */
@@ -255,7 +277,7 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
         else if (strcmp(child->name, "required-factors") == 0)
             s = parse_factors(ctx, child, &info->required, NULL, NULL);
         else if (strcmp(child->name, "persistent-factors") == 0)
-            s = parse_factors(ctx, child, &junk, NULL, &info->valid_threshold);
+            s = parse_factors(ctx, child, NULL, NULL, &info->valid_threshold);
         else if (strcmp(child->name, "login-history") == 0)
             s = parse_history(ctx, child, &info->logins);
         else if (strcmp(child->name, "max-loa") == 0) {
@@ -279,8 +301,11 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
      * but not <required-factors>, add m as a required factor.
      */
     if (info->required == NULL && multifactor_required) {
-        info->required = apr_array_make(ctx->pool, 1, sizeof(const char *));
-        APR_ARRAY_PUSH(info->required, const char *) = WA_FA_MULTIFACTOR;
+        apr_array_header_t *required;
+
+        required = apr_array_make(ctx->pool, 1, sizeof(const char *));
+        APR_ARRAY_PUSH(required, const char *) = WA_FA_MULTIFACTOR;
+        info->required = required;
     }
 
     /* Return the results. */

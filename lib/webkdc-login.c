@@ -716,7 +716,7 @@ check_multifactor(struct webauth_context *ctx,
  */
 static int
 build_identity_list(struct webauth_context *ctx, const char *subject,
-                    const char *target, apr_array_header_t **identities)
+                    const char *target, const apr_array_header_t **result)
 {
     int status;
     unsigned long line;
@@ -725,9 +725,10 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
     apr_status_t code;
     char buf[BUFSIZ];
     char *p, *authn, *was, *authz, *last;
+    apr_array_header_t *identities = NULL;
 
     /* If there is no identity ACL file, there is a NULL array. */
-    *identities = NULL;
+    *result = NULL;
     if (ctx->webkdc->id_acl_path == NULL)
         return WA_ERR_NONE;
 
@@ -788,9 +789,9 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
                           " line %lu", ctx->webkdc->id_acl_path, line);
             goto done;
         }
-        if (*identities == NULL)
-            *identities = apr_array_make(ctx->pool, 1, sizeof(char *));
-        APR_ARRAY_PUSH(*identities, char *) = apr_pstrdup(ctx->pool, authz);
+        if (identities == NULL)
+            identities = apr_array_make(ctx->pool, 1, sizeof(char *));
+        APR_ARRAY_PUSH(identities, char *) = apr_pstrdup(ctx->pool, authz);
     }
     if (code != APR_SUCCESS && code != APR_EOF) {
         status = WA_ERR_FILE_READ;
@@ -798,6 +799,7 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
                           ctx->webkdc->id_acl_path);
         goto done;
     }
+    *result = identities;
     status = WA_ERR_NONE;
 
 done:
@@ -1200,15 +1202,17 @@ webauth_webkdc_login(struct webauth_context *ctx,
 
     /* Encode the webkdc-proxy token in the response. */
     if (newproxy != NULL) {
+        apr_array_header_t *proxies;
         struct webauth_webkdc_proxy_data *data;
 
         size = sizeof(struct webauth_webkdc_proxy_data);
-        (*response)->proxies = apr_array_make(ctx->pool, 1, size);
-        data = apr_array_push((*response)->proxies);
+        proxies = apr_array_make(ctx->pool, 1, size);
+        data = apr_array_push(proxies);
         data->type = wkproxy->proxy_type;
         status = webauth_token_encode(ctx, newproxy, ring, &data->token);
         if (status != WA_ERR_NONE)
             return status;
+        (*response)->proxies = proxies;
     }
 
     /*
@@ -1338,15 +1342,17 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * to return.
      */
     if (wkfactor != NULL) {
+        apr_array_header_t *factor_tokens;
         struct webauth_webkdc_factor_data *factor;
         const size_t data_size = sizeof(struct webauth_webkdc_factor_data);
 
-        (*response)->factor_tokens = apr_array_make(ctx->pool, 1, data_size);
-        factor = apr_array_push((*response)->factor_tokens);
+        factor_tokens = apr_array_make(ctx->pool, 1, data_size);
+        factor = apr_array_push(factor_tokens);
         factor->expiration = wkfactor->token.webkdc_factor.expiration;
         status = webauth_token_encode(ctx, wkfactor, ring, &factor->token);
         if (status != WA_ERR_NONE)
             return status;
+        (*response)->factor_tokens = factor_tokens;
     }
     return status;
 }

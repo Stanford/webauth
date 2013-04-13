@@ -49,8 +49,8 @@ struct webauth_webkdc_config {
     const char *principal;      /* WebKDC's Kerberos principal. */
     time_t proxy_lifetime;      /* Maximum webkdc-proxy token lifetime (s). */
     time_t login_time_limit;    /* Time limit for completing login process. */
-    WA_APR_ARRAY_HEADER_T *permitted_realms; /* Array of char * realms. */
-    WA_APR_ARRAY_HEADER_T *local_realms;     /* Array of char * realms. */
+    const WA_APR_ARRAY_HEADER_T *permitted_realms; /* Array of char * realms */
+    const WA_APR_ARRAY_HEADER_T *local_realms;     /* Array of char * realms */
 };
 
 /*
@@ -82,8 +82,8 @@ struct webauth_webkdc_proxy_data {
  * authorization identity can also be requested in via the identity field.
  */
 struct webauth_webkdc_login_request {
-    struct webauth_token_webkdc_service *service;
-    WA_APR_ARRAY_HEADER_T *creds;       /* Array of webauth_token pointers. */
+    const struct webauth_token_webkdc_service *service;
+    const WA_APR_ARRAY_HEADER_T *creds; /* Array of webauth_token pointers. */
     const char *authz_subject;          /* Requested authorization identity. */
     const struct webauth_token_request *request;
     const char *remote_user;
@@ -105,10 +105,10 @@ struct webauth_webkdc_login_response {
     int login_error;
     const char *login_message;
     const char *user_message;
-    WA_APR_ARRAY_HEADER_T *factors_wanted;     /* Array of char * factors. */
-    WA_APR_ARRAY_HEADER_T *factors_configured; /* Array of char * factors. */
-    WA_APR_ARRAY_HEADER_T *proxies;         /* Array of webkdc_proxy_data. */
-    WA_APR_ARRAY_HEADER_T *factor_tokens;  /* Array of webkdc_factor_data. */
+    const WA_APR_ARRAY_HEADER_T *factors_wanted;     /* char * factors. */
+    const WA_APR_ARRAY_HEADER_T *factors_configured; /* char * factors. */
+    const WA_APR_ARRAY_HEADER_T *proxies;         /* webkdc_proxy_data. */
+    const WA_APR_ARRAY_HEADER_T *factor_tokens;   /* webkdc_factor_data. */
     const char *return_url;
     const char *requester;
     const char *subject;
@@ -121,9 +121,9 @@ struct webauth_webkdc_login_response {
     const char *login_cancel;   /* Encrypted error token. */
     const void *app_state;
     size_t app_state_len;
-    WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
+    const WA_APR_ARRAY_HEADER_T *logins;        /* Array of webauth_login. */
     time_t password_expires;            /* Time of password expiration or 0. */
-    WA_APR_ARRAY_HEADER_T *permitted_authz;  /* Allowable authorization ids. */
+    const WA_APR_ARRAY_HEADER_T *permitted_authz;  /* Allowable authz ids. */
 };    
 
 /*
@@ -180,14 +180,14 @@ struct webauth_login {
  * about a user, returned from the site-local user information middleware.
  */
 struct webauth_user_info {
-    WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
-    WA_APR_ARRAY_HEADER_T *additional;  /* Array of char * factor codes. */
-    WA_APR_ARRAY_HEADER_T *required;    /* Array of char * factor codes. */
+    const WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factors. */
+    const WA_APR_ARRAY_HEADER_T *additional;  /* Array of char * factors. */
+    const WA_APR_ARRAY_HEADER_T *required;    /* Array of char * factors. */
     time_t valid_threshold;             /* Cutoff for persistent validity. */
     int random_multifactor;             /* If random multifactor was done. */
     unsigned long max_loa;              /* Maximum level of assurance. */
     time_t password_expires;            /* Password expiration time or 0. */
-    WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
+    const WA_APR_ARRAY_HEADER_T *logins;  /* Array of struct webauth_login. */
     const char *error;                  /* Error returned from userinfo. */
     const char *user_message;           /* Message to pass along to a user. */
 };
@@ -200,9 +200,9 @@ struct webauth_user_info {
  */
 struct webauth_user_validate {
     int success;                        /* Whether the validation succeeded. */
-    WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
+    const WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factors. */
     time_t factors_expiration;          /* Expiration time of factors. */
-    WA_APR_ARRAY_HEADER_T *persistent;  /* Array of char * factor codes. */
+    const WA_APR_ARRAY_HEADER_T *persistent;  /* Array of char * factors. */
     time_t persistent_expiration;       /* Expiration time of persistent. */
     time_t valid_threshold;             /* Cutoff for persistent validity. */
     unsigned long loa;                  /* Level of assurance. */
@@ -218,7 +218,8 @@ BEGIN_DECLS
  * queries.  Returns a status code, which will be WA_ERR_NONE unless invalid
  * parameters were passed.
  */
-int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
+int webauth_user_config(struct webauth_context *,
+                        const struct webauth_user_config *)
     __attribute__((__nonnull__));
 
 /*
@@ -273,7 +274,7 @@ int webauth_user_validate(struct webauth_context *, const char *user,
  * passed.
  */
 int webauth_webkdc_config(struct webauth_context *,
-                          struct webauth_webkdc_config *)
+                          const struct webauth_webkdc_config *)
     __attribute__((__nonnull__));
 
 /*

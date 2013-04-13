@@ -76,6 +76,7 @@ int
 main(void)
 {
     apr_pool_t *pool = NULL;
+    apr_array_header_t *local_realms, *permitted_realms, *creds;
     struct kerberos_config *krbconf;
     struct webauth_context *ctx;
     struct webauth_keyring *ring, *session;
@@ -118,12 +119,14 @@ main(void)
     test_file_path_free(keyring);
 
     /* Provide basic configuration to the WebKDC code. */
+    local_realms     = apr_array_make(pool, 1, sizeof(const char *));
+    permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
+    APR_ARRAY_PUSH(local_realms, const char *) = "none";
     memset(&config, 0, sizeof(config));
-    config.local_realms = apr_array_make(pool, 1, sizeof(const char *));
-    APR_ARRAY_PUSH(config.local_realms, const char *) = "none";
-    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
-    config.keytab_path = krbconf->keytab;
-    config.principal = krbconf->principal;
+    config.local_realms     = local_realms;
+    config.permitted_realms = permitted_realms;
+    config.keytab_path      = krbconf->keytab;
+    config.principal        = krbconf->principal;
     status = webauth_webkdc_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
 
@@ -152,7 +155,8 @@ main(void)
     req.return_url = "https://example.com/";
     req.creation = now;
     request.request = &req;
-    request.creds = apr_array_make(pool, 1, sizeof(struct token *));
+    creds = apr_array_make(pool, 1, sizeof(struct token *));
+    request.creds = creds;
 
     /* Get an id token with a Kerberos authenticator and test forced auth. */
     memset(&login, 0, sizeof(login));
@@ -160,7 +164,7 @@ main(void)
     login.token.login.username = krbconf->userprinc;
     login.token.login.password = krbconf->password;
     login.token.login.creation = now;
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    APR_ARRAY_PUSH(creds, struct webauth_token *) = &login;
     req.options = "lc,fa";
     service.subject = apr_pstrcat(pool, "krb5:", config.principal, NULL);
     req.auth = "krb5";
@@ -196,7 +200,7 @@ main(void)
        "...which is the login token");
 
     /* Test permitted realm support with a realm that is allowed. */
-    APR_ARRAY_PUSH(config.permitted_realms, const char *) = krbconf->realm;
+    APR_ARRAY_PUSH(permitted_realms, const char *) = krbconf->realm;
     status = webauth_webkdc_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Setting permitted realms succeeds");
     req.options = NULL;
@@ -226,8 +230,8 @@ main(void)
     }
 
     /* Test permitted realm support with a realm that is denied. */
-    config.permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
-    APR_ARRAY_PUSH(config.permitted_realms, const char *) = "FOO.EXAMPLE.COM";
+    apr_array_clear(permitted_realms);
+    APR_ARRAY_PUSH(permitted_realms, const char *) = "FOO.EXAMPLE.COM";
     status = webauth_webkdc_config(ctx, &config);
     is_int(WA_ERR_NONE, status, "Setting permitted realms succeeds");
     status = webauth_webkdc_login(ctx, &request, &response, ring);
@@ -390,9 +394,9 @@ main(void)
     wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
     wkproxy.token.webkdc_proxy.initial_factors = "p";
     wkproxy.token.webkdc_proxy.session_factors = "c";
-    request.creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &login;
+    apr_array_clear(creds);
+    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkproxy;
+    APR_ARRAY_PUSH(creds, struct webauth_token *) = &login;
     req.type = "id";
     req.auth = "webkdc";
     req.proxy_type = NULL;
