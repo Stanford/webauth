@@ -1,7 +1,7 @@
 # Interact with the WebAuth WebKDC service.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011, 2012
+# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -413,7 +413,8 @@ __END__
 
 =for stopwords
 WebAuth webkdc-proxy authenticator WebKDC WebKDC's WebLogin AUTH TGT
-Allbery
+Allbery PEC keyring WebKDCException requestTokenRequest
+webkdcProxyTokenRequest
 
 =head1 NAME
 

@@ -2188,7 +2188,9 @@ sub edit_remoteuser : Runmode {
 __END__
 
 =for stopwords
-WebAuth WebLogin CGI login API Allbery
+WebAuth WebLogin CGI login API Allbery CPT FastCGI PAGETYPE SMS SPNEGO SSL
+URI USERNAME login logins memcached redisplay remctl username keyring
+post-login logout
 
 =head1 NAME
 
@@ -2238,7 +2240,7 @@ responses, and storing other query-specific data.
 
 =item krb5_escape (PRINCIPAL)
 
-Escape special characters in a principal nam to match the escaping done
+Escape special characters in a principal name to match the escaping done
 by krb5_unparse_name.  Returns the escaped principal name.
 
 =item fix_token (TOKEN)
@@ -2254,7 +2256,7 @@ as to whether or not it uses SSL.
 =item is_factor_set
 
 Uses the cookies set on the WebKDC::WebResponse object to determine if
-we have a factor token passed back from the webkdc.  Returns 1 if so, 0
+we have a factor token passed back from the WebKDC.  Returns 1 if so, 0
 if not.
 
 =item template_params (SETTINGS_REF)
@@ -2266,13 +2268,13 @@ current parameters.
 
 =item get_pagename (PAGETYPE)
 
-Takes the type of page we want, then returns the filename of the
+Takes the type of page we want, then returns the file name of the
 template that is used to display that page type.
 
 =item print_headers (ARGS_REF)
 
 Sets the headers for a page.  This handles setting or removing any
-cookies, then setting the headers.  If a return url was set, add a
+cookies, then setting the headers.  If a return URL was set, add a
 redirect to that URL into the headers.
 
 =item pretty_return_uri (URI)
@@ -2289,7 +2291,7 @@ was something wrong with the URL.
 
 =item token_rights
 
-Parses the token.acl file, using that to return an arrayref of the
+Parses the F<token.acl> file, using that to return an arrayref of the
 credentials that the requesting WAS is permitted to obtain.  This is
 used in cases where a specific WAS might have access to request
 delegated credentials.
@@ -2303,7 +2305,8 @@ template parameters to offer a login canceled URL with that token.
 
 View for the user login page.  This is the view that allows a user to
 attempt to login, offering fields for username and password, possibly a
-remuser URL, and any errors from previous failed logins.
+URL for remote user authentication, and any errors from previous failed
+logins.
 
 =item print_error_page
 
@@ -2404,7 +2407,7 @@ set, and we display an error page.
 
 Tests to make sure that if a password was sent, the request method was
 POST.  This is done in order to avoid the password potentially showing
-up in referer strings sent to a remote site.  If the method was not
+up in referrer strings sent to a remote site.  If the method was not
 POST, we display an error page.
 
 =item error_no_request_token
@@ -2436,14 +2439,14 @@ the number (set in WebKDC::Config).
 
 =item register_auth (RT, USERNAME)
 
-Registers a successful authentication for the given user against
-memcached, with the request token for the authentication.  This is used
-to detect replay attacks.
+Registers a successful authentication for the given user in memcached,
+with the request token for the authentication.  This is used to detect
+replay attacks.
 
 =item register_auth_fail (USERNAME)
 
-Registers a failed authentication for the given user againct memcached.
-This is used for rate limiting users on failed logins.
+Registers a failed authentication for the given user in memcached.  This
+is used for rate limiting users on failed logins.
 
 =item setup_kdc_request (COOKIES)
 
@@ -2468,22 +2471,22 @@ unrecoverable error page that the user can do nothing with.
 
 =item index
 
-The default runmode, handling the basic attempt to log in, whether via
+The default run mode, handling the basic attempt to log in, whether via
 plain username and password, SPNEGO, or other method.
 
-This is called if no other runmode is set by the main login URL, or on
+This is called if no other run mode is set by the main login URL, or on
 any regular failure to successfully log in (such as invalid password).
 
 =item logout
 
-Runmode to handle a request by the user to log out, blowing away all
+Run mode to handle a request by the user to log out, blowing away all
 proxy cookies.
 
 This is only called via the logout URL.
 
-=item pwchange
+=item pwchange()
 
-Runmode to handle an attempt by the user to change their current
+Run mode to handle an attempt by the user to change their current
 password.  This handles the attempt to change the user password, either
 passing the user on to the confirmation page or bringing the user back
 to this page on a problem with changing the password.
@@ -2494,7 +2497,7 @@ forced to here after logging in with an expired password.
 
 =item pwchange_display
 
-Runmode to handle a direct access to the password change display
+Run mode to handle a direct access to the password change display
 screen.
 
 This is called only by the user visiting the password change URL from
@@ -2502,17 +2505,17 @@ outside the normal program flow.
 
 =item multifactor
 
-Runmode to handle an attempted multifactor login.  The username and
-one-time password are passed to the WebKDC in order to validate whether
-or not there was a succesful login, and the user is then sent to either
-the confirm page on success, or the multifactor page again on failure.
+Run mode to handle an attempted multifactor login.  The username and
+one-time password are passed to the WebKDC in order to validate whether or
+not there was a successful login, and the user is then sent to either the
+confirm page on success, or the multifactor page again on failure.
 
 This is called from the multifactor entry screen, when the user submits
 their one-time password.
 
 =item multifactor_sendauth
 
-Runmode to handle the request from a user to send a multifactor
+Run mode to handle the request from a user to send a multifactor
 authentication token somewhere via a remctl command.  The command
 itself is configured in WebKDC::Config.  The normal case would be
 sending out a OTP over SMS to a user.
@@ -2522,14 +2525,14 @@ having a multifactor method that requires the user be sent a token.
 
 =item edit_authz_identity
 
-Runmode to handle the request from a user to change their authorization
+Run mode to handle the request from a user to change their authorization
 identity.
 
 This is called from the config screen.
 
 =item edit_remoteuser
 
-Runmode to handle the request from a user to change their REMOTE_USER
+Run mode to handle the request from a user to change their REMOTE_USER
 setting.
 
 This is called from the config screen.
