@@ -1,4 +1,4 @@
-username thoron
+username \S+
 return_url https://test.example.org/?WEBAUTHR=TestResponse;
 pretty_return_url https://test.example.org
 login_cancel
