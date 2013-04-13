@@ -61,7 +61,7 @@ BEGIN_DECLS
 
 /* Returns all of the factors as a newly-allocated array. */
 WA_APR_ARRAY_HEADER_T *webauth_factors_array(struct webauth_context *,
-                                             struct webauth_factors *)
+                                             const struct webauth_factors *)
     __attribute__((__nonnull__(1)));
 
 /*
@@ -69,7 +69,7 @@ WA_APR_ARRAY_HEADER_T *webauth_factors_array(struct webauth_context *,
  * otherwise.
  */
 int webauth_factors_contains(struct webauth_context *,
-                             struct webauth_factors *, const char *)
+                             const struct webauth_factors *, const char *)
     __attribute__((__nonnull__(1, 3)));
 
 /*
@@ -77,7 +77,7 @@ int webauth_factors_contains(struct webauth_context *,
  * false otherwise.
  */
 int webauth_factors_interactive(struct webauth_context *,
-                                struct webauth_factors *)
+                                const struct webauth_factors *)
     __attribute__((__nonnull__(1)));
 
 /*
@@ -87,7 +87,7 @@ int webauth_factors_interactive(struct webauth_context *,
  * synthesize multifactor.
  */
 struct webauth_factors *webauth_factors_new(struct webauth_context *,
-                                            WA_APR_ARRAY_HEADER_T *)
+                                            const WA_APR_ARRAY_HEADER_T *)
     __attribute__((__nonnull__(1)));
 
 /*
@@ -107,7 +107,7 @@ struct webauth_factors *webauth_factors_parse(struct webauth_context *,
  * pool-allocated.  If the webauth_factors struct is NULL, returns NULL.
  */
 char *webauth_factors_string(struct webauth_context *,
-                             struct webauth_factors *)
+                             const struct webauth_factors *)
     __attribute__((__nonnull__(1)));
 
 /*
@@ -115,8 +115,8 @@ char *webauth_factors_string(struct webauth_context *,
  * first set satisfies the second set, false otherwise.
  */
 int webauth_factors_satisfies(struct webauth_context *,
-                              struct webauth_factors *,
-                              struct webauth_factors *)
+                              const struct webauth_factors *,
+                              const struct webauth_factors *)
     __attribute__((__nonnull__));
 
 /*
@@ -124,9 +124,10 @@ int webauth_factors_satisfies(struct webauth_context *,
  * factors formed by removing all factors from the first set that are present
  * in the second set.
  */
-struct webauth_factors *webauth_factors_subtract(struct webauth_context *,
-                                                 struct webauth_factors *,
-                                                 struct webauth_factors *)
+struct webauth_factors *
+    webauth_factors_subtract(struct webauth_context *,
+                             const struct webauth_factors *,
+                             const struct webauth_factors *)
     __attribute__((__nonnull__(1)));
 
 /*
@@ -135,8 +136,9 @@ struct webauth_factors *webauth_factors_subtract(struct webauth_context *,
  * webauth_factors structs represent a multifactor authentication.
  */
 struct webauth_factors *
-webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
-                      struct webauth_factors *two)
+webauth_factors_union(struct webauth_context *ctx,
+                      const struct webauth_factors *one,
+                      const struct webauth_factors *two)
     __attribute__((__nonnull__(1)));
 
 END_DECLS

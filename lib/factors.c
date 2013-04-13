@@ -79,7 +79,8 @@ maybe_synthesize_multifactor(struct webauth_factors *factors)
  * will be opaque so this won't be needed.
  */
 static struct webauth_factors *
-factors_copy(struct webauth_context *ctx, struct webauth_factors *factors)
+factors_copy(struct webauth_context *ctx,
+             const struct webauth_factors *factors)
 {
     struct webauth_factors *copy;
 
@@ -100,7 +101,7 @@ factors_copy(struct webauth_context *ctx, struct webauth_factors *factors)
  * multifactor are always considered to satisfy random multifactor as well.
  */
 static bool
-factors_satisfies(struct webauth_factors *factors, const char *factor)
+factors_satisfies(const struct webauth_factors *factors, const char *factor)
 {
     int i;
     const char *candidate;
@@ -124,7 +125,7 @@ factors_satisfies(struct webauth_factors *factors, const char *factor)
  */
 apr_array_header_t *
 webauth_factors_array(struct webauth_context *ctx,
-                      struct webauth_factors *factors)
+                      const struct webauth_factors *factors)
 {
     if (factors == NULL || apr_is_empty_array(factors->factors))
         return apr_array_make(ctx->pool, 1, sizeof(const char *));
@@ -140,7 +141,8 @@ webauth_factors_array(struct webauth_context *ctx,
  */
 int
 webauth_factors_contains(struct webauth_context *ctx UNUSED,
-                         struct webauth_factors *factors, const char *factor)
+                         const struct webauth_factors *factors,
+                         const char *factor)
 {
     int i;
     const char *candidate;
@@ -162,7 +164,7 @@ webauth_factors_contains(struct webauth_context *ctx UNUSED,
  */
 int
 webauth_factors_interactive(struct webauth_context *ctx UNUSED,
-                            struct webauth_factors *factors)
+                            const struct webauth_factors *factors)
 {
     const char *factor;
     int i;
@@ -192,7 +194,8 @@ webauth_factors_interactive(struct webauth_context *ctx UNUSED,
  * not synthesize multifactor.
  */
 struct webauth_factors *
-webauth_factors_new(struct webauth_context *ctx, apr_array_header_t *factors)
+webauth_factors_new(struct webauth_context *ctx,
+                    const apr_array_header_t *factors)
 {
     struct webauth_factors *result;
     int i;
@@ -279,8 +282,9 @@ webauth_factors_parse(struct webauth_context *ctx, const char *input)
  * represent a multifactor authentication.  Returns the new struct.
  */
 struct webauth_factors *
-webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
-                      struct webauth_factors *two)
+webauth_factors_union(struct webauth_context *ctx,
+                      const struct webauth_factors *one,
+                      const struct webauth_factors *two)
 {
     struct webauth_factors *result;
     int i;
@@ -324,7 +328,7 @@ webauth_factors_union(struct webauth_context *ctx, struct webauth_factors *one,
  */
 char *
 webauth_factors_string(struct webauth_context *ctx,
-                       struct webauth_factors *factors)
+                       const struct webauth_factors *factors)
 {
     if (factors == NULL || apr_is_empty_array(factors->factors))
         return NULL;
@@ -338,8 +342,8 @@ webauth_factors_string(struct webauth_context *ctx,
  */
 int
 webauth_factors_satisfies(struct webauth_context *ctx UNUSED,
-                          struct webauth_factors *one,
-                          struct webauth_factors *two)
+                          const struct webauth_factors *one,
+                          const struct webauth_factors *two)
 {
     const char *factor;
     int i;
@@ -362,8 +366,8 @@ webauth_factors_satisfies(struct webauth_context *ctx UNUSED,
  */
 struct webauth_factors *
 webauth_factors_subtract(struct webauth_context *ctx,
-                         struct webauth_factors *one,
-                         struct webauth_factors *two)
+                         const struct webauth_factors *one,
+                         const struct webauth_factors *two)
 {
     struct webauth_factors *result;
     const char *factor;
