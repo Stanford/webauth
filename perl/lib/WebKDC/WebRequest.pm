@@ -182,9 +182,12 @@ doesn't know.
 
 =item login_state ([STATE])
 
-Get or set the login-state of the request.  This field can contain any
-data the implementor choses to place - usually used to indicate the token
-type.  It may be left unset if unneeded.
+Get or set the login state of the request.  This field can contain any
+data the implementer chooses to place and will be passed, by the WebKDC,
+to the user information service as part of an OTP validation.  It is
+usually used in conjunction with multifactor authentication to provide
+some additional data about the type of multifactor being used.  It may be
+left unset if unneeded.
 
 =item pass ([PASSWORD])
 
