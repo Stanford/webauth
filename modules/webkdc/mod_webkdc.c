@@ -1533,7 +1533,6 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     static const char *mwk_func="handle_requestTokenRequest";
     char *request_token = NULL;
     void *ls_data;
-    size_t ls_len;
     int i, status;
     const char *req_token_info;
     const char *login_type = NULL;
@@ -1631,7 +1630,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     /* need to base64 decode loginState */
     if (request.login_state != NULL) {
         ls_data = apr_palloc(rc->r->pool, apr_base64_decode_len(request.login_state));
-        ls_len = apr_base64_decode(ls_data, request.login_state);
+        apr_base64_decode(ls_data, request.login_state);
         request.login_state = ls_data;
     }
 
