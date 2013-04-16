@@ -40,7 +40,6 @@ sub username    { my $t = shift; $t->_attr ('username',    @_) }
 sub password    { my $t = shift; $t->_attr ('password',    @_) }
 sub otp         { my $t = shift; $t->_attr ('otp',         @_) }
 sub otp_type    { my $t = shift; $t->_attr ('otp_type',    @_) }
-sub login_state { my $t = shift; $t->_attr ('login_state', @_) }
 sub creation    { my $t = shift; $t->_attr ('creation',    @_) }
 
 1;
@@ -121,12 +120,6 @@ password() attribute will be set.
 Get or set the one-time password type.  This should be a WebAuth factor
 code corresponding to the type of one-time password that this login token
 represents.  It may be left unset if the caller doesn't know.
-
-=item login_state ([STATE])
-
-Get or sets an opaque state object to be passed along to the validation
-service to support complex login interactions.  It may be left unset if
-not required.
 
 =item creation ([TIMESTAMP])
 

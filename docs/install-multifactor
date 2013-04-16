@@ -351,6 +351,7 @@ User Information Service
   enforcement, or any other messaging specific to this step of the
   authenication process.  It can be displayed on the first load of
   WebLogin's OTP submission page.
+
   The optional <login-state> element may contain a simple value or a string
   serialized object that can be used to retain state for a subsequent call
   to the validate service.  The object may be deserialized in WebLogin by
@@ -473,6 +474,7 @@ OTP Validation
   the user with any additional information about specific actions they
   should take as a result of this OTP validation attempt, or an
   an informational message about the state of this validation.
+
   As explained above for the userinfo service, the optional <login-state>
   element may contain a simple value or a string serialized object that can
   be used to retain state for a subsequent call to the validate service.
