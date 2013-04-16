@@ -616,7 +616,7 @@ check_multifactor(struct webauth_context *ctx,
                   struct webauth_user_info *info)
 {
     struct webauth_factors *wanted, *swanted, *have, *shave, *required;
-    struct webauth_factors *configured;
+    struct webauth_factors *configured, *all_wanted;
     const struct webauth_token_request *req;
 
     /* Figure out what factors we want and have. */
@@ -697,7 +697,8 @@ check_multifactor(struct webauth_context *ctx,
         configured = webauth_factors_parse(ctx, WA_FA_PASSWORD);
     else
         configured = webauth_factors_new(ctx, info->factors);
-    response->factors_wanted = webauth_factors_array(ctx, wanted);
+    all_wanted = webauth_factors_union(ctx, wanted, swanted);
+    response->factors_wanted = webauth_factors_array(ctx, all_wanted);
     response->factors_configured = webauth_factors_array(ctx, configured);
     if (!webauth_factors_satisfies(ctx, configured, wanted)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
