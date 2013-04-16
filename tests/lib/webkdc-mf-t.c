@@ -20,493 +20,606 @@
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
 #include <tests/tap/remctl.h>
+#include <tests/tap/webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
-#include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 
+/* Tests to run with the default userinfo configuration. */
+static const struct wat_login_test tests_default[] = {
 
-int
-main(void)
-{
-    apr_pool_t *pool = NULL;
-    apr_array_header_t *local_realms, *permitted_realms, *creds;
-    struct webauth_keyring *ring, *session;
-    struct webauth_key *session_key;
-    struct kerberos_config *krbconf;
-    int status;
-    char *keyring;
-    time_t now;
-    struct webauth_context *ctx;
-    struct webauth_webkdc_config config;
-    struct webauth_user_config user_config;
-    struct webauth_webkdc_login_request request;
-    struct webauth_webkdc_login_response *response;
-    struct webauth_token *token, login, wkproxy, wkproxy2, wkfactor;
-    struct webauth_token_request req;
-    struct webauth_token_webkdc_factor *ft;
-    struct webauth_token_webkdc_proxy *pt;
-    struct webauth_token_webkdc_service service;
-    struct webauth_webkdc_factor_data *fd;
-    struct webauth_webkdc_proxy_data *pd;
+    /* Test basic authentication with a user information service. */
+    {
+        "Basic authentication",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 3, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            { "mini", NULL, "webkdc", NULL, 0, "x,x1", "c", 1, 0, 0 },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
-    /* Skip this test if built without remctl support. */
-#ifndef HAVE_REMCTL
-    skip_all("built without remctl support");
-#endif
-
-    if (apr_initialize() != APR_SUCCESS)
-        bail("cannot initialize APR");
-    if (apr_pool_create(&pool, NULL) != APR_SUCCESS)
-        bail("cannot create memory pool");
-    if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
-        bail("cannot initialize WebAuth context");
-
-    /* Load the Kerberos configuration. */
-    krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
-    local_realms     = apr_array_make(pool, 1, sizeof(const char *));
-    permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
-    APR_ARRAY_PUSH(local_realms, const char *) = "none";
-    memset(&config, 0, sizeof(config));
-    config.local_realms     = local_realms;
-    config.permitted_realms = permitted_realms;
-    config.keytab_path      = krbconf->keytab;
-    config.principal        = krbconf->principal;
-    config.login_time_limit = 5 * 60;
-
-    /* Load the precreated keyring that we'll use for token encryption. */
-    keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read(ctx, keyring, &ring);
-    if (status != WA_ERR_NONE)
-        bail("cannot read %s: %s", keyring,
-             webauth_error_message(ctx, status));
-    test_file_path_free(keyring);
-
-    /* Start remctld. */
-    remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
-
-    plan(275);
-
-    /* Provide basic configuration to the WebKDC code. */
-    status = webauth_webkdc_config(ctx, &config);
-    is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
-
-    /* Flesh out the absolute minimum required in the request. */
-    now = time(NULL);
-    memset(&request, 0, sizeof(request));
-    memset(&service, 0, sizeof(service));
-    service.subject = "krb5:webauth/example.com@EXAMPLE.COM";
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL,
-                                &session_key);
-    if (status != WA_ERR_NONE)
-        bail("cannot create key: %s", webauth_error_message(ctx, status));
-    session = webauth_keyring_from_key(ctx, session_key);
-    service.session_key = session_key->data;
-    service.session_key_len = session_key->length;
-    service.creation = now;
-    service.expiration = now + 60;
-    request.service = &service;
-    memset(&req, 0, sizeof(req));
-    req.type = "id";
-    req.auth = "webkdc";
-    req.return_url = "https://example.com/";
-    req.creation = now;
-    request.request = &req;
-
-    /* Create some tokens. */
-    memset(&login, 0, sizeof(login));
-    login.type = WA_TOKEN_LOGIN;
-    login.token.login.username = krbconf->userprinc;
-    login.token.login.password = krbconf->password;
-    login.token.login.creation = now;
-    memset(&wkproxy, 0, sizeof(wkproxy));
-    wkproxy.type = WA_TOKEN_WEBKDC_PROXY;
-    wkproxy.token.webkdc_proxy.subject = "mini";
-    wkproxy.token.webkdc_proxy.proxy_type = "remuser";
-    wkproxy.token.webkdc_proxy.proxy_subject = "WEBKDC:remuser";
-    wkproxy.token.webkdc_proxy.data = "mini";
-    wkproxy.token.webkdc_proxy.data_len = strlen("mini");
-    wkproxy.token.webkdc_proxy.initial_factors = "x,x1";
-    wkproxy.token.webkdc_proxy.session_factors = "c";
-    wkproxy.token.webkdc_proxy.loa = 3;
-    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
-    wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
+    /* The same, but attempt to access a restricted URL. */
+    {
+        "Authentication to restricted URL",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 3, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0,
+                "https://example.com/restrict/", NULL, NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_AUTH_REJECTED,
+            "authentication rejected by user information service",
+            "<strong>You are restricted!</strong>  &lt;_&lt;;",
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
-     * Add configuration for user information and try authentication with just
-     * the proxy token.
+     * Request an X.509 factor even though the user doesn't have that listed
+     * as a supported factor.  Since they have a webkdc-proxy token with that
+     * factor, this should work.
      */
-    memset(&user_config, 0, sizeof(user_config));
-    user_config.protocol = WA_PROTOCOL_REMCTL;
-    user_config.host = "localhost";
-    user_config.port = 14373;
-    user_config.identity = config.principal;
-    user_config.command = "test";
-    user_config.keytab = config.keytab_path;
-    user_config.principal = config.principal;
-    status = webauth_user_config(ctx, &user_config);
-    is_int(WA_ERR_NONE, status, "User information config accepted");
-    creds = apr_array_make(pool, 2, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkproxy;
-    request.creds = creds;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Proxy auth w/user config returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    is_string(NULL, response->user_message, "...and no user message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(5, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("mini", token->token.id.subject,
-                  "...result subject is right");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("x,x1", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string("c", token->token.proxy.session_factors,
-                  "...result session factors is right");
-        is_int(1, token->token.id.loa, "...result LoA is right");
-    }
-    is_int(0, response->password_expires, "...no password expiration");
-    ok(response->factor_tokens == NULL, "...no factor tokens");
+    {
+        "Authentication requiring an X.509 factor",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 3, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "x", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            { "mini", NULL, "webkdc", NULL, 0, "x,x1", "c", 1, 0, 0 },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+
+    /* Request a level of assurance that cannot be satisfied. */
+    {
+        "Authentication requiring a too-high LoA",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 3, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "x", NULL, 4, NULL, 0
+            }
+        },
+        {
+            WA_PEC_LOA_UNAVAILABLE,
+            "insufficient level of assurance",
+            NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
-     * Attempt to access a restricted URL and try again.  This should fail
-     * and return an error message.
+     * Request a session password factor.  This should fail with a forced
+     * login message since we only have cookie factors for the session.
+     *
+     * This and the next two tests are also run in the basic webkdc-login test
+     * suite, but we want to run them again here with a user information
+     * service configured to ensure that behavior doesn't change with a real
+     * user information service instead of the implicit "p" factor.
      */
-    req.return_url = "https://example.com/restrict/";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Restricted URL returns success");
-    is_int(WA_PEC_AUTH_REJECTED, response->login_error,
-           "...with the right error");
-    is_string("authentication rejected by user information service",
-              response->login_message, "...and the right message");
-    is_string("<strong>You are restricted!</strong>  &lt;_&lt;;",
-              response->user_message, "...and the right user message");
-    ok(response->result == NULL, "...and there is no result token");
+    {
+        "Authentication requiring a p session factor, old proxy",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 3, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, "p", 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_LOGIN_FORCED,
+            "forced authentication, need to login",
+            NULL,
+            "p", "p",
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
-     * Request an X.509 factor and try again.  This should still work even
-     * though this user doesn't have password listed as a supported factor in
-     * their user information.
+     * The same, setting the webkdc-proxy creation to now.  This still doesn't
+     * work, but for a different reason: the webkdc-proxy token doesn't have a
+     * password factor.
      */
-    req.return_url = "https://example.com/";
-    req.initial_factors = "x";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Multifactor with proxy returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
+    {
+        "Authentication requiring a p session factor, current proxy",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, "p", 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_LOGIN_FORCED,
+            "forced authentication, need to login",
+            NULL,
+            "p", "p",
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+
+    /* Instead, request an X.509 session factor.  This should work. */
+    {
+        "Authentication requiring an x session factor",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, "x", 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            { "mini", NULL, "webkdc", NULL, 0, "x,x1", "x,x1", 1, 0, 0 },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
-     * Request a level of assurance that we can't possibly.  This should
-     * result in a specific LoA error code.
+     * Request an OTP factor that isn't configured for this user.  This should
+     * be rejected with multifactor unavailable.
      */
-    req.loa = 4;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Multifactor LoA returns success");
-    is_int(WA_PEC_LOA_UNAVAILABLE, response->login_error,
-           "...with the right error");
-    is_string("insufficient level of assurance", response->login_message,
-              "...and the right message");
-
-    /*
-     * Request a password factor for the session authentication.  This should
-     * fail, since we only have a session factor of cookie, returning the
-     * error code for forced login.
-     */
-    req.loa = 0;
-    req.initial_factors = NULL;
-    req.session_factors = "p";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Multifactor session returns success");
-    is_int(WA_PEC_LOGIN_FORCED, response->login_error,
-           "...with the right error");
-    is_string("forced authentication, need to login", response->login_message,
-              "...and the right message");
-
-    /*
-     * If the proxy token is recent enough, this works, since the initial
-     * factors are then elevated to session factors, but this still doesn't
-     * work since we don't have a password factor.
-     */
-    wkproxy.token.webkdc_proxy.creation = now;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Multifactor recent session returns success");
-    is_int(WA_PEC_LOGIN_FORCED, response->login_error,
-           "...with the right error");
-    is_string("forced authentication, need to login", response->login_message,
-              "...and the right message");
-
-    /*
-     * If instead we request an X.509 session factor, this succeeds, since the
-     * proxy token is recent enough to provide session factors.
-     */
-    req.session_factors = "x";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Multifactor session returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    if (response->result == NULL)
-        ok(0, "...which is an id token");
-    else
-        is_string("id", response->result_type, "...which is an id token");
-    is_string("x,x1", response->initial_factors, "...initial factors");
-    is_string("x,x1", response->session_factors, "...session factors");
-
-    /*
-     * Change the WebKDC proxy token to assert just a password factor and ask
-     * for an OTP factor, and try again.  This should be rejected with
-     * multifactor required.
-     */
-    wkproxy.token.webkdc_proxy.initial_factors = "p";
-    req.initial_factors = "o";
-    req.session_factors = NULL;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Multifactor without config returns success");
-    is_int(WA_PEC_MULTIFACTOR_UNAVAILABLE, response->login_error,
-           "...with the right error");
-    is_string("multifactor required but not configured",
-              response->login_message, "...and the right message");
-    ok(response->result == NULL, "...and there is no result token");
-    is_int(1, response->factors_wanted->nelts, "...and one factor is wanted");
-    is_string("o", APR_ARRAY_IDX(response->factors_wanted, 0, const char *),
-              "...which is the OTP factor");
-    is_int(1, response->factors_configured->nelts,
-           "...and one factor is configured");
-    is_string("p",
-              APR_ARRAY_IDX(response->factors_configured, 0, const char *),
-              "...which is the password factor");
+    {
+        "Require an unavailable factor",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "o", NULL, 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_MULTIFACTOR_UNAVAILABLE,
+            "multifactor required but not configured",
+            NULL,
+            "o", "p",
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "p", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Try with the factor user, which should require multifactor since we
      * haven't included a d factor in our initial authentication factors.
      */
-    wkproxy.token.webkdc_proxy.subject = "factor";
-    wkproxy.token.webkdc_proxy.data = "factor";
-    wkproxy.token.webkdc_proxy.data_len = strlen("factor");
-    req.initial_factors = NULL;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Auth as factor user returns success");
-    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
-           "...with the right error");
-    is_string("multifactor login required", response->login_message,
-              "...and the right message");
-    ok(response->result == NULL, "...and there is no result token");
-    is_int(1, response->factors_wanted->nelts,
-           "...and one factor is wanted");
-    is_string("m", APR_ARRAY_IDX(response->factors_wanted, 0, const char *),
-              "...which is the multifactor factor");
-    is_int(4, response->factors_configured->nelts,
-           "...and four factors are configured");
-    is_string("p",
-              APR_ARRAY_IDX(response->factors_configured, 0, const char *),
-              "...which is the password factor");
-    is_string("m",
-              APR_ARRAY_IDX(response->factors_configured, 1, const char *),
-              "...the generic multifactor factor");
-    is_string("o",
-              APR_ARRAY_IDX(response->factors_configured, 2, const char *),
-              "...the OTP factor");
-    is_string("o2",
-              APR_ARRAY_IDX(response->factors_configured, 3, const char *),
-              "...and the OTP-2 factor");
+    {
+        "User information service requires factor from arg",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_MULTIFACTOR_REQUIRED,
+            "multifactor login required",
+            NULL,
+            "m", "p,m,o,o2",
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
-     * Add a d factor to our webkdc-proxy token and try again.  This should
-     * succeed and give us an id token.
+     * Add a d factor to the webkdc-proxy token and try again.  This should
+     * then work.
      */
-    wkproxy.token.webkdc_proxy.initial_factors = "p,d";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Auth as factor with device factor succeeds");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    is_string(NULL, response->user_message, "...and no user message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(5, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("factor", token->token.id.subject,
-                  "...result subject is right");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("p,d", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string("p,d", token->token.proxy.session_factors,
-                  "...result session factors is right");
-        is_int(1, token->token.id.loa, "...result LoA is right");
-    }
-    is_int(0, response->password_expires, "...no password expiration");
-    ok(response->factor_tokens == NULL, "...no factor tokens");
+    {
+        "Provide factor required by userinfo in arg",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p,d", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p,d", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            { "factor", NULL, "webkdc", NULL, 0, "p,d", "p,d", 1, 0, 0 },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
-     * Try with a user who has multifactor configuration and forced
-     * multifactor.
+     * Now try authenticating a user who has multifactor configured, again
+     * with a request of multifactor.  This will produce a different error
+     * message.
      */
-    wkproxy.token.webkdc_proxy.subject = "full";
-    wkproxy.token.webkdc_proxy.data = "full";
-    wkproxy.token.webkdc_proxy.data_len = strlen("full");
-    wkproxy.token.webkdc_proxy.initial_factors = "p";
-    req.initial_factors = "o";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Multifactor with config returns success");
-    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
-           "...with the right error");
-    is_string("multifactor login required", response->login_message,
-              "...and the right message");
-    ok(response->result == NULL, "...and there is no result token");
-    is_int(3, response->factors_wanted->nelts,
-           "...and three factors are wanted");
-    is_string("o", APR_ARRAY_IDX(response->factors_wanted, 0, const char *),
-              "...which are the OTP factor (from request)");
-    is_string("m", APR_ARRAY_IDX(response->factors_wanted, 1, const char *),
-              "...the multifactor factor (from userinfo)");
-    is_string("o3", APR_ARRAY_IDX(response->factors_wanted, 2, const char *),
-              "...and the o3 factor (from userinfo)");
-    is_int(4, response->factors_configured->nelts,
-           "...and four factors are configured");
-    is_string("p",
-              APR_ARRAY_IDX(response->factors_configured, 0, const char *),
-              "...which is the password factor");
-    is_string("m",
-              APR_ARRAY_IDX(response->factors_configured, 1, const char *),
-              "...the generic multifactor factor");
-    is_string("o",
-              APR_ARRAY_IDX(response->factors_configured, 2, const char *),
-              "...the OTP factor");
-    is_string("o3",
-              APR_ARRAY_IDX(response->factors_configured, 3, const char *),
-              "...and the OTP-3 factor");
-    is_int(1310675733, response->password_expires,
-           "...password expiration is correct");
+    {
+        "Require an available factor",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "o", NULL, 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_MULTIFACTOR_REQUIRED,
+            "multifactor login required",
+            NULL,
+            "o,m,o3", "p,m,o,o3",
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            1310675733,
+            NO_AUTHZ_IDS
+        }
+    },
 
-    /*
-     * Add a second webkdc-proxy token that repesents an OTP login.  This
-     * login should then work.
-     */
-    wkproxy.token.webkdc_proxy.loa = 3;
-    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
-    wkproxy.token.webkdc_proxy.session_factors = "c";
-    wkproxy2.type = WA_TOKEN_WEBKDC_PROXY;
-    wkproxy2.token.webkdc_proxy.subject = "full";
-    wkproxy2.token.webkdc_proxy.proxy_type = "remuser";
-    wkproxy2.token.webkdc_proxy.proxy_subject = "WEBKDC:remuser";
-    wkproxy2.token.webkdc_proxy.data = "full";
-    wkproxy2.token.webkdc_proxy.data_len = strlen("full");
-    wkproxy2.token.webkdc_proxy.initial_factors = "o,o3";
-    wkproxy2.token.webkdc_proxy.session_factors = "c";
-    wkproxy2.token.webkdc_proxy.loa = 2;
-    wkproxy2.token.webkdc_proxy.creation = now - 2 * 60;
-    wkproxy2.token.webkdc_proxy.expiration = now + 30 * 60;
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkproxy2;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status,
-           "Multifactor with two proxies returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    if (response->result == NULL)
-        ok(0, "...which is an id token");
-    else
-        is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(6, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("full", token->token.id.subject,
-                  "...result subject is right");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("o,o3,p,m", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string("o,o3,c", token->token.proxy.session_factors,
-                  "...result session factors is right");
-        is_int(3, token->token.id.loa, "...result LoA is right");
-        is_int(now + 30 * 60, token->token.id.expiration,
-               "...and expiration matches the shorter expiration");
-    }
-    is_int(1310675733, response->password_expires,
-           "...password expiration is correct");
-    ok(response->proxies != NULL, "...and we have proxy tokens");
-    if (response->proxies == NULL)
-        ok_block(5, 0, "...no proxy tokens");
-    else {
-        is_int(1, response->proxies->nelts, "...one proxy token");
-        pd = &APR_ARRAY_IDX(response->proxies, 0,
-                            struct webauth_webkdc_proxy_data);
-        is_string("remuser", pd->type, "...of type remuser");
-        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
-                                      ring, &token);
-        is_int(WA_ERR_NONE, status, "...which decodes properly");
-        pt = &token->token.webkdc_proxy;
-        is_string("o,o3,p,m", pt->initial_factors,
-                  "...with correct initial factors");
-        is_int(now - 10 * 60, pt->creation, "...and oldest creation");
-    }
-    is_string("o,o3,p,m", response->initial_factors, "...initial factors");
-    is_string("o,o3,c", response->session_factors, "...session factors");
-    is_int(3, response->loa, "...level of assurance");
-    ok(response->factor_tokens == NULL, "...no factor tokens");
+    /* Add a second webkdc-proxy token representing an OTP login. */
+    {
+        "Successful authentication with two proxy tokens",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 10 * 60, 60 * 60, "c"
+                },
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "o,o3", 2, 2 * 60, 30 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "o", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "o,o3,p,m", 3, 10 * 60, 30 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "full", NULL, "webkdc", NULL, 0, "o,o3,p,m", "o,o3,c", 3,
+                0, 30 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            1310675733,
+            NO_AUTHZ_IDS
+        }
+    },
 
-    /* Attempt an OTP authentication with an incorrect OTP code. */
-    login.token.login.username = "full";
-    login.token.login.password = NULL;
-    login.token.login.otp = "654321";
-    apr_array_clear(creds);
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &login;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Invalid OTP returns success");
-    is_int(WA_PEC_LOGIN_REJECTED, response->login_error,
-           "...with correct error");
-    is_string("login rejected by validation service", response->login_message,
-              "...and the correct error message");
-    is_string("<em>OTP3</em> down.  &lt;_&lt;;", response->user_message,
-              "...and the correct user message");
+    /* Attempt OTP with an incorrect code. */
+    {
+        "Incorrect OTP authentication",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "full", NULL, "654321", NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "o", NULL, 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_LOGIN_REJECTED,
+            "login rejected by validation service",
+            "<em>OTP3</em> down.  &lt;_&lt;;",
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Switch to the correct OTP code and add back a webkdc-proxy token
@@ -517,187 +630,178 @@ main(void)
      * We should get the full suite of session factors here, since the proxy
      * token is fresh.
      */
-    req.initial_factors = "m";
-    login.token.login.otp = "123456";
-    wkproxy.token.webkdc_proxy.creation = now;
-    apr_array_clear(creds);
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkproxy;
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &login;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status,
-           "Multifactor with proxy token and OTP login returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(6, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("full", token->token.id.subject,
-                  "...result subject is right");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("o,o3,p,m,d,u", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string("o,o3,p,m,d,u", token->token.proxy.session_factors,
-                  "...result session factors is right");
-        is_int(3, token->token.id.loa, "...result LoA is right");
-        is_int(now + 60 * 60, token->token.id.expiration,
-               "...and expiration matches the shorter expiration");
-    }
-    ok(response->factor_tokens != NULL, "...and we have factor tokens");
-    if (response->factor_tokens == NULL)
-        ok_block(7, 0, "...no factor tokens");
-    else {
-        is_int(1, response->factor_tokens->nelts, "...one factor token");
-        fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
-                            struct webauth_webkdc_factor_data);
-        is_int(1893484802, fd->expiration, "...with expiration");
-        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR,
-                                      fd->token, ring, &token);
-        is_int(WA_ERR_NONE, status, "...which decodes properly");
-        ft = &token->token.webkdc_factor;
-        is_string("full", ft->subject, "...with correct subject");
-        is_string("d,u", ft->factors, "...and correct factors");
-        is_int(1893484802, ft->expiration, "...and expiration is correct");
-        if (time(NULL) - ft->creation < 5)
-            ok(true, "...and creation within bounds");
-        else {
-            diag("Creation %lu, time %lu", (unsigned long) ft->creation,
-                 (unsigned long) time(NULL));
-            ok(false, "...and creation within bounds");
+    {
+        "Successful authentication with OTP login and proxy",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "full", NULL, "123456", NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "m", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "full", "otp", "WEBKDC:otp", "full", 4,
+                    "o,o3,p,m,d,u", 3, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            { "full", "d,u", 0, 1893484802 },
+            {
+                "full", NULL, "webkdc", NULL, 0, "o,o3,p,m,d,u",
+                "o,o3,p,m,d,u", 3, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            {
+                { "127.0.0.2", "example.com", 1335373919 },
+                { "127.0.0.3", "www.example.com", 0 },
+                { NULL, NULL, 0 },
+            },
+            1310675733,
+            NO_AUTHZ_IDS
         }
-    }
-    is_string(NULL, response->user_message, "...and user message is NULL");
+    },
 
-    /* Do the same authentication but add an input webkdc-factor token. */
-    memset(&wkfactor, 0, sizeof(wkfactor));
-    wkfactor.type = WA_TOKEN_WEBKDC_FACTOR;
-    wkfactor.token.webkdc_factor.subject = "full";
-    wkfactor.token.webkdc_factor.factors = "k";
-    wkfactor.token.webkdc_factor.creation = now - 10 * 60;
-    wkfactor.token.webkdc_factor.expiration = now + 60 * 60;
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkfactor;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status,
-           "Multifactor with proxy, factor, and OTP returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(6, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("full", token->token.id.subject,
-                  "...result subject is right");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("o,o3,p,m,d,u,k", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string("o,o3,p,m,d,u,k", token->token.proxy.session_factors,
-                  "...result session factors is right");
-        is_int(3, token->token.id.loa, "...result LoA is right");
-        is_int(now + 60 * 60, token->token.id.expiration,
-               "...and expiration matches the shorter expiration");
-    }
-    ok(response->factor_tokens != NULL, "...and we have factor tokens");
-    if (response->factor_tokens == NULL)
-        ok_block(7, 0, "...no factor tokens");
-    else {
-        is_int(1, response->factor_tokens->nelts, "...one factor token");
-        fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
-                            struct webauth_webkdc_factor_data);
-        is_int(now + 60 * 60, fd->expiration, "...with expiration");
-        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR,
-                                      fd->token, ring, &token);
-        is_int(WA_ERR_NONE, status, "...which decodes properly");
-        ft = &token->token.webkdc_factor;
-        is_string("full", ft->subject, "...with correct subject");
-        is_string("k,d,u", ft->factors, "...and correct factors");
-        is_int(now + 60 * 60, ft->expiration, "...and expiration is correct");
-        is_int(now - 10 * 60, ft->creation, "...and creation is correct");
-    }
+    /* Same authentication, but add an input webkdc-factor token. */
+    {
+        "Successful authentication with OTP login, proxy, and factor",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "full", NULL, "123456", NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            {
+                { "full", "k", 10 * 60, 60 * 60 },
+                EMPTY_TOKEN_WKFACTOR,
+                EMPTY_TOKEN_WKFACTOR
+            },
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "m", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "full", "otp", "WEBKDC:otp", "full", 4,
+                    "o,o3,p,m,k,d,u", 3, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            { "full", "d,u,k", 10 * 60, 60 * 60 },
+            {
+                "full", NULL, "webkdc", NULL, 0, "o,o3,p,m,k,d,u",
+                "o,o3,p,m,k,d,u", 3, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            {
+                { "127.0.0.2", "example.com", 1335373919 },
+                { "127.0.0.3", "www.example.com", 0 },
+                { NULL, NULL, 0 },
+            },
+            1310675733,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * If the webkdc-factor token is older than the invalid-before cutoff,
      * we will ignore it and not add the additional factor, including the new
      * webkdc-factor information that we get from OTP.
      */
-    wkfactor.token.webkdc_factor.creation = 1365630518;
-    wkfactor.token.webkdc_factor.expiration = now + 60 * 60;
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkfactor;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status,
-           "Multifactor with proxy, old factor, and OTP returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(6, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("full", token->token.id.subject,
-                  "...result subject is right");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("o,o3,p,m,d,u", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string("o,o3,p,m,d,u", token->token.proxy.session_factors,
-                  "...result session factors is right");
-        is_int(3, token->token.id.loa, "...result LoA is right");
-        is_int(now + 60 * 60, token->token.id.expiration,
-               "...and expiration matches the shorter expiration");
-    }
-    ok(response->factor_tokens != NULL, "...and we have factor tokens");
-    if (response->factor_tokens == NULL)
-        ok_block(7, 0, "...no factor tokens");
-    else {
-        is_int(1, response->factor_tokens->nelts, "...one factor token");
-        fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
-                            struct webauth_webkdc_factor_data);
-        is_int(1893484802, fd->expiration, "...with expiration");
-        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR,
-                                      fd->token, ring, &token);
-        is_int(WA_ERR_NONE, status, "...which decodes properly");
-        ft = &token->token.webkdc_factor;
-        is_string("full", ft->subject, "...with correct subject");
-        is_string("d,u", ft->factors, "...and correct factors");
-        is_int(1893484802, ft->expiration, "...and expiration is correct");
-        if (time(NULL) - ft->creation < 5)
-            ok(true, "...and creation within bounds");
-        else {
-            diag("Creation %lu, time %lu", (unsigned long) ft->creation,
-                 (unsigned long) time(NULL));
-            ok(false, "...and creation within bounds");
+    {
+        "Old webkdc-factor token",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "full", NULL, "123456", NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            {
+                { "full", "k", 1365630518, 60 * 60 },
+                EMPTY_TOKEN_WKFACTOR,
+                EMPTY_TOKEN_WKFACTOR
+            },
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "m", "m", 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "full", "otp", "WEBKDC:otp", "full", 4,
+                    "o,o3,p,m,d,u", 3, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            { "full", "d,u", 0, 1893484802 },
+            {
+                "full", NULL, "webkdc", NULL, 0, "o,o3,p,m,d,u",
+                "o,o3,p,m,d,u", 3, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            {
+                { "127.0.0.2", "example.com", 1335373919 },
+                { "127.0.0.3", "www.example.com", 0 },
+                { NULL, NULL, 0 },
+            },
+            1310675733,
+            NO_AUTHZ_IDS
         }
-    }
+    },
 
     /*
      * Go back to just the webkdc-proxy and OTP login tokens and request
@@ -705,42 +809,111 @@ main(void)
      * password webkdc-proxy token is too old and hence can't contribute to
      * the session factors, even though we're logging in.
      */
-    req.session_factors = "m";
-    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
-    apr_array_clear(creds);
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkproxy;
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &login;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Multifactor OTP session returns success");
-    is_int(WA_PEC_LOGIN_FORCED, response->login_error,
-           "...with the right error");
-    is_string("forced authentication, need to login", response->login_message,
-              "...and the right message");
+    {
+        "Session multifactor with old proxy",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "full", NULL, "123456", NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "m", "m", 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_LOGIN_FORCED,
+            "forced authentication, need to login",
+            NULL,
+            "m", "p,m,o,o3",
+            {
+                {
+                    "full", "otp", "WEBKDC:otp", "full", 4,
+                    "o,o3,p,m,d,u", 3, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            {
+                { "127.0.0.2", "example.com", 1335373919 },
+                { "127.0.0.3", "www.example.com", 0 },
+                { NULL, NULL, 0 },
+            },
+            1310675733,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /* But if the webkdc-proxy token is current, this does work. */
-    wkproxy.token.webkdc_proxy.creation = now;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status,
-           "Multifactor OTP recent session returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok(0, "...no result token: %s", webauth_error_message(ctx, status));
-    else
-        is_string("o,o3,p,m,d,u", token->token.id.session_factors,
-                  "...result session factors is right");
+    {
+        "Session multifactor with current proxy",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "full", NULL, "123456", NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            {
+                {
+                    "full", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "m", "m", 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "full", "otp", "WEBKDC:otp", "full", 4,
+                    "o,o3,p,m,d,u", 3, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            { "full", "d,u", 0, 1893484802 },
+            {
+                "full", NULL, "webkdc", NULL, 0, "o,o3,p,m,d,u",
+                "o,o3,p,m,d,u", 3, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            {
+                { "127.0.0.2", "example.com", 1335373919 },
+                { "127.0.0.3", "www.example.com", 0 },
+                { NULL, NULL, 0 },
+            },
+            1310675733,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Try requesting only a level of assurance, with a webkdc-proxy token for
@@ -748,24 +921,49 @@ main(void)
      * user can meet.  Ensure the correct error message is returned.  Use
      * normal instead of full as the user so that multifactor isn't forced.
      */
-    wkproxy.token.webkdc_proxy.subject = "normal";
-    wkproxy.token.webkdc_proxy.loa = 1;
-    req.initial_factors = NULL;
-    req.session_factors = "m";
-    req.loa = 2;
-    apr_array_clear(creds);
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkproxy;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Multifactor for LoA returns success");
-    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
-           "...with the right error");
-    is_string("multifactor login required", response->login_message,
-              "...and the right message");
-    ok(response->result == NULL, "...and there is no result token");
-    is_int(0, response->factors_wanted->nelts,
-           "...and no factors are wanted");
-    is_int(4, response->factors_configured->nelts,
-           "...and four factors are configured");
+    {
+        "Meetable but unmet LoA requirement",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "normal", "remuser", "WEBKDC:remuser", "normal", 6,
+                    "p", 2, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 3, NULL, 0
+            }
+        },
+        {
+            WA_PEC_MULTIFACTOR_REQUIRED,
+            "multifactor login required",
+            NULL,
+            "", "p,m,o,o2",
+            {
+                {
+                    "normal", "remuser", "WEBKDC:remuser", "normal", 6,
+                    "p", 2, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            1310675733,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Request multifactor, provide a webkdc-proxy token indicating a password
@@ -773,120 +971,144 @@ main(void)
      * factors.  The additional factors should not be added because we didn't
      * just authenticate.
      */
-    req.type = "id";
-    req.auth = "webkdc";
-    req.proxy_type = NULL;
-    req.initial_factors = "m";
-    req.loa = 0;
-    wkproxy.token.webkdc_proxy.subject = krbconf->userprinc;
-    wkproxy.token.webkdc_proxy.initial_factors = "p";
-    apr_array_clear(creds);
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkproxy;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Proxy auth w/additional returns success");
-    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
-           "...with the right error");
-    is_string("multifactor login required", response->login_message,
-              "...and the right message");
-    ok(response->result == NULL, "...and there is no result token");
-    if (response->factors_wanted == NULL)
-        ok_block(2, false, "...and no wanted factors");
-    else {
-        is_int(1, response->factors_wanted->nelts,
-               "...and one factor is wanted");
-        is_string("m",
-                  APR_ARRAY_IDX(response->factors_wanted, 0, const char *),
-                  "...which is the multfactor factor");
-    }
-    if (response->factors_configured == NULL)
-        ok_block(4, false, "...and no configured factors");
-    else {
-        is_int(3, response->factors_configured->nelts,
-               "...and three factors are configured");
-        is_string("h",
-                  APR_ARRAY_IDX(response->factors_configured, 0, const char *),
-                  "...which are the password factor");
-        is_string("m",
-                  APR_ARRAY_IDX(response->factors_configured, 1, const char *),
-                  "...the generic multifactor factor");
-        is_string("p",
-                  APR_ARRAY_IDX(response->factors_configured, 2, const char *),
-                  "...and the password factor");
-    }
+    {
+        "Additional factors not added for proxy authentication",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "<userprinc>", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "m", NULL, 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_MULTIFACTOR_REQUIRED,
+            "multifactor login required",
+            NULL,
+            "m", "h,m,p",
+            {
+                {
+                    "<userprinc>", "remuser", "WEBKDC:remuser", "full", 4,
+                    "p", 0, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Now, switch to providing a login token instead.  This will allow us to
      * merge the additional factors.
      */
-    login.token.login.username = krbconf->userprinc;
-    login.token.login.password = krbconf->password;
-    login.token.login.otp = NULL;
-    apr_array_clear(creds);
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &login;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Password auth w/additional returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(2, false, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("p,h,m", token->token.id.initial_factors,
-                  "...result initial factors are right");
-        is_string("p,h,m", token->token.id.session_factors,
-                  "...result session factors are right");
-    }
+    {
+        "Factors added for login authentication",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "m", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "<userprinc>", "krb5", "<webkdc-principal>", NULL, 0,
+                    "p,h,m", 0, 0, 0, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "<userprinc>", NULL, "webkdc", NULL, 0, "p,h,m", "p,h,m",
+                0, 0, 0
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Request random multifactor for a user who will get lucky and not need
      * to authenticate with multifactor.
      */
-    req.initial_factors = "rm";
-    req.session_factors = NULL;
-    req.loa = 0;
-    wkproxy.token.webkdc_proxy.subject = "normal";
-    wkproxy.token.webkdc_proxy.loa = 1;
-    apr_array_clear(creds);
-    APR_ARRAY_PUSH(creds, struct webauth_token *) = &wkproxy;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Random multifactor returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(2, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("p,rm", token->token.id.initial_factors,
-                  "...result initial factors is right");
-        is_string("p,rm", token->token.id.session_factors,
-                  "...result session factors is right");
-    }
+    {
+        "Random multifactor for lucky user",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "normal", "remuser", "WEBKDC:remuser", "normal", 6,
+                    "p", 1, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "normal", "remuser", "WEBKDC:remuser", "normal", 6,
+                    "p,rm", 1, 0, 0, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "normal", NULL, "webkdc", NULL, 0, "p,rm", "p,rm",
+                1, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            1310675733,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Change the proxy token to indicate that random multifactor has already
@@ -894,35 +1116,50 @@ main(void)
      * confirm that they're still allowed in.  Also make the proxy token older
      * so that it doesn't contribute to session factors.
      */
-    wkproxy.token.webkdc_proxy.subject = "random";
-    wkproxy.token.webkdc_proxy.initial_factors = "p,rm";
-    wkproxy.token.webkdc_proxy.session_factors = "c";
-    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Have random multifactor returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(2, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("p,rm", token->token.id.initial_factors,
-                  "...result initial factors is right");
-        is_string("c", token->token.id.session_factors,
-                  "...result session factors is right");
-    }
+    {
+        "Existing random multifactor",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,rm", 1, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,rm", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "random", NULL, "webkdc", NULL, 0, "p,rm", "c",
+                1, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Require random multifactor for the session, which should force a check
@@ -930,191 +1167,437 @@ main(void)
      * since the webkdc-proxy token is too old to provide session factors.
      * This should fail and indicate multifactor is required.
      */
-    wkproxy.token.webkdc_proxy.session_factors = "c";
-    req.session_factors = "rm";
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Random multifactor session returns success");
-    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
-           "...with the right error");
-    is_string("multifactor login required", response->login_message,
-              "...and the right message");
-    ok(response->result == NULL, "...and there is no result token");
+    {
+        "Unlucky random multifactor for session",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,rm", 1, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", "rm", 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_MULTIFACTOR_REQUIRED,
+            "multifactor login required",
+            NULL,
+            "m", "p,m,o,o2",
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,rm", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * Similarly, requiring random multifactor for the initial factors should
      * fail if the webkdc-proxy token doesn't already have random multifactor
      * and we have an unlucky user.
      */
-    req.session_factors = NULL;
-    wkproxy.token.webkdc_proxy.initial_factors = "p";
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Random multifactor unlucky returns success");
-    is_int(WA_PEC_MULTIFACTOR_REQUIRED, response->login_error,
-           "...with the right error");
-    is_string("multifactor login required", response->login_message,
-              "...and the right message");
-    ok(response->result == NULL, "...and there is no result token");
+    {
+        "Unlucky random multifactor for initial",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p", 1, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", NULL, 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_MULTIFACTOR_REQUIRED,
+            "multifactor login required",
+            NULL,
+            "m", "p,m,o,o2",
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,rm", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * But if we have a regular multifactor webkdc-proxy token, that allows
      * random multifactor as well.  The factors for the id and webkdc-proxy
      * tokens should just include multifactor.
      */
-    wkproxy.token.webkdc_proxy.initial_factors = "p,o,o3,m";
-    wkproxy.token.webkdc_proxy.session_factors = "c";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Random with multifactor returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(2, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("p,o,o3,m", token->token.id.initial_factors,
-                  "...result initial factors is right");
-        is_string("c", token->token.id.session_factors,
-                  "...result session factors is right");
-    }
-    ok(response->proxies != NULL, "...and we have proxy tokens");
-    if (response->proxies == NULL)
-        ok_block(3, 0, "...no proxy tokens");
-    else {
-        is_int(1, response->proxies->nelts, "...one proxy token");
-        pd = &APR_ARRAY_IDX(response->proxies, 0,
-                            struct webauth_webkdc_proxy_data);
-        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
-                                      ring, &token);
-        is_int(WA_ERR_NONE, status, "...which decodes properly");
-        pt = &token->token.webkdc_proxy;
-        is_string("p,o,o3,m", pt->initial_factors,
-                  "...with correct initial factors");
-    }
-
-    /* Try that with session multifactor. */
-    req.session_factors = "rm";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Random session multifactor returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(2, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("p,o,o3,m,rm", token->token.id.initial_factors,
-                  "...result initial factors is right");
-        is_string("c,rm", token->token.id.session_factors,
-                  "...result session factors is right");
-    }
+    {
+        "Multifactor satisfies random",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,o,o3,m", 1, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,o,o3,m", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "random", NULL, "webkdc", NULL, 0, "p,o,o3,m", "c",
+                1, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
-     * Add a timeout and then switch users to one for which the user
-     * information service won't return in time.  Now, authentication should
-     * fail since we can't contact the user information service.
+     * Try that with session multifactor.
+     *
+     * FIXME: This should not work!
      */
-    user_config.timeout = 1;
-    status = webauth_user_config(ctx, &user_config);
-    is_int(WA_ERR_NONE, status, "Setting user information timeout succeeds");
-    req.session_factors = NULL;
-    wkproxy.token.webkdc_proxy.subject = "delay";
-    wkproxy.token.webkdc_proxy.data = "delay";
-    wkproxy.token.webkdc_proxy.data_len = strlen("delay");
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_REMOTE_FAILURE, status, "Random with timeout fails");
-    is_string("a remote service call failed (error receiving token:"
-              " timed out)", webauth_error_message(ctx, status),
-              "...with correct error");
+    {
+        "Multifactor satisfies random session",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,o,o3,m", 1, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", "rm", 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "random", "remuser", "WEBKDC:remuser", "random", 6,
+                    "p,o,o3,m,rm", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "random", NULL, "webkdc", NULL, 0, "p,o,o3,m,rm", "c,rm",
+                1, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    }
+};
+
+/* Tests that should be run with a timeout configured. */
+static const struct wat_login_test tests_timeout[] = {
+
+    /*
+     * Switch users to one for which the user information service won't return
+     * in time.  Now, authentication should fail since we can't contact the
+     * user information service.
+     */
+    {
+        "User information service timeout",
+        WA_ERR_REMOTE_FAILURE,
+        "a remote service call failed (error receiving token: timed out)",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "delay", "remuser", "WEBKDC:remuser", "delay", 5,
+                    "p", 1, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+};
+
+
+/* Tests that should be run with a timeout and ignore errors. */
+static const struct wat_login_test tests_ignore_failure[] = {
 
     /*
      * If we say to ignore user information errors, random multifactor should
      * succeed based on the existing proxy information that we have.
      */
-    wkproxy.token.webkdc_proxy.session_factors = "c";
-    user_config.ignore_failure = true;
-    status = webauth_user_config(ctx, &user_config);
-    is_int(WA_ERR_NONE, status, "Setting user information ignore succeeds");
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Random with ignored timeout returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no error message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    if (response->result == NULL) {
-        ok(false, "...no result token");
-        token = NULL;
-    } else {
-        status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                      session, &token);
-        is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    }
-    if (token == NULL || status != WA_ERR_NONE)
-        ok_block(2, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("p,o,o3,m", token->token.id.initial_factors,
-                  "...result initial factors is right");
-        is_string("c", token->token.id.session_factors,
-                  "...result session factors is right");
-    }
-    ok(response->proxies != NULL, "...and we have proxy tokens");
-    if (response->proxies == NULL)
-        ok_block(3, 0, "...no proxy tokens");
-    else {
-        is_int(1, response->proxies->nelts, "...one proxy token");
-        pd = &APR_ARRAY_IDX(response->proxies, 0,
-                            struct webauth_webkdc_proxy_data);
-        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
-                                      ring, &token);
-        is_int(WA_ERR_NONE, status, "...which decodes properly");
-        pt = &token->token.webkdc_proxy;
-        is_string("p,o,o3,m", pt->initial_factors,
-                  "...with correct initial factors");
-    }
+    {
+        "Random multifactor with multifactor and timeout",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "delay", "remuser", "WEBKDC:remuser", "delay", 5,
+                    "p,o,o3,m", 1, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", NULL, 0, NULL, 0
+            }
+        },
+        {
+            LOGIN_SUCCESS,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "delay", "remuser", "WEBKDC:remuser", "delay", 5,
+                    "p,o,o3,m", 0, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "delay", NULL, "webkdc", NULL, 0, "p,o,o3,m", "c",
+                0, 0, 60 * 60
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
 
     /*
      * But if we remove multifactor from the proxy token, random multifactor
      * should now fail, since we were unable to contact the user information
      * service.
      */
-    wkproxy.token.webkdc_proxy.initial_factors = "p";
-    if (status != WA_ERR_NONE)
-        diag("%s", webauth_error_message(ctx, status));
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Random multifactor timeout returns success");
-    is_int(WA_PEC_MULTIFACTOR_UNAVAILABLE, response->login_error,
-           "...with the right error");
-    is_string("multifactor required but not configured",
-              response->login_message, "...and the right message");
-    ok(response->result == NULL, "...and there is no result token");
+    {
+        "Random multifactor without multifactor and timeout",
+        0,
+        NULL,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "delay", "remuser", "WEBKDC:remuser", "delay", 5,
+                    "p", 1, 10 * 60, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "rm", NULL, 0, NULL, 0
+            }
+        },
+        {
+            WA_PEC_MULTIFACTOR_UNAVAILABLE,
+            "multifactor required but not configured",
+            NULL,
+            "rm", "p",
+            {
+                {
+                    "delay", "remuser", "WEBKDC:remuser", "delay", 5,
+                    "p", 0, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    }
+};
+
+
+int
+main(void)
+{
+    apr_pool_t *pool = NULL;
+    apr_array_header_t *local_realms, *permitted_realms;
+    struct kerberos_config *krbconf;
+    struct webauth_context *ctx;
+    struct webauth_keyring *ring;
+    struct webauth_user_config user_config;
+    struct webauth_webkdc_config config;
+    char *keyring;
+    int s;
+    size_t i;
+
+    /* Skip this test if built without remctl support. */
+#ifndef HAVE_REMCTL
+    skip_all("built without remctl support");
+#endif
+
+    /* Load the Kerberos configuration. */
+    krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
+
+    /* Use lazy planning so that test counts can vary on some errors. */
+    plan_lazy();
+
+    /* Initialize APR and WebAuth. */
+    if (apr_initialize() != APR_SUCCESS)
+        bail("cannot initialize APR");
+    if (apr_pool_create(&pool, NULL) != APR_SUCCESS)
+        bail("cannot create memory pool");
+    if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
+        bail("cannot initialize WebAuth context");
+
+    /* Load the precreated keyring that we'll use for token encryption. */
+    keyring = test_file_path("data/keyring");
+    s = webauth_keyring_read(ctx, keyring, &ring);
+    if (s != WA_ERR_NONE)
+        bail("cannot read %s: %s", keyring, webauth_error_message(ctx, s));
+    test_file_path_free(keyring);
+
+    /* Start remctld. */
+    remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
+
+    /* Provide basic configuration to the WebKDC code. */
+    local_realms     = apr_array_make(pool, 1, sizeof(const char *));
+    permitted_realms = apr_array_make(pool, 1, sizeof(const char *));
+    APR_ARRAY_PUSH(local_realms, const char *) = "none";
+    memset(&config, 0, sizeof(config));
+    config.local_realms     = local_realms;
+    config.permitted_realms = permitted_realms;
+    config.keytab_path      = krbconf->keytab;
+    config.principal        = krbconf->principal;
+    config.login_time_limit = 5 * 60;
+    s = webauth_webkdc_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "WebKDC configuration succeeded");
+
+    /* Add configuration for the user information service. */
+    memset(&user_config, 0, sizeof(user_config));
+    user_config.protocol  = WA_PROTOCOL_REMCTL;
+    user_config.host      = "localhost";
+    user_config.port      = 14373;
+    user_config.identity  = config.principal;
+    user_config.command   = "test";
+    user_config.keytab    = config.keytab_path;
+    user_config.principal = config.principal;
+    s = webauth_user_config(ctx, &user_config);
+    is_int(WA_ERR_NONE, s, "User information config accepted");
+
+    /* Run the basic set of tests. */
+    for (i = 0; i < ARRAY_SIZE(tests_default); i++)
+        run_login_test(ctx, &tests_default[i], ring, krbconf);
+
+    /* Add a timeout to the user information service queries. */
+    user_config.timeout = 1;
+    s = webauth_user_config(ctx, &user_config);
+    is_int(WA_ERR_NONE, s, "Setting user information timeout succeeds");
+
+    /* Run the tests requiring a timeout. */
+    for (i = 0; i < ARRAY_SIZE(tests_timeout); i++)
+        run_login_test(ctx, &tests_timeout[i], ring, krbconf);
+
+    /* Configure the user information service to ignore errors. */
+    user_config.ignore_failure = true;
+    s = webauth_user_config(ctx, &user_config);
+    is_int(WA_ERR_NONE, s, "Setting user information ignore succeeds");
+
+    /* Run the tests requiring a timeout and ignore failure. */
+    for (i = 0; i < ARRAY_SIZE(tests_ignore_failure); i++)
+        run_login_test(ctx, &tests_ignore_failure[i], ring, krbconf);
 
     /* Clean up. */
     apr_terminate();
