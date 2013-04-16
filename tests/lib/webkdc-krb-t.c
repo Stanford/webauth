@@ -24,7 +24,6 @@
 #include <tests/tap/webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
-#include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 
 /* Test cases to run without any local realms. */
