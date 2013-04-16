@@ -207,8 +207,7 @@ wai_token_merge_webkdc_proxy(struct webauth_context *ctx,
      * that we had from older cookies.  We added those to the end of the
      * array.
      */
-    i = creds->nelts - 1;
-    do {
+    for (i = creds->nelts - 1; i >= 0; i--) {
         struct webauth_factors *cfactors;
 
         token = APR_ARRAY_IDX(creds, i, struct webauth_token *);
@@ -308,9 +307,9 @@ wai_token_merge_webkdc_proxy(struct webauth_context *ctx,
         /* Set LoA to the highest of the tokens. */
         if (wkproxy->loa > best->loa)
             best->loa = wkproxy->loa;
-    } while (i-- > 0);
+    }
 
-    /* If genbest is NULL, all tokens were expired. */
+    /* If *result is NULL, all tokens were expired. */
     if (*result == NULL)
         return WA_ERR_NONE;
 
