@@ -128,13 +128,22 @@ is_token_id(const struct webauth_token_id *wanted,
     is_string(wanted->authz_subject, seen->authz_subject, "%s authz subject",
               message);
     is_string(wanted->auth, seen->auth, "%s auth type", message);
-    if (wanted->auth_data == NULL || seen->auth_data == NULL)
-        ok(wanted->auth_data == seen->auth_data, "%s auth data", message);
-    else
+    if (wanted->auth_data == NULL || seen->auth_data == NULL) {
+        if (strcmp(wanted->auth, "krb5") == 0) {
+            ok(seen->auth_data != NULL, "%s has auth data", message);
+            ok(seen->auth_data_len > 0, "%s has auth data length", message);
+        } else {
+            ok(wanted->auth_data == seen->auth_data, "%s auth data", message);
+            is_int(wanted->auth_data_len, seen->auth_data_len,
+                   "%s auth data length", message);
+        }
+    } else {
         ok(memcmp(wanted->auth_data, seen->auth_data,
-                  wanted->auth_data_len) == 0, "%s auth data", message);
-    is_int(wanted->auth_data_len, seen->auth_data_len, "%s auth data length",
-           message);
+                  wanted->auth_data_len) == 0,
+           "%s auth data", message);
+        is_int(wanted->auth_data_len, seen->auth_data_len,
+               "%s auth data length", message);
+    }
     is_string(wanted->initial_factors, seen->initial_factors,
               "%s initial factors", message);
     is_string(wanted->session_factors, seen->session_factors,
@@ -170,14 +179,24 @@ is_token_proxy(const struct webauth_token_proxy *wanted,
     is_string(wanted->authz_subject, seen->authz_subject, "%s authz subject",
               message);
     is_string(wanted->type, seen->type, "%s proxy type", message);
-    if (wanted->webkdc_proxy == NULL || seen->webkdc_proxy == NULL)
-        ok(wanted->webkdc_proxy == seen->webkdc_proxy, "%s webkdc proxy",
-           message);
-    else
+    if (wanted->webkdc_proxy == NULL || seen->webkdc_proxy == NULL) {
+        if (strcmp(wanted->type, "krb5") == 0) {
+            ok(seen->webkdc_proxy != NULL, "%s has webkdc-proxy", message);
+            ok(seen->webkdc_proxy_len > 0, "%s has webkdc-proxy length",
+               message);
+        } else {
+            ok(wanted->webkdc_proxy == seen->webkdc_proxy, "%s webkdc-proxy",
+               message);
+            is_int(wanted->webkdc_proxy_len, seen->webkdc_proxy_len,
+                   "%s webkdc-proxy length", message);
+        }
+    } else {
         ok(memcmp(wanted->webkdc_proxy, seen->webkdc_proxy,
-                  wanted->webkdc_proxy_len) == 0, "%s webkdc proxy", message);
-    is_int(wanted->webkdc_proxy_len, seen->webkdc_proxy_len,
-           "%s webkdc proxy length", message);
+                  wanted->webkdc_proxy_len) == 0,
+           "%s webkdc-proxy", message);
+        is_int(wanted->webkdc_proxy_len, seen->webkdc_proxy_len,
+               "%s webkdc-proxy length", message);
+    }
     is_string(wanted->initial_factors, seen->initial_factors,
               "%s initial factors", message);
     is_string(wanted->session_factors, seen->session_factors,
@@ -326,9 +345,9 @@ build_token_id(struct webauth_context *ctx,
     id->loa             = template->loa;
     id->creation        = template->creation;
     id->expiration      = template->expiration;
-    if (id->creation < 1000 && id->creation > 0)
+    if (id->creation < 10000 && id->creation > 0)
         id->creation = now - id->creation;
-    if (id->expiration < 1000 && id->expiration > 0)
+    if (id->expiration < 10000 && id->expiration > 0)
         id->expiration += now;
     return token;
 }
@@ -356,7 +375,7 @@ build_token_login(struct webauth_context *ctx,
     login->otp      = template->otp;
     login->otp_type = template->otp_type;
     login->creation = template->creation;
-    if (login->creation < 1000 && login->creation > 0)
+    if (login->creation < 10000 && login->creation > 0)
         login->creation = now - login->creation;
     return token;
 }
@@ -387,9 +406,9 @@ build_token_proxy(struct webauth_context *ctx,
     proxy->loa             = template->loa;
     proxy->creation        = template->creation;
     proxy->expiration      = template->expiration;
-    if (proxy->creation < 1000 && proxy->creation > 0)
+    if (proxy->creation < 10000 && proxy->creation > 0)
         proxy->creation = now - proxy->creation;
-    if (proxy->expiration < 1000 && proxy->expiration > 0)
+    if (proxy->expiration < 10000 && proxy->expiration > 0)
         proxy->expiration += now;
     return token;
 }
@@ -422,9 +441,9 @@ build_token_webkdc_proxy(struct webauth_context *ctx,
     wkproxy->creation        = template->creation;
     wkproxy->expiration      = template->expiration;
     wkproxy->session_factors = template->session_factors;
-    if (wkproxy->creation < 1000 && wkproxy->creation > 0)
+    if (wkproxy->creation < 10000 && wkproxy->creation > 0)
         wkproxy->creation = now - wkproxy->creation;
-    if (wkproxy->expiration < 1000 && wkproxy->expiration > 0)
+    if (wkproxy->expiration < 10000 && wkproxy->expiration > 0)
         wkproxy->expiration += now;
     return token;
 }
@@ -454,9 +473,9 @@ build_token_webkdc_service(struct webauth_context *ctx,
     wkservice->session_key_len = key->length;
     wkservice->creation        = template->creation;
     wkservice->expiration      = template->expiration;
-    if (wkservice->creation < 1000 && wkservice->creation > 0)
+    if (wkservice->creation < 10000 && wkservice->creation > 0)
         wkservice->creation = now - wkservice->creation;
-    if (wkservice->expiration < 1000 && wkservice->expiration > 0)
+    if (wkservice->expiration < 10000 && wkservice->expiration > 0)
         wkservice->expiration += now;
     return token;
 }
@@ -486,11 +505,26 @@ check_login_response(struct webauth_context *ctx,
         WA_PEC_LOGIN_CANCELED, "user canceled login", 0
     };
 
-    /* Check the login error code and message. */
+    /*
+     * Check the login error code and message.  We need a better templating
+     * system for the login message; in the meantime, recognize the one
+     * substitution we need to make.
+     */
     is_int(test->response.login_error, response->login_error,
            "... login error code");
-    is_string(test->response.login_message, response->login_message,
-              "... login error message");
+    if (test->response.login_message != NULL
+        && strcmp(test->response.login_message,
+                  "realm <realm> is not permitted") == 0) {
+        char *realm_error;
+
+        basprintf(&realm_error, "realm %s is not permitted", krbconf->realm);
+        is_string(realm_error, response->login_message,
+                  "... login error message");
+        free(realm_error);
+    } else {
+        is_string(test->response.login_message, response->login_message,
+                  "... login error message");
+    }
 
     /* Check various simple response parameters. */
     is_string(test->response.user_message, response->user_message,
@@ -501,8 +535,8 @@ check_login_response(struct webauth_context *ctx,
     /* Check response parameters derived directly from the request. */
     is_string(test->request.request.return_url, response->return_url,
               "... return URL");
-    is_string(test->request.service.subject, response->requester,
-              "... requester");
+    is_string(subst(ctx, test->request.service.subject, krbconf),
+              response->requester, "... requester");
 
     /* Check wanted and configured factors. */
     if (response->factors_wanted == NULL)
@@ -762,20 +796,20 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     /* Create an array for credentials. */
     creds = apr_array_make(ctx->pool, 3, sizeof(struct webauth_token *));
 
-    /* Add the login tokens to the array. */
-    for (i = 0; i < ARRAY_SIZE(test->request.logins); i++) {
-        if (test->request.logins[i].username == NULL)
-            break;
-        token = build_token_login(ctx, &test->request.logins[i], now, krbconf);
-        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
-    }
-
     /* Add the webkdc-proxy tokens to the array. */
     for (i = 0; i < ARRAY_SIZE(test->request.wkproxies); i++) {
         if (test->request.wkproxies[i].subject == NULL)
             break;
         token = build_token_webkdc_proxy(ctx, &test->request.wkproxies[i], now,
                                          krbconf);
+        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
+    }
+
+    /* Add the login tokens to the array. */
+    for (i = 0; i < ARRAY_SIZE(test->request.logins); i++) {
+        if (test->request.logins[i].username == NULL)
+            break;
+        token = build_token_login(ctx, &test->request.logins[i], now, krbconf);
         APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
     }
 

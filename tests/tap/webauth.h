@@ -70,7 +70,7 @@ struct webauth_keyring;
  *     <username>               User principal without the realm
  *     <password>               User password
  *
- * For creation and expiration if the value is < 1000 and > 0, it is taken as
+ * For creation and expiration if the value is < 10000 and > 0, it is taken as
  * a *negative* offset from now for creation and a *positive* offset from now
  * for expiration.  If creation is 0, check that the creation is somewhere
  * around the current time.  If expiration is 0, check to ensure that it's in
