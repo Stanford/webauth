@@ -1162,8 +1162,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * If we don't have configuration about a user information service, we
      * trust all the webkdc-factor tokens unconditionally.
      */
-    if (wkproxy != NULL)
-        (*response)->subject = wkproxy->subject;
     if (ctx->user != NULL && wkproxy != NULL) {
         status = add_user_info(ctx, request, response, newproxy, wkfactors,
                                did_login, &info);
@@ -1205,7 +1203,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         }
     }
 
-    /* Encode the webkdc-proxy token in the response. */
+    /* Encode the webkdc-proxy token in the response and set the subject. */
     if (newproxy != NULL) {
         apr_array_header_t *proxies;
         struct webauth_webkdc_proxy_data *data;
@@ -1218,6 +1216,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (status != WA_ERR_NONE)
             return status;
         (*response)->proxies = proxies;
+        (*response)->subject = wkproxy->subject;
     }
 
     /*
