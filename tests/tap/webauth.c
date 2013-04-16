@@ -298,7 +298,7 @@ static const char *
 subst(struct webauth_context *ctx, const char *template,
       const struct kerberos_config *krbconf)
 {
-    if (krbconf == NULL)
+    if (krbconf == NULL || template == NULL)
         return template;
     if (strcmp(template, "<principal>") == 0)
         return krbconf->principal;
@@ -410,6 +410,34 @@ build_token_proxy(struct webauth_context *ctx,
         proxy->creation = now - proxy->creation;
     if (proxy->expiration < 10000 && proxy->expiration > 0)
         proxy->expiration += now;
+    return token;
+}
+
+
+/*
+ * Internal helper function to build a webkdc-factor token from a
+ * webauth_token_webkdc_factor structure but with the timestamp manipulations.
+ * Takes the WebAuth context, the template, the time basis, and an optional
+ * Kerberos configuration to replace principal placeholders, and returns a
+ * newly-allocated token.
+ */
+static struct webauth_token *
+build_token_webkdc_factor(struct webauth_context *ctx,
+                          const struct webauth_token_webkdc_factor *template,
+                          time_t now, const struct kerberos_config *krbconf)
+{
+    struct webauth_token *token;
+    struct webauth_token_webkdc_factor *wkfactor;
+
+    token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+    token->type = WA_TOKEN_WEBKDC_FACTOR;
+    wkfactor = &token->token.webkdc_factor;
+    *wkfactor = *template;
+    wkfactor->subject = subst(ctx, template->subject, krbconf);
+    if (wkfactor->creation < 10000 && wkfactor->creation > 0)
+        wkfactor->creation = now - wkfactor->creation;
+    if (wkfactor->expiration < 10000 && wkfactor->expiration > 0)
+        wkfactor->expiration += now;
     return token;
 }
 
@@ -609,14 +637,16 @@ check_login_response(struct webauth_context *ctx,
 
         is_int(1, response->factor_tokens->nelts,
                "... one webkdc-factor token");
+        wanted = build_token_webkdc_factor(ctx, &test->response.factor_token,
+                                           now, krbconf);
         fd = &APR_ARRAY_IDX(response->factor_tokens, 0,
                             struct webauth_webkdc_factor_data);
-        is_int(test->response.factor_token.expiration, fd->expiration,
+        is_int(wanted->token.webkdc_factor.expiration, fd->expiration,
                "... expiration of webkdc-factor token");
         type = WA_TOKEN_WEBKDC_FACTOR;
         s = webauth_token_decode(ctx, type, fd->token, ring, &token);
         is_int(WA_ERR_NONE, s, "... webkdc-factor %d decodes", i);
-        is_token_webkdc_factor(&test->response.factor_token,
+        is_token_webkdc_factor(&wanted->token.webkdc_factor,
                                &token->token.webkdc_factor,
                                "... webkdc-factor");
     }
@@ -802,6 +832,19 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
             break;
         token = build_token_webkdc_proxy(ctx, &test->request.wkproxies[i], now,
                                          krbconf);
+        if (token->token.webkdc_proxy.creation == 0)
+            token->token.webkdc_proxy.creation = now;
+        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
+    }
+
+    /* Add the webkdc-factor tokens to the array. */
+    for (i = 0; i < ARRAY_SIZE(test->request.wkfactors); i++) {
+        if (test->request.wkfactors[i].subject == NULL)
+            break;
+        token = build_token_webkdc_factor(ctx, &test->request.wkfactors[i],
+                                          now, krbconf);
+        if (token->token.webkdc_factor.creation == 0)
+            token->token.webkdc_factor.creation = now;
         APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
     }
 
@@ -810,16 +853,8 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
         if (test->request.logins[i].username == NULL)
             break;
         token = build_token_login(ctx, &test->request.logins[i], now, krbconf);
-        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
-    }
-
-    /* Add the webkdc-factor tokens to the array. */
-    for (i = 0; i < ARRAY_SIZE(test->request.wkfactors); i++) {
-        if (test->request.wkfactors[i].subject == NULL)
-            break;
-        token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
-        token->type = WA_TOKEN_WEBKDC_FACTOR;
-        token->token.webkdc_factor = test->request.wkfactors[i];
+        if (token->token.login.creation == 0)
+            token->token.login.creation = now;
         APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
     }
 
