@@ -8,6 +8,11 @@ Terminology
   Please use the following terms consistently throughout the WebAuth
   source code and documentation:
 
+  attribute
+      A single key-value pair in the WebAuth token format, normally
+      directly corresponding to a struct member in the webauth_token
+      struct representation.
+
   code
       An error code from something *other* than WebAuth, usually either
       APR or Kerberos.  Use code instead of status for these to
