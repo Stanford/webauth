@@ -60,7 +60,7 @@ struct webauth_context {
  * An APR-managed buffer, used to accumulate data that comes in chunks.  This
  * is managed by the wai_buffer_* functions.
  */
-struct buffer {
+struct wai_buffer {
     apr_pool_t *pool;
     size_t size;
     size_t used;
@@ -205,27 +205,27 @@ BEGIN_DECLS
 #pragma GCC visibility push(hidden)
 
 /* Allocate a new buffer and initialize its contents. */
-struct buffer *wai_buffer_new(apr_pool_t *)
+struct wai_buffer *wai_buffer_new(apr_pool_t *)
     __attribute__((__nonnull__));
 
 /*
  * Resize a buffer to be at least as large as the provided size.  Invalidates
  * pointers into the buffer.
  */
-void wai_buffer_resize(struct buffer *, size_t);
+void wai_buffer_resize(struct wai_buffer *, size_t);
 
 /* Set the buffer contents, ignoring anything currently there. */
-void wai_buffer_set(struct buffer *, const char *data, size_t length)
+void wai_buffer_set(struct wai_buffer *, const char *data, size_t length)
     __attribute__((__nonnull__));
 
 /* Append data to the buffer. */
-void wai_buffer_append(struct buffer *, const char *data, size_t length)
+void wai_buffer_append(struct wai_buffer *, const char *data, size_t length)
     __attribute__((__nonnull__));
 
 /* Append printf-style data to the buffer. */
-void wai_buffer_append_sprintf(struct buffer *, const char *, ...)
+void wai_buffer_append_sprintf(struct wai_buffer *, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 2, 3)));
-void wai_buffer_append_vsprintf(struct buffer *, const char *, va_list)
+void wai_buffer_append_vsprintf(struct wai_buffer *, const char *, va_list)
     __attribute__((__nonnull__));
 
 /*
@@ -233,7 +233,7 @@ void wai_buffer_append_vsprintf(struct buffer *, const char *, va_list)
  * the same meaning as start) in offset if found, and returns true if the
  * terminator is found and false otherwise.
  */
-bool wai_buffer_find_string(struct buffer *, const char *, size_t start,
+bool wai_buffer_find_string(struct wai_buffer *, const char *, size_t start,
                             size_t *offset)
     __attribute__((__nonnull__));
 

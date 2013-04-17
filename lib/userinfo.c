@@ -377,7 +377,7 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     apr_xml_parser *parser = NULL;
     size_t offset;
     char errbuf[BUFSIZ] = "";
-    struct buffer *errors;
+    struct wai_buffer *errors;
     struct webauth_user_config *c = ctx->user;
     struct webauth_krb5 *kc = NULL;
     char *cache;

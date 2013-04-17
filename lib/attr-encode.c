@@ -7,7 +7,7 @@
  * caches and keyrings.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2012
+ * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -64,7 +64,7 @@ encode_error_set(struct webauth_context *ctx, int status, const char *desc,
  * code.
  */
 static int
-encode_data(struct buffer *output, const char *attr, const void *data,
+encode_data(struct wai_buffer *output, const char *attr, const void *data,
             size_t length, bool ascii)
 {
     size_t hexlen, i, enclen;
@@ -108,7 +108,7 @@ encode_data(struct buffer *output, const char *attr, const void *data,
  * integer, and a flag indicating whether to format the number as a string.
  */
 static void
-encode_number(struct buffer *output, const char *attr, unsigned long value,
+encode_number(struct wai_buffer *output, const char *attr, unsigned long value,
               bool ascii)
 {
     if (ascii)
@@ -133,8 +133,8 @@ encode_number(struct buffer *output, const char *attr, unsigned long value,
  */
 static int
 encode_to_attrs(struct webauth_context *ctx, const struct wai_encoding *rules,
-                const void *input, struct buffer *output, const char *context,
-                unsigned long element)
+                const void *input, struct wai_buffer *output,
+                const char *context, unsigned long element)
 {
     const struct wai_encoding *rule;
     const char *attr;
@@ -235,7 +235,7 @@ int
 wai_encode(struct webauth_context *ctx, const struct wai_encoding *rules,
            const void *data, void **output, size_t *length)
 {
-    struct buffer *buffer;
+    struct wai_buffer *buffer;
     int status;
 
     buffer = wai_buffer_new(ctx->pool);
@@ -258,7 +258,7 @@ wai_encode_token(struct webauth_context *ctx,
                  const struct webauth_token *token, void **output,
                  size_t *length)
 {
-    struct buffer *buffer;
+    struct wai_buffer *buffer;
     int status;
     const char *type;
     const struct wai_encoding *rules;

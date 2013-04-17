@@ -26,7 +26,7 @@ static const char test_string3[] = "This is a test\0 of the buffer system";
  * Test wai_buffer_append_vsprintf.  Wrapper needed to generate the va_list.
  */
 static void
-test_append_vsprintf(struct buffer *buffer, const char *format, ...)
+test_append_vsprintf(struct wai_buffer *buffer, const char *format, ...)
 {
     va_list args;
 
@@ -40,7 +40,7 @@ int
 main(void)
 {
     apr_pool_t *pool;
-    struct buffer *buffer;
+    struct wai_buffer *buffer;
     size_t offset;
     char *data;
 

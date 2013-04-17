@@ -6,7 +6,7 @@
  * library API; they're only used by other parts of the library.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -30,7 +30,7 @@ int
 wai_xml_content(struct webauth_context *ctx, apr_xml_elem *e,
                 const char **output)
 {
-    struct buffer *buf;
+    struct wai_buffer *buf;
     apr_text *text;
 
     buf = wai_buffer_new(ctx->pool);

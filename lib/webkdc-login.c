@@ -1017,7 +1017,7 @@ log_escape(apr_pool_t *pool, const char *message)
  * Escapes the value if necessary, and handles NULL values.
  */
 static void
-log_attribute(struct buffer *message, const char *key, const char *value)
+log_attribute(struct wai_buffer *message, const char *key, const char *value)
 {
     const char *escaped;
 
@@ -1043,7 +1043,7 @@ log_login(struct webauth_context *ctx,
           apr_array_header_t *logins,
           const struct webauth_token_request *req)
 {
-    struct buffer *message;
+    struct wai_buffer *message;
     const char *subject, *login_type;
     int i;
 
