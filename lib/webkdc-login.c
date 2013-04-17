@@ -197,21 +197,23 @@ do_otp(struct webauth_context *ctx,
     *wkproxy = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
     (*wkproxy)->type = WA_TOKEN_WEBKDC_PROXY;
     pt = &(*wkproxy)->token.webkdc_proxy;
-    pt->subject = login->username;
-    pt->proxy_type = "otp";
-    pt->proxy_subject = "WEBKDC:otp";
-    pt->data = login->username;
-    pt->data_len = strlen(login->username);
+    pt->subject         = login->username;
+    pt->proxy_type      = "otp";
+    pt->proxy_subject   = "WEBKDC:otp";
+    pt->data            = login->username;
+    pt->data_len        = strlen(login->username);
     pt->initial_factors = webauth_factors_string(ctx, validate->factors);
     pt->session_factors = pt->initial_factors;
-    pt->loa = validate->loa;
-    pt->expiration = validate->factors_expiration;
+    pt->loa             = validate->loa;
+    pt->expiration      = validate->factors_expiration;
+    pt->creation        = time(NULL);
+
+    /* Cap the proxy token expiration based on our configuration. */
     if (ctx->webkdc->proxy_lifetime > 0) {
         max_expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
         if (pt->expiration > max_expiration)
             pt->expiration = max_expiration;
     }
-    pt->creation = time(NULL);
 
     /*
      * If there are any persistent-factor tokens, create a webkdc-factor
@@ -221,10 +223,10 @@ do_otp(struct webauth_context *ctx,
         *wkfactor = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
         (*wkfactor)->type = WA_TOKEN_WEBKDC_FACTOR;
         ft = &(*wkfactor)->token.webkdc_factor;
-        ft->subject = login->username;
-        ft->factors = webauth_factors_string(ctx, validate->persistent);
+        ft->subject    = login->username;
+        ft->factors    = webauth_factors_string(ctx, validate->persistent);
         ft->expiration = validate->persistent_expiration;
-        ft->creation = time(NULL);
+        ft->creation   = time(NULL);
     }
     return WA_ERR_NONE;
 }
@@ -248,7 +250,7 @@ do_login(struct webauth_context *ctx,
     const char *subject;
     void *tgt;
     size_t tgt_len;
-    time_t expires;
+    time_t expires, max_expiration;
     struct webauth_token_webkdc_proxy *pt;
 
     status = webauth_krb5_new(ctx, &kc);
@@ -316,21 +318,22 @@ do_login(struct webauth_context *ctx,
     *wkproxy = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
     (*wkproxy)->type = WA_TOKEN_WEBKDC_PROXY;
     pt = &(*wkproxy)->token.webkdc_proxy;
-    pt->subject = subject;
-    pt->proxy_type = "krb5";
-    pt->proxy_subject = apr_pstrcat(ctx->pool, "WEBKDC:", webkdc, NULL);
-    pt->data = tgt;
-    pt->data_len = tgt_len;
+    pt->subject         = subject;
+    pt->proxy_type      = "krb5";
+    pt->proxy_subject   = apr_pstrcat(ctx->pool, "WEBKDC:", webkdc, NULL);
+    pt->data            = tgt;
+    pt->data_len        = tgt_len;
     pt->initial_factors = WA_FA_PASSWORD;
     pt->session_factors = pt->initial_factors;
-    if (ctx->webkdc->proxy_lifetime == 0)
-        pt->expiration = expires;
-    else {
-        pt->expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
-        if (pt->expiration > expires)
-            pt->expiration = expires;
+    pt->creation        = time(NULL);
+    pt->expiration      = expires;
+
+    /* Cap the proxy token expiration based on our configuration. */
+    if (ctx->webkdc->proxy_lifetime > 0) {
+        max_expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
+        if (pt->expiration > max_expiration)
+            pt->expiration = max_expiration;
     }
-    pt->creation = time(NULL);
 
 cleanup:
     webauth_krb5_free(ctx, kc);
@@ -876,28 +879,31 @@ create_id_token(struct webauth_context *ctx,
     struct webauth_token token;
     struct webauth_token_id *id;
 
+    /* Set the basic token data. */
     memset(&token, 0, sizeof(token));
     token.type = WA_TOKEN_ID;
     id = &token.token.id;
-    id->subject = wkproxy->subject;
-    id->authz_subject = response->authz_subject;
-    id->auth = request->auth;
+    id->subject         = wkproxy->subject;
+    id->authz_subject   = response->authz_subject;
+    id->auth            = request->auth;
+    id->expiration      = wkproxy->expiration;
+    id->initial_factors = wkproxy->initial_factors;
+    id->session_factors = wkproxy->session_factors;
+    id->loa             = wkproxy->loa;
+
+    /* If a Kerberos authenticator was requested, obtain one. */
     if (strcmp(request->auth, "krb5") == 0) {
         status = get_krb5_authenticator(ctx, service->subject, wkproxy,
                                         &krb5_auth, &krb5_auth_len);
         if (status == WA_ERR_KRB5) {
-            response->login_error = WA_PEC_PROXY_TOKEN_INVALID;
+            response->login_error   = WA_PEC_PROXY_TOKEN_INVALID;
             response->login_message = webauth_error_message(ctx, status);
             return WA_ERR_NONE;
         } else if (status != WA_ERR_NONE)
             return status;
-        id->auth_data = krb5_auth;
+        id->auth_data     = krb5_auth;
         id->auth_data_len = krb5_auth_len;
     }
-    id->expiration = wkproxy->expiration;
-    id->initial_factors = wkproxy->initial_factors;
-    id->session_factors = wkproxy->session_factors;
-    id->loa = wkproxy->loa;
 
     /* Encode the token and store the resulting string. */
     response->result_type = "id";
@@ -934,13 +940,13 @@ create_proxy_token(struct webauth_context *ctx,
     memset(&token, 0, sizeof(token));
     token.type = WA_TOKEN_PROXY;
     proxy = &token.token.proxy;
-    proxy->subject = wkproxy->subject;
-    proxy->authz_subject = response->authz_subject;
-    proxy->type = request->proxy_type;
+    proxy->subject         = wkproxy->subject;
+    proxy->authz_subject   = response->authz_subject;
+    proxy->type            = request->proxy_type;
     proxy->initial_factors = wkproxy->initial_factors;
     proxy->session_factors = wkproxy->session_factors;
-    proxy->loa = wkproxy->loa;
-    proxy->expiration = wkproxy->expiration;
+    proxy->loa             = wkproxy->loa;
+    proxy->expiration      = wkproxy->expiration;
 
     /* Create the embedded webkdc-proxy token and limit its scope. */
     memset(&subtoken, 0, sizeof(subtoken));
