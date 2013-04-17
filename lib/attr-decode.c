@@ -57,14 +57,14 @@ struct value {
  * (for repeated elements).
  */
 static void
-decode_error_set(struct webauth_context *ctx, int status, const char *desc,
+decode_error_set(struct webauth_context *ctx, int s, const char *desc,
                  const char *context, size_t element)
 {
     if (context != NULL && element != 0)
-        wai_error_set(ctx, status, "decoding %s %s %lu", context, desc,
+        wai_error_set(ctx, s, "decoding %s %s %lu", context, desc,
                       (unsigned long) element);
     else
-        wai_error_set(ctx, status, "decoding %s", desc);
+        wai_error_set(ctx, s, "decoding %s", desc);
 }
 
 
@@ -193,21 +193,21 @@ static int
 decode_data(struct webauth_context *ctx, struct value *value, void **output,
             size_t *size, bool ascii)
 {
-    int status;
+    int s;
     size_t length;
 
     if (ascii) {
-        status = webauth_hex_decoded_length(value->length, &length);
-        if (status != WA_ERR_NONE) {
-            wai_error_set(ctx, status, "invalid hex-encoded data");
-            return status;
+        s = webauth_hex_decoded_length(value->length, &length);
+        if (s != WA_ERR_NONE) {
+            wai_error_set(ctx, s, "invalid hex-encoded data");
+            return s;
         }
         *output = apr_pcalloc(ctx->pool, length);
-        status = webauth_hex_decode(value->data, value->length, *output,
-                                    size, length);
-        if (status != WA_ERR_NONE) {
-            wai_error_set(ctx, status, "invalid hex-encoded data");
-            return status;
+        s = webauth_hex_decode(value->data, value->length, *output, size,
+                               length);
+        if (s != WA_ERR_NONE) {
+            wai_error_set(ctx, s, "invalid hex-encoded data");
+            return s;
         }
     } else {
         *output = apr_pmemdup(ctx->pool, value->data, value->length);
@@ -286,7 +286,7 @@ decode_by_rule(struct webauth_context *ctx, const struct wai_encoding *rules,
     const char *attr;
     struct value *value;
     unsigned long i;
-    int status;
+    int s;
     void *data;
     void **repeat;
     uint32_t uint32;
@@ -297,65 +297,63 @@ decode_by_rule(struct webauth_context *ctx, const struct wai_encoding *rules,
         else
             attr = apr_psprintf(ctx->pool, "%s%lu", rule->attr, element);
         value = apr_hash_get(attrs, attr, strlen(attr));
-        status = WA_ERR_NONE;
+        s = WA_ERR_NONE;
 
         /* If this attribute isn't optional, missing data is an error. */
         if (value == NULL) {
             if (rule->optional)
                 continue;
-            status = WA_ERR_CORRUPT;
-            decode_error_set(ctx, status, rule->desc, context, element);
-            return status;
+            s = WA_ERR_CORRUPT;
+            decode_error_set(ctx, s, rule->desc, context, element);
+            return s;
         }
             
         /* Otherwise, interpret the value by data type. */
         switch (rule->type) {
         case WA_TYPE_DATA:
-            status = decode_data(ctx, value, LOC_DATA(result, rule->offset),
-                                 LOC_SIZE(result, rule->len_offset),
-                                 rule->ascii);
+            s = decode_data(ctx, value, LOC_DATA(result, rule->offset),
+                            LOC_SIZE(result, rule->len_offset), rule->ascii);
             break;
         case WA_TYPE_STRING:
             decode_string(ctx, value, LOC_STRING(result, rule->offset));
             break;
         case WA_TYPE_INT32:
-            status = decode_number(ctx, value, &uint32, rule->ascii);
-            if (status == WA_ERR_NONE)
+            s = decode_number(ctx, value, &uint32, rule->ascii);
+            if (s == WA_ERR_NONE)
                 *LOC_INT32(result, rule->offset) = (int32_t) uint32;
             break;
         case WA_TYPE_UINT32:
-            status = decode_number(ctx, value, &uint32, rule->ascii);
-            if (status == WA_ERR_NONE)
+            s = decode_number(ctx, value, &uint32, rule->ascii);
+            if (s == WA_ERR_NONE)
                 *LOC_UINT32(result, rule->offset) = uint32;
             break;
         case WA_TYPE_ULONG:
-            status = decode_number(ctx, value, &uint32, rule->ascii);
-            if (status == WA_ERR_NONE)
+            s = decode_number(ctx, value, &uint32, rule->ascii);
+            if (s == WA_ERR_NONE)
                 *LOC_ULONG(result, rule->offset) = uint32;
             break;
         case WA_TYPE_TIME:
-            status = decode_number(ctx, value, &uint32, rule->ascii);
-            if (status == WA_ERR_NONE)
+            s = decode_number(ctx, value, &uint32, rule->ascii);
+            if (s == WA_ERR_NONE)
                 *LOC_TIME(result, rule->offset) = (time_t) uint32;
             break;
         case WA_TYPE_REPEAT:
-            status = decode_number(ctx, value, &uint32, rule->ascii);
-            if (status != WA_ERR_NONE)
+            s = decode_number(ctx, value, &uint32, rule->ascii);
+            if (s != WA_ERR_NONE)
                 break;
             *LOC_UINT32(result, rule->len_offset) = uint32;
             repeat = LOC_DATA(result, rule->offset);
             *repeat = apr_palloc(ctx->pool, rule->size * uint32);
             for (i = 0; i < uint32; i++) {
                 data = (char *) *repeat + i * rule->size;
-                status = decode_by_rule(ctx, rule->repeat, attrs, data,
-                                        attr, i);
-                if (status != WA_ERR_NONE)
-                    return status;
+                s = decode_by_rule(ctx, rule->repeat, attrs, data, attr, i);
+                if (s != WA_ERR_NONE)
+                    return s;
             }
             break;
         }
-        if (status != WA_ERR_NONE)
-            return status;
+        if (s != WA_ERR_NONE)
+            return s;
     }
     return WA_ERR_NONE;
 }
@@ -371,13 +369,13 @@ wai_decode(struct webauth_context *ctx, const struct wai_encoding *rules,
            const void *input, size_t length, void *data)
 {
     apr_hash_t *attrs;
-    int status;
+    int s;
     void *buf;
 
     buf = apr_pmemdup(ctx->pool, input, length);
-    status = decode_attrs(ctx, buf, length, &attrs);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = decode_attrs(ctx, buf, length, &attrs);
+    if (s != WA_ERR_NONE)
+        return s;
     return decode_by_rule(ctx, rules, attrs, data, NULL, 0);
 }
 
@@ -393,7 +391,7 @@ wai_decode_token(struct webauth_context *ctx, const void *input,
                  size_t length, struct webauth_token *token)
 {
     apr_hash_t *attrs;
-    int status;
+    int s;
     void *buf, *data;
     struct value *value;
     char *type;
@@ -401,9 +399,9 @@ wai_decode_token(struct webauth_context *ctx, const void *input,
 
     memset(token, 0, sizeof(*token));
     buf = apr_pmemdup(ctx->pool, input, length);
-    status = decode_attrs(ctx, buf, length, &attrs);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = decode_attrs(ctx, buf, length, &attrs);
+    if (s != WA_ERR_NONE)
+        return s;
     value = apr_hash_get(attrs, "t", strlen("t"));
     if (value == NULL) {
         wai_error_set(ctx, WA_ERR_CORRUPT, "token has no type attribute");
@@ -415,8 +413,8 @@ wai_decode_token(struct webauth_context *ctx, const void *input,
         wai_error_set(ctx, WA_ERR_CORRUPT, "unknown token type %s", type);
         return WA_ERR_CORRUPT;
     }
-    status = wai_token_encoding(ctx, token, &rules, (const void **) &data);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = wai_token_encoding(ctx, token, &rules, (const void **) &data);
+    if (s != WA_ERR_NONE)
+        return s;
     return decode_by_rule(ctx, rules, attrs, data, NULL, 0);
 }

@@ -25,14 +25,13 @@
 
 
 /*
- * Map an error code to a string.  This is used as the fallback error message,
- * and is prepended with a colon to whatever additional error information is
- * provided.
+ * Map a WebAuth status code to a string.  This is used as the basis for the
+ * error message and is always present at the beginning of the error message.
  */
 static const char *
-error_string(struct webauth_context *ctx, int code)
+error_string(struct webauth_context *ctx, int s)
 {
-    switch (code) {
+    switch (s) {
     case WA_ERR_NONE:              return "no error occurred";
     case WA_ERR_NO_ROOM:           return "supplied buffer too small";
     case WA_ERR_CORRUPT:           return "data is incorrectly formatted";
@@ -60,26 +59,26 @@ error_string(struct webauth_context *ctx, int code)
     case WA_ERR_TOKEN_REJECTED:    return "token used in invalid context";
     default:
         if (ctx != NULL)
-            return apr_psprintf(ctx->pool, "unknown error code %d", code);
+            return apr_psprintf(ctx->pool, "unknown status code %d", s);
         else
-            return "unknown error code";
+            return "unknown status code";
         break;
     }
 }
 
 
 /*
- * Map an error code to an error message.  If there's an error message stored
- * in the context and the error code matches the one that's passed in, return
- * that error message.  Otherwise, and if the context is NULL, map the error
- * code to a static error string and return it.
+ * Map a WebAuth status code to an error message.  If there's an error message
+ * stored in the context and the status code matches the one that's passed in,
+ * return that error message.  Otherwise, and if the context is NULL, map the
+ * error code to a static error string and return it.
  */
 const char *
-webauth_error_message(struct webauth_context *ctx, int err)
+webauth_error_message(struct webauth_context *ctx, int s)
 {
-    if (ctx != NULL && ctx->error != NULL && ctx->code == err)
+    if (ctx != NULL && ctx->error != NULL && ctx->status == s)
         return ctx->error;
-    return error_string(ctx, err);
+    return error_string(ctx, s);
 }
 
 
@@ -112,17 +111,17 @@ wai_error_context(struct webauth_context *ctx, const char *format, ...)
  * and is not exposed to external consumers.
  */
 void
-wai_error_set(struct webauth_context *ctx, int err, const char *format, ...)
+wai_error_set(struct webauth_context *ctx, int s, const char *format, ...)
 {
     va_list args;
-    char *string;
+    char *string, *message;
 
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
-    ctx->error = apr_pstrcat(ctx->pool, error_string(ctx, err),
-                             " (", string, ")", NULL);
-    ctx->code = err;
+    message = apr_psprintf(ctx->pool, "%s (%s)", error_string(ctx, s), string);
+    ctx->error  = message;
+    ctx->status = s;
 }
 
 
@@ -133,7 +132,7 @@ wai_error_set(struct webauth_context *ctx, int err, const char *format, ...)
  * exposed to external consumers.
  */
 void
-wai_error_set_apr(struct webauth_context *ctx, int err, apr_status_t status,
+wai_error_set_apr(struct webauth_context *ctx, int s, apr_status_t status,
                   const char *format, ...)
 {
     va_list args;
@@ -143,9 +142,9 @@ wai_error_set_apr(struct webauth_context *ctx, int err, apr_status_t status,
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
-    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, err),
+    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, s),
                               string, apr_strerror(status, buf, sizeof(buf)));
-    ctx->code = err;
+    ctx->status = s;
 }
 
 
@@ -156,7 +155,7 @@ wai_error_set_apr(struct webauth_context *ctx, int err, apr_status_t status,
  * external consumers.
  */
 void
-wai_error_set_system(struct webauth_context *ctx, int err, int syserr,
+wai_error_set_system(struct webauth_context *ctx, int s, int syserr,
                      const char *format, ...)
 {
     va_list args;
@@ -165,9 +164,9 @@ wai_error_set_system(struct webauth_context *ctx, int err, int syserr,
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
-    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, err),
+    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, s),
                               string, strerror(syserr));
-    ctx->code = err;
+    ctx->status = s;
 }
 
 
@@ -275,12 +274,12 @@ LOG_FUNCTION(warn,   WA_LOG_WARN)
  */
 void
 wai_log_error(struct webauth_context *ctx, enum webauth_log_level level,
-              int code)
+              int s)
 {
     const char *message;
 
-    message = webauth_error_message(ctx, code);
+    message = webauth_error_message(ctx, s);
     log_message(ctx, level, message);
-    ctx->error = NULL;
-    ctx->code = 0;
+    ctx->error  = NULL;
+    ctx->status = 0;
 }

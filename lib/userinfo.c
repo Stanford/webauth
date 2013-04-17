@@ -68,23 +68,22 @@ int
 webauth_user_config(struct webauth_context *ctx,
                     const struct webauth_user_config *user)
 {
-    int status = WA_ERR_NONE;;
+    int s = WA_ERR_NONE;
 
     /* Verify that the new configuration is sane. */
     if (user->protocol != WA_PROTOCOL_REMCTL) {
-        status = WA_ERR_UNIMPLEMENTED;
-        wai_error_set(ctx, status, "unknown protocol %d", user->protocol);
+        s = WA_ERR_UNIMPLEMENTED;
+        wai_error_set(ctx, s, "unknown protocol %d", user->protocol);
         goto done;
     }
     if (user->host == NULL) {
-        status = WA_ERR_INVALID;
-        wai_error_set(ctx, status, "user information host must be set");
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "user information host must be set");
         goto done;
     }
     if (user->protocol == WA_PROTOCOL_REMCTL && user->keytab == NULL) {
-        status = WA_ERR_INVALID;
-        wai_error_set(ctx, status,
-                      "keytab must be configured for remctl protocol");
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "keytab must be configured for remctl protocol");
         goto done;
     }
 
@@ -101,7 +100,7 @@ webauth_user_config(struct webauth_context *ctx,
     ctx->user->ignore_failure = user->ignore_failure;
 
 done:
-    return status;
+    return s;
 }
 
 
@@ -113,15 +112,15 @@ static int UNUSED
 convert_number(struct webauth_context *ctx, const char *string,
                unsigned long *value)
 {
-    int status;
+    int s;
     char *end;
 
     errno = 0;
     *value = strtoul(string, &end, 10);
     if (*end != '\0' || (*value == ULONG_MAX && errno != 0)) {
-        status = WA_ERR_REMOTE_FAILURE;
-        wai_error_set(ctx, status, "invalid number %s in XML", string);
-        return status;
+        s = WA_ERR_REMOTE_FAILURE;
+        wai_error_set(ctx, s, "invalid number %s in XML", string);
+        return s;
     }
     return WA_ERR_NONE;
 }
@@ -143,7 +142,7 @@ parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
     apr_array_header_t *factors = NULL;
     const char **type, *content;
     unsigned long value;
-    int status;
+    int s;
 
     /* Ensure the output variables are initialized in case of error. */
     if (result != NULL)
@@ -161,29 +160,29 @@ parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
             if (factors == NULL)
                 factors = apr_array_make(ctx->pool, 2, sizeof(const char *));
             type = apr_array_push(factors);
-            status = wai_xml_content(ctx, child, type);
-            if (status != WA_ERR_NONE)
-                return status;
+            s = wai_xml_content(ctx, child, type);
+            if (s != WA_ERR_NONE)
+                return s;
         } else if (strcmp(child->name, "expiration") == 0) {
             if (expiration == NULL)
                 continue;
-            status = wai_xml_content(ctx, child, &content);
-            if (status == WA_ERR_NONE) {
-                status = convert_number(ctx, content, &value);
+            s = wai_xml_content(ctx, child, &content);
+            if (s == WA_ERR_NONE) {
+                s = convert_number(ctx, content, &value);
                 *expiration = value;
             }
-            if (status != WA_ERR_NONE)
-                return status;
+            if (s != WA_ERR_NONE)
+                return s;
         } else if (strcmp(child->name, "valid-threshold") == 0) {
             if (valid_threshold == NULL)
                 continue;
-            status = wai_xml_content(ctx, child, &content);
-            if (status == WA_ERR_NONE) {
-                status = convert_number(ctx, content, &value);
+            s = wai_xml_content(ctx, child, &content);
+            if (s == WA_ERR_NONE) {
+                s = convert_number(ctx, content, &value);
                 *valid_threshold = value;
             }
-            if (status != WA_ERR_NONE)
-                return status;
+            if (s != WA_ERR_NONE)
+                return s;
         }
     }
 
@@ -208,7 +207,7 @@ parse_history(struct webauth_context *ctx, apr_xml_elem *root,
     apr_xml_attr *attr;
     apr_array_header_t *logins = NULL;
     struct webauth_login *login;
-    int status;
+    int s;
     size_t size;
     unsigned long timestamp;
 
@@ -220,16 +219,16 @@ parse_history(struct webauth_context *ctx, apr_xml_elem *root,
             logins = apr_array_make(ctx->pool, 5, size);
         }
         login = apr_array_push(logins);
-        status = wai_xml_content(ctx, child, &login->ip);
-        if (status != WA_ERR_NONE)
-            return status;
+        s = wai_xml_content(ctx, child, &login->ip);
+        if (s != WA_ERR_NONE)
+            return s;
         for (attr = child->attr; attr != NULL; attr = attr->next)
             if (strcmp(attr->name, "name") == 0)
                 login->hostname = attr->value;
             else if (strcmp(attr->name, "timestamp") == 0) {
-                status = convert_number(ctx, attr->value, &timestamp);
-                if (status != WA_ERR_NONE)
-                    return status;
+                s = convert_number(ctx, attr->value, &timestamp);
+                if (s != WA_ERR_NONE)
+                    return s;
                 login->timestamp = timestamp;
             }
     }
@@ -322,38 +321,38 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
                     struct webauth_user_validate **result)
 {
     apr_xml_elem *child;
-    int status = WA_ERR_REMOTE_FAILURE;
+    int s = WA_ERR_REMOTE_FAILURE;
     struct webauth_user_validate *validate;
     const char *content;
 
     if (strcmp(doc->root->name, "authdata") != 0) {
-        wai_error_set(ctx, status, "root element is %s, not authdata",
+        wai_error_set(ctx, s, "root element is %s, not authdata",
                       doc->root->name);
-        return status;
+        return s;
     }
     validate = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_validate));
     for (child = doc->root->first_child; child != NULL; child = child->next) {
         if (strcmp(child->name, "success") == 0) {
-            status = wai_xml_content(ctx, child, &content);
-            if (status == WA_ERR_NONE)
+            s = wai_xml_content(ctx, child, &content);
+            if (s == WA_ERR_NONE)
                 validate->success = (strcmp(content, "yes") == 0);
         } else if (strcmp(child->name, "factors") == 0)
-            status = parse_factors(ctx, child, &validate->factors,
+            s = parse_factors(ctx, child, &validate->factors,
                                    &validate->factors_expiration, NULL);
         else if (strcmp(child->name, "persistent-factors") == 0)
-            status = parse_factors(ctx, child, &validate->persistent,
-                                   &validate->persistent_expiration,
-                                   &validate->valid_threshold);
+            s = parse_factors(ctx, child, &validate->persistent,
+                              &validate->persistent_expiration,
+                              &validate->valid_threshold);
         else if (strcmp(child->name, "loa") == 0) {
-            status = wai_xml_content(ctx, child, &content);
-            if (status == WA_ERR_NONE)
-                status = convert_number(ctx, content, &validate->loa);
+            s = wai_xml_content(ctx, child, &content);
+            if (s == WA_ERR_NONE)
+                s = convert_number(ctx, content, &validate->loa);
         } else if (strcmp(child->name, "user-message") == 0)
-            status = wai_xml_content(ctx, child, &validate->user_message);
+            s = wai_xml_content(ctx, child, &validate->user_message);
         else if (strcmp(child->name, "login-state") == 0)
-            status = wai_xml_content(ctx, child, &validate->login_state);
-        if (status != WA_ERR_NONE)
-            return status;
+            s = wai_xml_content(ctx, child, &validate->login_state);
+        if (s != WA_ERR_NONE)
+            return s;
     }
     *result = validate;
     return WA_ERR_NONE;
@@ -375,20 +374,21 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     struct remctl *r = NULL;
     struct remctl_output *out;
     apr_xml_parser *parser = NULL;
+    apr_status_t code;
     size_t offset;
     char errbuf[BUFSIZ] = "";
     struct wai_buffer *errors;
     struct webauth_user_config *c = ctx->user;
     struct webauth_krb5 *kc = NULL;
     char *cache;
-    int status;
+    int s;
 
     /* Initialize the remctl context. */
     r = remctl_new();
     if (r == NULL) {
-        status = WA_ERR_NO_MEM;
-        wai_error_set_system(ctx, status, errno, "initializing remctl");
-        return status;
+        s = WA_ERR_NO_MEM;
+        wai_error_set_system(ctx, s, errno, "initializing remctl");
+        return s;
     }
 
     /*
@@ -402,20 +402,19 @@ remctl_generic(struct webauth_context *ctx, const char **command,
      * If remctl_set_ccache fails or doesn't exist, we fall back on just
      * whacking the global KRB5CCNAME variable.
      */
-    status = webauth_krb5_new(ctx, &kc);
-    if (status != WA_ERR_NONE)
+    s = webauth_krb5_new(ctx, &kc);
+    if (s != WA_ERR_NONE)
         goto fail;
-    status = webauth_krb5_init_via_keytab(ctx, kc, c->keytab, c->principal,
-                                          NULL);
-    if (status != WA_ERR_NONE)
+    s = webauth_krb5_init_via_keytab(ctx, kc, c->keytab, c->principal, NULL);
+    if (s != WA_ERR_NONE)
         goto fail;
-    status = webauth_krb5_get_cache(ctx, kc, &cache);
-    if (status != WA_ERR_NONE)
+    s = webauth_krb5_get_cache(ctx, kc, &cache);
+    if (s != WA_ERR_NONE)
         goto fail;
     if (!remctl_set_ccache(r, cache)) {
         if (setenv("KRB5CCNAME", cache, 1) < 0) {
-            status = WA_ERR_NO_MEM;
-            wai_error_set_system(ctx, status, errno,
+            s = WA_ERR_NO_MEM;
+            wai_error_set_system(ctx, s, errno,
                                  "setting KRB5CCNAME for remctl");
             goto fail;
         }
@@ -427,18 +426,18 @@ remctl_generic(struct webauth_context *ctx, const char **command,
 
     /* Set up and execute the command. */
     if (c->command == NULL) {
-        status = WA_ERR_INVALID;
-        wai_error_set(ctx, status, "no remctl command specified");
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "no remctl command specified");
         goto fail;
     }
     if (!remctl_open(r, c->host, c->port, c->identity)) {
-        status = WA_ERR_REMOTE_FAILURE;
-        wai_error_set(ctx, status, "%s", remctl_error(r));
+        s = WA_ERR_REMOTE_FAILURE;
+        wai_error_set(ctx, s, "%s", remctl_error(r));
         goto fail;
     }
     if (!remctl_command(r, command)) {
-        status = WA_ERR_REMOTE_FAILURE;
-        wai_error_set(ctx, status, "%s", remctl_error(r));
+        s = WA_ERR_REMOTE_FAILURE;
+        wai_error_set(ctx, s, "%s", remctl_error(r));
         goto fail;
     }
 
@@ -451,19 +450,19 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     do {
         out = remctl_output(r);
         if (out == NULL) {
-            status = WA_ERR_REMOTE_FAILURE;
-            wai_error_set(ctx, status, "%s", remctl_error(r));
+            s = WA_ERR_REMOTE_FAILURE;
+            wai_error_set(ctx, s, "%s", remctl_error(r));
             goto fail;
         }
         switch (out->type) {
         case REMCTL_OUT_OUTPUT:
             switch (out->stream) {
             case 1:
-                status = apr_xml_parser_feed(parser, out->data, out->length);
-                if (status != APR_SUCCESS) {
+                code = apr_xml_parser_feed(parser, out->data, out->length);
+                if (code != APR_SUCCESS) {
                     apr_xml_parser_geterror(parser, errbuf, sizeof(errbuf));
-                    status = WA_ERR_REMOTE_FAILURE;
-                    wai_error_set(ctx, status, "XML error: %s", errbuf);
+                    s = WA_ERR_REMOTE_FAILURE;
+                    wai_error_set(ctx, s, "XML error: %s", errbuf);
                     goto fail;
                 }
                 break;
@@ -473,15 +472,15 @@ remctl_generic(struct webauth_context *ctx, const char **command,
             }
             break;
         case REMCTL_OUT_ERROR:
-            status = WA_ERR_REMOTE_FAILURE;
-            wai_error_set(ctx, status, "%s", errors->data);
+            s = WA_ERR_REMOTE_FAILURE;
+            wai_error_set(ctx, s, "%s", errors->data);
             goto fail;
         case REMCTL_OUT_STATUS:
             if (out->status != 0) {
                 if (wai_buffer_find_string(errors, "\n", 0, &offset))
                     errors->data[offset] = '\0';
-                status = WA_ERR_REMOTE_FAILURE;
-                wai_error_set(ctx, status, "%s", errors->data);
+                s = WA_ERR_REMOTE_FAILURE;
+                wai_error_set(ctx, s, "%s", errors->data);
                 goto fail;
             }
         case REMCTL_OUT_DONE:
@@ -497,8 +496,8 @@ remctl_generic(struct webauth_context *ctx, const char **command,
      * seen any errors.  Finish the parsing and then hand off to document
      * analysis.
      */
-    status = apr_xml_parser_done(parser, doc);
-    if (status != APR_SUCCESS) {
+    code = apr_xml_parser_done(parser, doc);
+    if (code != APR_SUCCESS) {
         apr_xml_parser_geterror(parser, errbuf, sizeof(errbuf));
         wai_error_set(ctx, WA_ERR_REMOTE_FAILURE, "XML error: %s", errbuf);
         return WA_ERR_REMOTE_FAILURE;
@@ -509,18 +508,18 @@ fail:
         apr_xml_parser_done(parser, NULL);
     if (r != NULL)
         remctl_close(r);
-    return status;
+    return s;
 }
 #else /* !HAVE_REMCTL */
 static int
 remctl_generic(struct webauth_context *ctx, const char **command UNUSED,
                apr_xml_doc **doc UNUSED)
 {
-    int status;
+    int s;
 
-    status = WA_ERR_UNIMPLEMENTED;
-    wai_error_set(ctx, status, "not built with remctl support");
-    return status;
+    s = WA_ERR_UNIMPLEMENTED;
+    wai_error_set(ctx, s, "not built with remctl support");
+    return s;
 }
 #endif /* !HAVE_REMCTL */
 
@@ -534,7 +533,7 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
             int random_mf, const char *url, const char *factors,
             struct webauth_user_info **info)
 {
-    int status;
+    int s;
     const char *argv[9];
     apr_xml_doc *doc;
     struct webauth_user_config *c = ctx->user;
@@ -553,9 +552,9 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
     argv[6] = url;
     argv[7] = factors;
     argv[8] = NULL;
-    status = remctl_generic(ctx, argv, &doc);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = remctl_generic(ctx, argv, &doc);
+    if (s != WA_ERR_NONE)
+        return s;
     return parse_user_info(ctx, doc, info);
 }
 
@@ -569,7 +568,7 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
                 const char *code, const char *type, const char *state,
                 struct webauth_user_validate **validate)
 {
-    int status;
+    int s;
     const char *argv[8];
     apr_xml_doc *doc;
     struct webauth_user_config *c = ctx->user;
@@ -582,9 +581,9 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
     argv[5] = type;
     argv[6] = state;
     argv[7] = NULL;
-    status = remctl_generic(ctx, argv, &doc);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = remctl_generic(ctx, argv, &doc);
+    if (s != WA_ERR_NONE)
+        return s;
     return parse_user_validate(ctx, doc, validate);
 }
 
@@ -596,12 +595,12 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
 static int
 check_config(struct webauth_context *ctx)
 {
-    int status;
+    int s;
 
     if (ctx->user == NULL) {
-        status = WA_ERR_INVALID;
-        wai_error_set(ctx, status, "user information service not configured");
-        return status;
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "user information service not configured");
+        return s;
     }
     if (ctx->user->protocol == WA_PROTOCOL_REMCTL) {
         if (ctx->user->keytab == NULL) {
@@ -610,9 +609,9 @@ check_config(struct webauth_context *ctx)
             return WA_ERR_INVALID;
         }
 #ifndef HAVE_REMCTL
-        status = WA_ERR_UNIMPLEMENTED;
-        wai_error_set(ctx, status, "not built with remctl support");
-        return status;
+        s = WA_ERR_UNIMPLEMENTED;
+        wai_error_set(ctx, s, "not built with remctl support");
+        return s;
 #endif
     }
     return WA_ERR_NONE;
@@ -638,17 +637,17 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
                   const char *ip, int random_mf, const char *url,
                   const char *factors, struct webauth_user_info **info)
 {
-    int status;
+    int s;
 
     *info = NULL;
-    status = check_config(ctx);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = check_config(ctx);
+    if (s != WA_ERR_NONE)
+        return s;
     if (ip == NULL)
         ip = "127.0.0.1";
     switch (ctx->user->protocol) {
     case WA_PROTOCOL_REMCTL:
-        status = remctl_info(ctx, user, ip, random_mf, url, factors, info);
+        s = remctl_info(ctx, user, ip, random_mf, url, factors, info);
         break;
     case WA_PROTOCOL_NONE:
     default:
@@ -662,14 +661,14 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
      * random multifactor check passed.  If the call failed but we were told
      * to ignore failures, create a fake return struct.
      */
-    if (status == WA_ERR_NONE && random_mf)
+    if (s == WA_ERR_NONE && random_mf)
         (*info)->random_multifactor = true;
-    else if (status == WA_ERR_REMOTE_FAILURE && ctx->user->ignore_failure) {
-        wai_log_error(ctx, WA_LOG_WARN, status);
-        status = WA_ERR_NONE;
+    else if (s == WA_ERR_REMOTE_FAILURE && ctx->user->ignore_failure) {
+        wai_log_error(ctx, WA_LOG_WARN, s);
+        s = WA_ERR_NONE;
         *info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
     }
-    return status;
+    return s;
 }
 
 
@@ -691,12 +690,12 @@ webauth_user_validate(struct webauth_context *ctx, const char *user,
                       const char *state,
                       struct webauth_user_validate **result)
 {
-    int status;
+    int s;
 
     *result = NULL;
-    status = check_config(ctx);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = check_config(ctx);
+    if (s != WA_ERR_NONE)
+        return s;
     if (ip == NULL)
         ip = "127.0.0.1";
     switch (ctx->user->protocol) {

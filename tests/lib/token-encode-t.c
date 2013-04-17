@@ -34,24 +34,24 @@ static struct webauth_token *
 encode_decode(struct webauth_context *ctx, struct webauth_token *data,
               const struct webauth_keyring *ring, const char *name, int count)
 {
-    int status;
+    int s;
     struct webauth_token *result;
     const char *token;
 
-    status = webauth_token_encode(ctx, data, ring, &token);
-    is_int(WA_ERR_NONE, status, "Encoding %s %s succeeds",
+    s = webauth_token_encode(ctx, data, ring, &token);
+    is_int(WA_ERR_NONE, s, "Encoding %s %s succeeds",
            webauth_token_type_string(data->type), name);
     if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
+        is_string("", webauth_error_message(ctx, s),
                   "...and sets the token pointer");
         ok_block(count, 0, "...encoding failed");
         return NULL;
     }
     ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode(ctx, data->type, token, ring, &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    s = webauth_token_decode(ctx, data->type, token, ring, &result);
+    is_int(WA_ERR_NONE, s, "...and decoding succeeds");
     if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
+        is_string("", webauth_error_message(ctx, s),
                   "...and sets the struct pointer");
         ok_block(count, 0, "...decoding failed");
         return NULL;
@@ -72,26 +72,26 @@ encode_decode_raw(struct webauth_context *ctx, struct webauth_token *data,
                   const struct webauth_keyring *ring, const char *name,
                   int count)
 {
-    int status;
+    int s;
     struct webauth_token *result;
     const void *token;
     size_t length;
 
-    status = webauth_token_encode_raw(ctx, data, ring, &token, &length);
-    is_int(WA_ERR_NONE, status, "Encoding %s %s succeeds",
+    s = webauth_token_encode_raw(ctx, data, ring, &token, &length);
+    is_int(WA_ERR_NONE, s, "Encoding %s %s succeeds",
            webauth_token_type_string(data->type), name);
     if (token == NULL) {
-        is_string("", webauth_error_message(ctx, status),
+        is_string("", webauth_error_message(ctx, s),
                   "...and sets the token pointer");
         ok_block(count, 0, "...encoding failed");
         return NULL;
     }
     ok(token != NULL, "...and sets the token pointer");
-    status = webauth_token_decode_raw(ctx, data->type, token, length, ring,
-                                      &result);
-    is_int(WA_ERR_NONE, status, "...and decoding succeeds");
+    s = webauth_token_decode_raw(ctx, data->type, token, length, ring,
+                                 &result);
+    is_int(WA_ERR_NONE, s, "...and decoding succeeds");
     if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status),
+        is_string("", webauth_error_message(ctx, s),
                   "...and sets the struct pointer");
         ok_block(count, 0, "...decoding failed");
         return NULL;
@@ -497,7 +497,7 @@ main(void)
     struct webauth_key *key;
     char *keyring;
     time_t now;
-    int status;
+    int s;
     struct webauth_context *ctx;
     struct webauth_token_app app;
     struct webauth_token_cred cred;
@@ -520,10 +520,9 @@ main(void)
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read(ctx, keyring, &ring);
-    if (status != WA_ERR_NONE)
-        bail("cannot read %s: %s", keyring,
-             webauth_error_message(ctx, status));
+    s = webauth_keyring_read(ctx, keyring, &ring);
+    if (s != WA_ERR_NONE)
+        bail("cannot read %s: %s", keyring, webauth_error_message(ctx, s));
     test_file_path_free(keyring);
 
     /* Now, flesh out a application token, and then encode and decode it. */
@@ -930,15 +929,15 @@ main(void)
                "...session key length");
 
     /* Create a keyring with an invalid key and then try encoding a token. */
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
-    if (status != WA_ERR_NONE)
-        bail("cannot create key: %s", webauth_error_message(ctx, status));
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    if (s != WA_ERR_NONE)
+        bail("cannot create key: %s", webauth_error_message(ctx, s));
     key->length = 2;
     bad_ring = webauth_keyring_from_key(ctx, key);
-    status = webauth_token_encode(ctx, &in, bad_ring, &result);
-    is_int(WA_ERR_BAD_KEY, status, "Encoding with invalid key fails");
+    s = webauth_token_encode(ctx, &in, bad_ring, &result);
+    is_int(WA_ERR_BAD_KEY, s, "Encoding with invalid key fails");
     is_string("unable to use key (cannot set encryption key)",
-              webauth_error_message(ctx, status),
+              webauth_error_message(ctx, s),
               "...with correct error message");
 
     /* Clean up. */

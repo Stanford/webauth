@@ -2,7 +2,7 @@
  * Handling of keys and keyrings.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2012
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2012, 2013
  *    The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -161,7 +161,7 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
                        size_t length, struct webauth_keyring **output)
 {
     size_t i;
-    int status;
+    int s;
     struct webauth_keyring *ring;
     struct wai_keyring data;
 
@@ -171,14 +171,14 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
      */
     *output = NULL;
     memset(&data, 0, sizeof(data));
-    status = wai_decode(ctx, wai_keyring_encoding, input, length, &data);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = wai_decode(ctx, wai_keyring_encoding, input, length, &data);
+    if (s != WA_ERR_NONE)
+        return s;
     if (data.version != KEYRING_VERSION) {
-        status = WA_ERR_FILE_VERSION;
-        wai_error_set(ctx, status, "unsupported keyring data version %d",
+        s = WA_ERR_FILE_VERSION;
+        wai_error_set(ctx, s, "unsupported keyring data version %d",
                       data.version);
-        return status;
+        return s;
     }
 
     /*
@@ -192,10 +192,10 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
         struct webauth_key *key;
 
         entry = &data.entry[i];
-        status = webauth_key_create(ctx, entry->key_type, entry->key_len,
-                                    entry->key, &key);
-        if (status != WA_ERR_NONE)
-            return status;
+        s = webauth_key_create(ctx, entry->key_type, entry->key_len,
+                               entry->key, &key);
+        if (s != WA_ERR_NONE)
+            return s;
         webauth_keyring_add(ctx, ring, entry->creation, entry->valid_after,
                             key);
     }
@@ -212,14 +212,14 @@ int
 webauth_keyring_read(struct webauth_context *ctx, const char *path,
                      struct webauth_keyring **ring)
 {
-    int status;
+    int s;
     void *buf;
     size_t length;
 
     *ring = NULL;
-    status = wai_file_read(ctx, path, &buf, &length);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = wai_file_read(ctx, path, &buf, &length);
+    if (s != WA_ERR_NONE)
+        return s;
     return webauth_keyring_decode(ctx, buf, length, ring);
 }
 
@@ -275,7 +275,7 @@ webauth_keyring_write(struct webauth_context *ctx,
     apr_file_t *file = NULL;
     size_t length;
     char *temp, *buf;
-    apr_status_t status;
+    apr_status_t code;
     apr_int32_t flags;
     int s;
 
@@ -283,10 +283,10 @@ webauth_keyring_write(struct webauth_context *ctx,
     temp = apr_psprintf(ctx->pool, "%s.XXXXXX", path);
     flags = (APR_FOPEN_CREATE | APR_FOPEN_WRITE | APR_FOPEN_EXCL
              | APR_FOPEN_NOCLEANUP);
-    status = apr_file_mktemp(&file, temp, flags, ctx->pool);
-    if (status != APR_SUCCESS) {
+    code = apr_file_mktemp(&file, temp, flags, ctx->pool);
+    if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_OPENWRITE;
-        wai_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
+        wai_error_set_apr(ctx, s, code, "temporary keyring %s", temp);
         goto done;
     }
 
@@ -294,22 +294,22 @@ webauth_keyring_write(struct webauth_context *ctx,
     s = webauth_keyring_encode(ctx, ring, &buf, &length);
     if (s != WA_ERR_NONE)
         goto done;
-    status = apr_file_write_full(file, buf, length, NULL);
-    if (status == APR_SUCCESS) {
-        status = apr_file_close(file);
+    code = apr_file_write_full(file, buf, length, NULL);
+    if (code == APR_SUCCESS) {
+        code = apr_file_close(file);
         file = NULL;
     }
-    if (status != APR_SUCCESS) {
+    if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_WRITE;
-        wai_error_set_apr(ctx, s, status, "temporary keyring %s", temp);
+        wai_error_set_apr(ctx, s, code, "temporary keyring %s", temp);
         goto done;
     }
 
     /* Rename the new file over the old path. */
-    status = apr_file_rename(temp, path, ctx->pool);
-    if (status != APR_SUCCESS) {
+    code = apr_file_rename(temp, path, ctx->pool);
+    if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_WRITE;
-        wai_error_set_apr(ctx, s, status, "renaming %s to %s", temp, path);
+        wai_error_set_apr(ctx, s, code, "renaming %s to %s", temp, path);
         goto done;
     }
     s = WA_ERR_NONE;
@@ -334,12 +334,12 @@ new_ring(struct webauth_context *ctx, const char *path,
          struct webauth_keyring **ring)
 {
     struct webauth_key *key;
-    int status;
+    int s;
     time_t now;
 
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    if (s != WA_ERR_NONE)
+        return s;
     *ring = webauth_keyring_new(ctx, 1);
     now = time(NULL);
     webauth_keyring_add(ctx, *ring, now, now, key);
@@ -362,7 +362,7 @@ check_ring(struct webauth_context *ctx, const char *path,
     time_t now;
     struct webauth_key *key;
     struct webauth_keyring_entry *entry;
-    int status;
+    int s;
     size_t i;
 
     /*
@@ -378,9 +378,9 @@ check_ring(struct webauth_context *ctx, const char *path,
 
     /* We don't have a recent enough key.  Add a new one. */
     *updated = WA_KAU_UPDATE;
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    if (s != WA_ERR_NONE)
+        return s;
     webauth_keyring_add(ctx, ring, now, now, key);
     return webauth_keyring_write(ctx, ring, path);
 }
@@ -409,18 +409,18 @@ webauth_keyring_auto_update(struct webauth_context *ctx, const char *path,
                             enum webauth_kau_status *updated,
                             int *update_status)
 {
-    int status;
+    int s;
 
     *updated = WA_KAU_NONE;
     *update_status = WA_ERR_NONE;
-    status = webauth_keyring_read(ctx, path, ring);
-    if (status != WA_ERR_NONE) {
-        if (!create || status != WA_ERR_FILE_NOT_FOUND)
-            return status;
+    s = webauth_keyring_read(ctx, path, ring);
+    if (s != WA_ERR_NONE) {
+        if (!create || s != WA_ERR_FILE_NOT_FOUND)
+            return s;
         *updated = WA_KAU_CREATE;
         return new_ring(ctx, path, ring);
     }
     if (lifetime > 0)
         *update_status = check_ring(ctx, path, lifetime, *ring, updated);
-    return status;
+    return s;
 }

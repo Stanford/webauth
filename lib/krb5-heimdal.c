@@ -44,17 +44,17 @@ encode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
              krb5_creds *creds, void **output, size_t *length,
              time_t *expiration)
 {
-    int status;
+    int s;
     struct wai_krb5_cred data;
 
     /* Start by copying the credential data into our standard struct. */
     memset(&data, 0, sizeof(data));
-    status = encode_principal(ctx, kc, creds->client, &data.client_principal);
-    if (status != WA_ERR_NONE)
-        return status;
-    status = encode_principal(ctx, kc, creds->server, &data.server_principal);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = encode_principal(ctx, kc, creds->client, &data.client_principal);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = encode_principal(ctx, kc, creds->server, &data.server_principal);
+    if (s != WA_ERR_NONE)
+        return s;
     data.keyblock_enctype  = creds->session.keytype;
     data.keyblock_data     = creds->session.keyvalue.data;
     data.keyblock_data_len = creds->session.keyvalue.length;
@@ -126,7 +126,7 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
              const void *input, size_t length, krb5_creds *creds)
 {
     struct wai_krb5_cred data;
-    int status;
+    int s;
     size_t size, i;
 
     /*
@@ -135,21 +135,19 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
      * Heimdal, so ignore it.
      */
     memset(&data, 0, sizeof(data));
-    status = wai_decode(ctx, wai_krb5_cred_encoding, input, length, &data);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = wai_decode(ctx, wai_krb5_cred_encoding, input, length, &data);
+    if (s != WA_ERR_NONE)
+        return s;
     memset(creds, 0, sizeof(krb5_creds));
     if (data.client_principal != NULL) {
-        status = decode_principal(ctx, kc, data.client_principal,
-                                  &creds->client);
-        if (status != WA_ERR_NONE)
-            return status;
+        s = decode_principal(ctx, kc, data.client_principal, &creds->client);
+        if (s != WA_ERR_NONE)
+            return s;
     }
     if (data.client_principal != NULL) {
-        status = decode_principal(ctx, kc, data.server_principal,
-                                  &creds->server);
-        if (status != WA_ERR_NONE)
-            return status;
+        s = decode_principal(ctx, kc, data.server_principal, &creds->server);
+        if (s != WA_ERR_NONE)
+            return s;
     }
     creds->session.keytype = data.keyblock_enctype;
     creds->session.keyvalue.data = data.keyblock_data;

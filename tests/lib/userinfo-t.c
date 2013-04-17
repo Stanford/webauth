@@ -46,12 +46,12 @@ static void
 test_validate(struct webauth_context *ctx, const char *code, bool success)
 {
     struct webauth_user_validate *validate;
-    int status;
+    int s;
 
-    status = webauth_user_validate(ctx, "full", "127.0.0.1", code, "o1",
-                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"\
-                                   "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
-    is_int(WA_ERR_NONE, status, "Validate for full succeeded");
+    s = webauth_user_validate(ctx, "full", "127.0.0.1", code, "o1",
+                              "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
+                              "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
+    is_int(WA_ERR_NONE, s, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
     if (validate == NULL)
         ok_block(6, 0, "Validate failed");
@@ -87,7 +87,7 @@ main(void)
     const char url[] = "https://example.com/";
     const char restrict_url[] = "https://example.com/restrict/";
     char *warnings = NULL;
-    int status;
+    int s;
 
     /* Skip this test if built without remctl support. */
 #ifndef HAVE_REMCTL
@@ -109,49 +109,49 @@ main(void)
      * Set up the user information service configuration, testing error cases.
      */
     memset(&config, 0, sizeof(config));
-    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
-    is_int(WA_ERR_INVALID, status, "Info without configuration");
+    s = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
+    is_int(WA_ERR_INVALID, s, "Info without configuration");
     is_string("invalid argument to function (user information service not"
-              " configured)", webauth_error_message(ctx, status),
+              " configured)", webauth_error_message(ctx, s),
               "...with correct error");
     ok(info == NULL, "...and info is NULL");
-    status = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_UNIMPLEMENTED, status, "Config with bad protocol");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_UNIMPLEMENTED, s, "Config with bad protocol");
     is_string("operation not supported (unknown protocol 0)",
-              webauth_error_message(ctx, status), "...with correct error");
+              webauth_error_message(ctx, s), "...with correct error");
     config.protocol = WA_PROTOCOL_REMCTL;
-    status = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_INVALID, status, "Config without host");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_INVALID, s, "Config without host");
     is_string("invalid argument to function (user information host must be"
               " set)",
-              webauth_error_message(ctx, status), "...with correct error");
+              webauth_error_message(ctx, s), "...with correct error");
     config.host = "localhost";
     config.port = 14373;
     config.identity = krbconf->principal;
-    status = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_INVALID, status, "remctl config without keytab");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_INVALID, s, "remctl config without keytab");
     is_string("invalid argument to function (keytab must be configured for"
-              " remctl protocol)", webauth_error_message(ctx, status),
+              " remctl protocol)", webauth_error_message(ctx, s),
               "...with correct error");
     config.keytab = krbconf->keytab;
     config.principal = krbconf->principal;
-    status = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_NONE, status, "Config with only host and protocol");
-    status = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
-    is_int(WA_ERR_INVALID, status, "remctl info call without command");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "Config with only host and protocol");
+    s = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
+    is_int(WA_ERR_INVALID, s, "remctl info call without command");
     is_string("invalid argument to function (no remctl command specified)",
-              webauth_error_message(ctx, status), "...with correct error");
+              webauth_error_message(ctx, s), "...with correct error");
     ok(info == NULL, "...and info is NULL");
     config.command = "test";
-    status = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_NONE, status, "Complete config");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "Complete config");
 
     /* Do a query for a full user. */
-    status = webauth_user_info(ctx, "full", "127.0.0.1", 0, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for full succeeded");
+    s = webauth_user_info(ctx, "full", "127.0.0.1", 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for full succeeded");
     ok(info != NULL, "...info is not NULL");
     if (info == NULL) {
-        is_string("", webauth_error_message(ctx, status), "...no error");
+        is_string("", webauth_error_message(ctx, s), "...no error");
         ok_block(16, 0, "...info is not NULL");
     } else {
         is_int(0, info->random_multifactor, "...random multifactor");
@@ -185,8 +185,8 @@ main(void)
     }
 
     /* Do a query for a minimal user. */
-    status = webauth_user_info(ctx, "mini", NULL, 0, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for mini succeeded");
+    s = webauth_user_info(ctx, "mini", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for mini succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");
@@ -204,8 +204,8 @@ main(void)
     }
 
     /* The same query, but with random multifactor. */
-    status = webauth_user_info(ctx, "mini", NULL, 1, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for mini w/random succeeded");
+    s = webauth_user_info(ctx, "mini", NULL, 1, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for mini w/random succeeded");
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");
@@ -222,8 +222,8 @@ main(void)
     }
 
     /* Query information for factor, without any authentication factors. */
-    status = webauth_user_info(ctx, "factor", NULL, 0, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for factor succeeded");
+    s = webauth_user_info(ctx, "factor", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for factor succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
@@ -243,8 +243,8 @@ main(void)
     }
 
     /* Query information for a user with a device factor. */
-    status = webauth_user_info(ctx, "factor", NULL, 0, url, "d", &info);
-    is_int(WA_ERR_NONE, status, "Metadata for factor with d succeeded");
+    s = webauth_user_info(ctx, "factor", NULL, 0, url, "d", &info);
+    is_int(WA_ERR_NONE, s, "Metadata for factor with d succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");
@@ -263,8 +263,8 @@ main(void)
     }
 
     /* Query information for a user with additional factors. */
-    status = webauth_user_info(ctx, "additional", NULL, 0, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for additional succeeded");
+    s = webauth_user_info(ctx, "additional", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for additional succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
         ok_block(8, 0, "Metadata failed");
@@ -284,8 +284,8 @@ main(void)
     }
 
     /* Query information for a user with a user message. */
-    status = webauth_user_info(ctx, "message", NULL, 0, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for message succeeded");
+    s = webauth_user_info(ctx, "message", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for message succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
@@ -303,8 +303,8 @@ main(void)
     }
 
     /* Query information for a user with a login state. */
-    status = webauth_user_info(ctx, "loginstate", NULL, 0, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for message succeeded");
+    s = webauth_user_info(ctx, "loginstate", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for message succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");
@@ -329,39 +329,39 @@ main(void)
     test_validate(ctx, "123456", true);
 
     /* Attempt a login for a user who doesn't have multifactor configured. */
-    status = webauth_user_validate(ctx, "mini", NULL, "123456", "o1",
-                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
-                                   "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
-    is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for invalid user fails");
+    s = webauth_user_validate(ctx, "mini", NULL, "123456", "o1",
+                              "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
+                              "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
+    is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for invalid user fails");
     is_string("a remote service call failed (unknown user mini)",
-              webauth_error_message(ctx, status), "...with correct error");
+              webauth_error_message(ctx, s), "...with correct error");
 
     /* Do a query for a user that should time out. */
     config.timeout = 1;
-    status = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_NONE, status, "Config with timeout");
-    status = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
-    is_int(WA_ERR_REMOTE_FAILURE, status, "Metadata for delay fails");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "Config with timeout");
+    s = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_REMOTE_FAILURE, s, "Metadata for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
-              webauth_error_message(ctx, status), "...with correct error");
+              webauth_error_message(ctx, s), "...with correct error");
 
     /* Attempt a login for a user that should time out. */
-    status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
-                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
-                                   "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
-    is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
+    s = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
+                              "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
+                              "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
+    is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
-              webauth_error_message(ctx, status), "...with correct error");
+              webauth_error_message(ctx, s), "...with correct error");
 
     /* Try the query again with ignore_failure set and capture warnings. */
     webauth_log_callback(ctx, WA_LOG_WARN, log_callback, &warnings);
     config.ignore_failure = true;
-    status = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_NONE, status, "Config with timeout and ignore failure");
-    status = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for delay now succeeds");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "Config with timeout and ignore failure");
+    s = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for delay now succeeds");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
     else {
@@ -378,9 +378,9 @@ main(void)
               "...and logged warning is correct");
 
     /* Try the query again with ignore_failure and random multifactor. */
-    is_int(WA_ERR_NONE, status, "Config with timeout, ignore, random");
-    status = webauth_user_info(ctx, "delay", NULL, 1, url, NULL, &info);
-    is_int(WA_ERR_NONE, status, "Metadata for delay w/random succeeds");
+    is_int(WA_ERR_NONE, s, "Config with timeout, ignore, random");
+    s = webauth_user_info(ctx, "delay", NULL, 1, url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for delay w/random succeeds");
     if (info == NULL)
         ok_block(6, 0, "Metadata failed");
     else {
@@ -399,23 +399,22 @@ main(void)
     /* Attempt a login again, which should still fail. */
     free(warnings);
     warnings = NULL;
-    status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
-                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
-                                   "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
-    is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
+    s = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
+                              "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
+                              "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
+    is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for delay fails");
     is_string("a remote service call failed"
               " (error receiving token: timed out)",
-              webauth_error_message(ctx, status), "...with correct error");
+              webauth_error_message(ctx, s), "...with correct error");
     is_string(NULL, warnings, "...and there are no warnings");
 
     /* Attempt a login to a restricted site.  This should return an error. */
     config.ignore_failure = false;
     config.timeout = 0;
-    status = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_NONE, status, "Config back to normal");
-    status = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, NULL,
-                               &info);
-    is_int(WA_ERR_NONE, status, "Metadata for restricted URL succeeds");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "Config back to normal");
+    s = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, NULL, &info);
+    is_int(WA_ERR_NONE, s, "Metadata for restricted URL succeeds");
     if (info == NULL)
         ok_block(7, 0, "Metadata failed");
     else {

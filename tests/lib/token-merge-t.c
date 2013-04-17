@@ -380,7 +380,8 @@ main(void)
 {
     apr_pool_t *pool = NULL;
     struct webauth_context *ctx;
-    size_t i, j, s, size;
+    size_t i, j, size;
+    int s;
     apr_array_header_t *tokens;
     struct webauth_token *token, *wkp, *wkf;
     struct webauth_token *result;

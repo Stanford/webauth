@@ -46,14 +46,14 @@
  * encode_to_attrs.
  */
 static void
-encode_error_set(struct webauth_context *ctx, int status, const char *desc,
+encode_error_set(struct webauth_context *ctx, int s, const char *desc,
                  const char *context, size_t element)
 {
     if (context != NULL && element != 0)
-        wai_error_set(ctx, status, "encoding %s %s %lu", context, desc,
+        wai_error_set(ctx, s, "encoding %s %s %lu", context, desc,
                       (unsigned long) element);
     else
-        wai_error_set(ctx, status, "encoding %s", desc);
+        wai_error_set(ctx, s, "encoding %s", desc);
 }
 
 
@@ -70,16 +70,16 @@ encode_data(struct wai_buffer *output, const char *attr, const void *data,
     size_t hexlen, i, enclen;
     const char *in = data;
     char *p;
-    int status;
+    int s;
 
     wai_buffer_append_sprintf(output, "%s=", attr);
     if (ascii) {
         hexlen = webauth_hex_encoded_length(length);
         wai_buffer_resize(output, output->used + hexlen + 1);
-        status = webauth_hex_encode(data, length, output->data + output->used,
-                                    &hexlen, hexlen);
-        if (status != WA_ERR_NONE)
-            return status;
+        s = webauth_hex_encode(data, length, output->data + output->used,
+                               &hexlen, hexlen);
+        if (s != WA_ERR_NONE)
+            return s;
         output->used += hexlen;
         output->data[output->used] = ';';
         output->used++;
@@ -139,7 +139,7 @@ encode_to_attrs(struct webauth_context *ctx, const struct wai_encoding *rules,
     const struct wai_encoding *rule;
     const char *attr;
     unsigned long i;
-    int status;
+    int s;
     void *data, *repeat;
     int32_t int32;
     char *string;
@@ -153,28 +153,28 @@ encode_to_attrs(struct webauth_context *ctx, const struct wai_encoding *rules,
             attr = rule->attr;
         else
             attr = apr_psprintf(ctx->pool, "%s%lu", rule->attr, element);
-        status = WA_ERR_NONE;
+        s = WA_ERR_NONE;
         switch (rule->type) {
         case WA_TYPE_DATA:
             data = *LOC_DATA(input, rule->offset);
             if (rule->optional && data == NULL)
                 break;
             if (data == NULL) {
-                status = WA_ERR_INVALID;
+                s = WA_ERR_INVALID;
                 break;
             }
             size = *LOC_SIZE(input, rule->len_offset);
-            status = encode_data(output, attr, data, size, rule->ascii);
+            s = encode_data(output, attr, data, size, rule->ascii);
             break;
         case WA_TYPE_STRING:
             string = *LOC_STRING(input, rule->offset);
             if (rule->optional && string == NULL)
                 break;
             if (string == NULL) {
-                status = WA_ERR_INVALID;
+                s = WA_ERR_INVALID;
                 break;
             }
-            status = encode_data(output, attr, string, strlen(string), false);
+            s = encode_data(output, attr, string, strlen(string), false);
             break;
         case WA_TYPE_INT32:
             int32 = *LOC_INT32(input, rule->offset);
@@ -209,16 +209,16 @@ encode_to_attrs(struct webauth_context *ctx, const struct wai_encoding *rules,
             encode_number(output, attr, uint32, rules->ascii);
             for (i = 0; i < uint32; i++) {
                 repeat = *LOC_STRING(input, rule->offset) + rule->size * i;
-                status = encode_to_attrs(ctx, rule->repeat, repeat, output,
-                                         attr, i);
-                if (status != WA_ERR_NONE)
-                    return status;
+                s = encode_to_attrs(ctx, rule->repeat, repeat, output,
+                                    attr, i);
+                if (s != WA_ERR_NONE)
+                    return s;
             }
             break;
         }
-        if (status != WA_ERR_NONE) {
-            encode_error_set(ctx, status, rule->desc, context, element);
-            return status;
+        if (s != WA_ERR_NONE) {
+            encode_error_set(ctx, s, rule->desc, context, element);
+            return s;
         }
     }
     return WA_ERR_NONE;
@@ -236,12 +236,12 @@ wai_encode(struct webauth_context *ctx, const struct wai_encoding *rules,
            const void *data, void **output, size_t *length)
 {
     struct wai_buffer *buffer;
-    int status;
+    int s;
 
     buffer = wai_buffer_new(ctx->pool);
-    status = encode_to_attrs(ctx, rules, data, buffer, NULL, 0);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = encode_to_attrs(ctx, rules, data, buffer, NULL, 0);
+    if (s != WA_ERR_NONE)
+        return s;
     *output = buffer->data;
     *length = buffer->used;
     return WA_ERR_NONE;
@@ -259,20 +259,20 @@ wai_encode_token(struct webauth_context *ctx,
                  size_t *length)
 {
     struct wai_buffer *buffer;
-    int status;
+    int s;
     const char *type;
     const struct wai_encoding *rules;
     const void *data;
 
-    status = wai_token_encoding(ctx, token, &rules, &data);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = wai_token_encoding(ctx, token, &rules, &data);
+    if (s != WA_ERR_NONE)
+        return s;
     buffer = wai_buffer_new(ctx->pool);
     type = webauth_token_type_string(token->type);
     wai_buffer_append_sprintf(buffer, "t=%s;", type);
-    status = encode_to_attrs(ctx, rules, data, buffer, NULL, 0);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = encode_to_attrs(ctx, rules, data, buffer, NULL, 0);
+    if (s != WA_ERR_NONE)
+        return s;
     *output = buffer->data;
     *length = buffer->used;
     return WA_ERR_NONE;

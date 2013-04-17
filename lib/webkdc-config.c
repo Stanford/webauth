@@ -42,19 +42,19 @@ int
 webauth_webkdc_config(struct webauth_context *ctx,
                       const struct webauth_webkdc_config *config)
 {
-    int status;
+    int s;
     struct webauth_webkdc_config *webkdc;
 
     /* Verify that the new configuration is sane. */
     if (config->local_realms == NULL) {
-        status = WA_ERR_INVALID;
-        wai_error_set(ctx, status, "local realms must be present");
-        return status;
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "local realms must be present");
+        return s;
     }
     if (config->permitted_realms == NULL) {
-        status = WA_ERR_INVALID;
-        wai_error_set(ctx, status, "permitted realms must be present");
-        return status;
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "permitted realms must be present");
+        return s;
     }
 
     /* Copy the configuration into the context. */

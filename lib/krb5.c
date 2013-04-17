@@ -330,20 +330,20 @@ translate_error(struct webauth_context *ctx, krb5_error_code code)
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KDC_ERR_PREAUTH_FAILED:
     case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
-        ctx->code = WA_ERR_LOGIN_FAILED;
+        ctx->status = WA_ERR_LOGIN_FAILED;
         break;
     case KRB5KDC_ERR_KEY_EXP:
-        ctx->code = WA_ERR_CREDS_EXPIRED;
+        ctx->status = WA_ERR_CREDS_EXPIRED;
         break;
     case KRB5KDC_ERR_POLICY:
     case KRB5KDC_ERR_NAME_EXP:
-        ctx->code = WA_ERR_USER_REJECTED;
+        ctx->status = WA_ERR_USER_REJECTED;
         break;
     default:
-        ctx->code = WA_ERR_KRB5;
+        ctx->status = WA_ERR_KRB5;
         break;
     }
-    return ctx->code;
+    return ctx->status;
 }
 
 
@@ -388,16 +388,16 @@ webauth_krb5_init_via_keytab(struct webauth_context *ctx,
     krb5_get_init_creds_opt *opts;
     krb5_keytab kt;
     krb5_error_code code;
-    int status = WA_ERR_NONE;
+    int s = WA_ERR_NONE;
 
     /* Initialize arguments and setup ticket cache. */
-    status = open_keytab(ctx, kc, keytab, principal, &kc->princ, &kt);
-    if (status != WA_ERR_NONE)
-        return status;
-    status = setup_cache(ctx, kc, cache);
-    if (status != WA_ERR_NONE) {
+    s = open_keytab(ctx, kc, keytab, principal, &kc->princ, &kt);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = setup_cache(ctx, kc, cache);
+    if (s != WA_ERR_NONE) {
         krb5_kt_close(kc->ctx, kt);
-        return status;
+        return s;
     }
 
     /*
@@ -421,12 +421,12 @@ webauth_krb5_init_via_keytab(struct webauth_context *ctx,
                                       opts);
     if (code != 0) {
         error_set(ctx, kc, code, "cannot authenticate with keytab %s", keytab);
-        status = translate_error(ctx, code);
+        s = translate_error(ctx, code);
     }
     krb5_get_init_creds_opt_free(kc->ctx, opts);
     krb5_kt_close(kc->ctx, kt);
-    if (status != WA_ERR_NONE)
-        return status;
+    if (s != WA_ERR_NONE)
+        return s;
 
     /* Add the credentials to the cache. */
     code = krb5_cc_store_cred(kc->ctx, kc->cc, &creds);
@@ -457,15 +457,15 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
     krb5_creds creds;
     krb5_get_init_creds_opt *opts;
     krb5_error_code code;
-    int status;
+    int s;
 
     /* Initialize arguments and set up ticket cache. */
     code = krb5_parse_name(kc->ctx, username, &kc->princ);
     if (code != 0)
         return error_set(ctx, kc, code, "cannot parse principal %s", username);
-    status = setup_cache(ctx, kc, cache);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = setup_cache(ctx, kc, cache);
+    if (s != WA_ERR_NONE)
+        return s;
 
     /* Set the credential options. */
     code = krb5_get_init_creds_opt_alloc(kc->ctx, &opts);
@@ -499,10 +499,10 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
         krb5_keytab kt = NULL;
         char *name;
 
-        status = open_keytab(ctx, kc, keytab, server_principal, &princ, &kt);
-        if (status != WA_ERR_NONE) {
+        s = open_keytab(ctx, kc, keytab, server_principal, &princ, &kt);
+        if (s != WA_ERR_NONE) {
             krb5_free_cred_contents(kc->ctx, &creds);
-            return status;
+            return s;
         }
         code = krb5_verify_init_creds(kc->ctx, &creds, princ, kt, NULL, NULL);
         if (code != 0)
@@ -545,14 +545,14 @@ prepare_from_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
                    krb5_creds *creds, const char *cache)
 {
     krb5_error_code code;
-    int status;
+    int s;
 
     code = krb5_copy_principal(kc->ctx, creds->client, &kc->princ);
     if (code != 0)
         return error_set(ctx, kc, code, "cannot copy principal");
-    status = setup_cache(ctx, kc, cache);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = setup_cache(ctx, kc, cache);
+    if (s != WA_ERR_NONE)
+        return s;
     return WA_ERR_NONE;
 }
 
@@ -567,11 +567,11 @@ webauth_krb5_prepare_via_cred(struct webauth_context *ctx,
                               size_t length, const char *cache)
 {
     krb5_creds creds;
-    int status;
+    int s;
 
-    status = decode_creds(ctx, kc, cred, length, &creds);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = decode_creds(ctx, kc, cred, length, &creds);
+    if (s != WA_ERR_NONE)
+        return s;
     return prepare_from_creds(ctx, kc, &creds, cache);
 }
 
@@ -589,18 +589,18 @@ webauth_krb5_import_cred(struct webauth_context *ctx, struct webauth_krb5 *kc,
 {
     krb5_creds creds;
     krb5_error_code code;
-    int status;
+    int s;
 
     /* Decode the credential. */
-    status = decode_creds(ctx, kc, cred, cred_len, &creds);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = decode_creds(ctx, kc, cred, cred_len, &creds);
+    if (s != WA_ERR_NONE)
+        return s;
 
     /* If the webauth_krb5 context is not initialized, do that now. */
     if (kc->cc == NULL) {
-        status = prepare_from_creds(ctx, kc, &creds, cache);
-        if (status != WA_ERR_NONE)
-            return status;
+        s = prepare_from_creds(ctx, kc, &creds, cache);
+        if (s != WA_ERR_NONE)
+            return s;
     }
 
     /*
@@ -633,7 +633,7 @@ webauth_krb5_export_cred(struct webauth_context *ctx, struct webauth_krb5 *kc,
     krb5_creds in, *out;
     const char *realm;
     krb5_error_code code;
-    int status = WA_ERR_KRB5;
+    int s = WA_ERR_KRB5;
 
     memset(&in, 0, sizeof(in));
     code = krb5_cc_get_principal(kc->ctx, kc->cc, &in.client);
@@ -644,8 +644,8 @@ webauth_krb5_export_cred(struct webauth_context *ctx, struct webauth_krb5 *kc,
     if (server == NULL) {
         realm = krb5_principal_get_realm(kc->ctx, in.client);
         if (realm == NULL) {
-            status = WA_ERR_INVALID_CONTEXT;
-            wai_error_set(ctx, status, "no realm for principal");
+            s = WA_ERR_INVALID_CONTEXT;
+            wai_error_set(ctx, s, "no realm for principal");
             goto done;
         }
         code = krb5_build_principal_ext(kc->ctx, &in.server,
@@ -668,12 +668,12 @@ webauth_krb5_export_cred(struct webauth_context *ctx, struct webauth_krb5 *kc,
         error_set(ctx, kc, code, "cannot get credentials");
         goto done;
     }
-    status = encode_creds(ctx, kc, out, ticket, length, expiration);
+    s = encode_creds(ctx, kc, out, ticket, length, expiration);
     krb5_free_creds(kc->ctx, out);
 
 done:
     krb5_free_cred_contents(kc->ctx, &in);
-    return status;
+    return s;
 }
 
 
@@ -953,13 +953,13 @@ webauth_krb5_read_auth_data(struct webauth_context *ctx,
     krb5_authenticator ka = NULL;
 #endif
     krb5_error_code code;
-    int status;
+    int s;
     char *name;
 
     /* Initial setup. */
-    status = open_keytab(ctx, kc, keytab, server_principal, &sprinc, &kt);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = open_keytab(ctx, kc, keytab, server_principal, &sprinc, &kt);
+    if (s != WA_ERR_NONE)
+        return s;
     auth = NULL;
 
     /* Read and analyze the request. */
@@ -980,7 +980,7 @@ webauth_krb5_read_auth_data(struct webauth_context *ctx,
     cprinc->name = ka->cname;
     cprinc->realm = ka->crealm;
 #endif
-    status = canonicalize_principal(ctx, kc, cprinc, client, canon);
+    s = canonicalize_principal(ctx, kc, cprinc, client, canon);
 
     /* Decrypt the data if any. */
     if (in_data != NULL && out_data != NULL) {
@@ -1051,9 +1051,9 @@ done:
 #endif
     krb5_kt_close(kc->ctx, kt);
     krb5_free_principal(kc->ctx, sprinc);
-    if (status == WA_ERR_NONE && code != 0)
-        status = WA_ERR_KRB5;
-    return status;
+    if (s == WA_ERR_NONE && code != 0)
+        s = WA_ERR_KRB5;
+    return s;
 }
 
 

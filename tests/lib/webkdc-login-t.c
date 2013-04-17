@@ -520,7 +520,7 @@ main(void)
     struct webauth_keyring *ring;
     struct webauth_webkdc_config config;
     size_t i;
-    int status;
+    int s;
     char *keyring;
 
     /* Use lazy planning so that test counts can vary on some errors. */
@@ -536,20 +536,19 @@ main(void)
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read(ctx, keyring, &ring);
-    if (status != WA_ERR_NONE)
-        bail("cannot read %s: %s", keyring,
-             webauth_error_message(ctx, status));
+    s = webauth_keyring_read(ctx, keyring, &ring);
+    if (s != WA_ERR_NONE)
+        bail("cannot read %s: %s", keyring, webauth_error_message(ctx, s));
     test_file_path_free(keyring);
 
     /* Provide basic configuration to the WebKDC code. */
     memset(&config, 0, sizeof(config));
     config.local_realms = apr_array_make(pool, 0, sizeof(const char *));
     config.permitted_realms = apr_array_make(pool, 0, sizeof(const char *));
-    status = webauth_webkdc_config(ctx, &config);
-    if (status != WA_ERR_NONE)
-        diag("configuration failed: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
+    s = webauth_webkdc_config(ctx, &config);
+    if (s != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "WebKDC configuration succeeded");
 
     /* Run the first set of tests. */
     for (i = 0; i < ARRAY_SIZE(tests_login); i++)
@@ -560,10 +559,10 @@ main(void)
      * are dated 10 minutes ago, this will make them considered fresh.
      */
     config.login_time_limit = 15 * 60;
-    status = webauth_webkdc_config(ctx, &config);
-    if (status != WA_ERR_NONE)
-        diag("configuration failed: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Setting login timeout succeeded");
+    s = webauth_webkdc_config(ctx, &config);
+    if (s != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Setting login timeout succeeded");
 
     /* Run the batch of tests requiring the login timeout setting. */
     for (i = 0; i < ARRAY_SIZE(tests_time_limit); i++)
@@ -572,10 +571,10 @@ main(void)
     /* Set up an identity ACL (and clear the login time limit). */
     config.id_acl_path = test_file_path("data/id.acl");
     config.login_time_limit = 0;
-    status = webauth_webkdc_config(ctx, &config);
-    if (status != WA_ERR_NONE)
-        diag("configuration failed: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Identity ACL configuration succeeded");
+    s = webauth_webkdc_config(ctx, &config);
+    if (s != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Identity ACL configuration succeeded");
 
     /* Run the batch of tests requiring an identity ACL. */
     for (i = 0; i < ARRAY_SIZE(tests_id_acl); i++)

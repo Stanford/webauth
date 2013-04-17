@@ -2,7 +2,7 @@
  * Test time interval conversion.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -48,18 +48,18 @@ main(void)
 {
     unsigned long value;
     size_t i;
-    int status;
+    int s;
 
     plan(ARRAY_SIZE(tests) * 2 + ARRAY_SIZE(invalid) * 2);
     for (i = 0; i < ARRAY_SIZE(tests); i++) {
-        status = webauth_parse_interval(tests[i].interval, &value);
-        is_int(WA_ERR_NONE, status, "Parse %s", tests[i].interval);
+        s = webauth_parse_interval(tests[i].interval, &value);
+        is_int(WA_ERR_NONE, s, "Parse %s", tests[i].interval);
         is_int(tests[i].seconds, value, "...with correct value");
     }
     for (i = 0; i < ARRAY_SIZE(invalid); i++) {
         value = i + 1;
-        status = webauth_parse_interval(invalid[i], &value);
-        is_int(WA_ERR_INVALID, status, "Parse invalid %s", invalid[i]);
+        s = webauth_parse_interval(invalid[i], &value);
+        is_int(WA_ERR_INVALID, s, "Parse invalid %s", invalid[i]);
         is_int(i + 1, value, "...and value doesn't change");
     }
 

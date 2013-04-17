@@ -91,7 +91,7 @@ main(void)
               "bare error for WA_ERR_NONE");
     is_string("unable to use key", webauth_error_message(NULL, WA_ERR_BAD_KEY),
               "bare error for WA_ERR_BAD_KEY");
-    is_string("unknown error code", webauth_error_message(NULL, INT_MAX),
+    is_string("unknown status code", webauth_error_message(NULL, INT_MAX),
               "bare error for INT_MAX");
 
     /*
@@ -103,7 +103,7 @@ main(void)
               "unset error for WA_ERR_NONE");
     is_string("unable to use key", webauth_error_message(ctx, WA_ERR_BAD_KEY),
               "unset error for WA_ERR_BAD_KEY");
-    basprintf(&expected, "unknown error code %d", INT_MAX);
+    basprintf(&expected, "unknown status code %d", INT_MAX);
     is_string(expected, webauth_error_message(ctx, INT_MAX),
               "unset error for INT_MAX");
     free(expected);
@@ -118,7 +118,7 @@ main(void)
     is_string("unable to get random data",
               webauth_error_message(ctx, WA_ERR_RAND_FAILURE),
               "mismatch of error and code");
-    basprintf(&expected, "unknown error code %d", INT_MAX);
+    basprintf(&expected, "unknown status code %d", INT_MAX);
     is_string(expected, webauth_error_message(ctx, INT_MAX),
               "mismatch with unknown error code");
     free(expected);

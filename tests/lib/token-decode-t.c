@@ -56,19 +56,19 @@ check_decode(struct webauth_context *ctx, enum webauth_token_type type,
              const char *name, const struct webauth_keyring *ring, int count)
 {
     char *path, *token;
-    int status;
+    int s;
     struct webauth_token *result;
 
     if (asprintf(&path, "data/tokens/%s", name) < 0)
         sysbail("cannot allocate memory");
     token = read_token(path);
     free(path);
-    status = webauth_token_decode(ctx, type, token, ring, &result);
+    s = webauth_token_decode(ctx, type, token, ring, &result);
     free(token);
-    is_int(WA_ERR_NONE, status, "%secode %s",
+    is_int(WA_ERR_NONE, s, "%secode %s",
            (type == WA_TOKEN_ANY) ? "Generic d" : "D", name);
     if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        is_string("", webauth_error_message(ctx, s), "Decoding failed");
         ok_block(count, 0, "Decoding failed");
     } else {
         ok(result != NULL, "...succeeded");
@@ -91,7 +91,7 @@ check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
     FILE *token;
     char buffer[4096];
     size_t len;
-    int status;
+    int s;
     struct webauth_token *result;
 
     if (asprintf(&filename, "data/tokens/%s", name) < 0)
@@ -108,11 +108,11 @@ check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
         sysbail("cannot read %s", path);
     test_file_path_free(path);
     fclose(token);
-    status = webauth_token_decode_raw(ctx, type, buffer, len, ring, &result);
-    is_int(WA_ERR_NONE, status, "%secode %s",
+    s = webauth_token_decode_raw(ctx, type, buffer, len, ring, &result);
+    is_int(WA_ERR_NONE, s, "%secode %s",
            (type == WA_TOKEN_ANY) ? "Generic d" : "D", name);
     if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        is_string("", webauth_error_message(ctx, s), "Decoding failed");
         ok_block(count, 0, "Decoding failed");
     } else {
         ok(result != NULL, "...succeeded");
@@ -156,7 +156,7 @@ main(void)
     struct webauth_keyring *ring, *bad_ring;
     struct webauth_key *key;
     char *keyring;
-    int status;
+    int s;
     struct webauth_context *ctx;
     struct webauth_token *result;
     struct webauth_token_app *app;
@@ -181,10 +181,9 @@ main(void)
      * that's stored in that directory.  So start by loading that keyring.
      */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read(ctx, keyring, &ring);
-    if (status != WA_ERR_NONE)
-        bail("cannot read %s: %s", keyring,
-             webauth_error_message(ctx, status));
+    s = webauth_keyring_read(ctx, keyring, &ring);
+    if (s != WA_ERR_NONE)
+        bail("cannot read %s: %s", keyring, webauth_error_message(ctx, s));
     test_file_path_free(keyring);
 
     /*
@@ -266,9 +265,9 @@ main(void)
      * Create a different keyring and test decoding a token using a keyring
      * that does not contain a usable key.
      */
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (key == NULL)
-        bail("cannot create key: %s", webauth_error_message(ctx, status));
+        bail("cannot create key: %s", webauth_error_message(ctx, s));
     bad_ring = webauth_keyring_from_key(ctx, key);
     check_error(ctx, WA_TOKEN_APP, "app-ok", bad_ring, WA_ERR_BAD_HMAC,
                 "HMAC check failed while decrypting token");

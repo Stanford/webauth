@@ -42,7 +42,7 @@ struct wai_log_callback {
 struct webauth_context {
     apr_pool_t *pool;           /* Pool used for all memory allocations. */
     const char *error;          /* Error message from last failure. */
-    int code;                   /* Error code from last failure. */
+    int status;                 /* WebAuth status code from last failure. */
 
     /* Logging callbacks. */
     struct wai_log_callback warn;
