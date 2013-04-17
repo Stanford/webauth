@@ -67,24 +67,30 @@ struct webauth_webkdc_factor_data {
 /*
  * Holds an encoded webkdc-proxy token along with some additional metadata
  * about it that may be needed by consumers who can't decode the token (or
- * don't want to).
+ * don't want to), or that allows the WebLogin server to tell the WebKDC the
+ * source of the token (for session factors).
  */
 struct webauth_webkdc_proxy_data {
     const char *type;
     const char *token;
+    const char *source;
 };
 
 /*
  * Input for a <requestTokenRequest>, which is sent from the WebLogin server
  * to the WebKDC and represents a request by a user to authenticate to a WAS.
  * This request may contain webkdc-proxy tokens, representing existing single
- * sign-on credentials, and a login token, representing a username and
- * authentication credential provided by the user in this session.  An
- * authorization identity can also be requested in via the identity field.
+ * sign-on credentials, webkdc-factor tokens, representing persistent factors,
+ * and login tokens, representing a username and authentication credential
+ * provided by the user in this session.  An authorization identity can also
+ * be requested in via the identity field, and opaque multifactor data can be
+ * passed via login_state.
  */
 struct webauth_webkdc_login_request {
     const struct webauth_token_webkdc_service *service;
-    const WA_APR_ARRAY_HEADER_T *creds; /* Array of webauth_token pointers. */
+    const WA_APR_ARRAY_HEADER_T *wkproxies; /* webauth_webkdc_proxy_data */
+    const WA_APR_ARRAY_HEADER_T *wkfactors; /* const char * */
+    const WA_APR_ARRAY_HEADER_T *logins;    /* const char * */
     const char *authz_subject;          /* Requested authorization identity. */
     const char *login_state;            /* Opaque object for multifactor. */
     const struct webauth_token_request *request;

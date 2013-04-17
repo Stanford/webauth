@@ -799,10 +799,12 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     struct webauth_token *token;
     struct webauth_webkdc_login_request request;
     struct webauth_webkdc_login_response *response;
-    apr_array_header_t *creds;
+    struct webauth_webkdc_proxy_data *pd;
+    apr_array_header_t *wkproxies, *wkfactors, *logins;
     const char *message;
+    const char **encoded;
     int s;
-    size_t i;
+    size_t i, size;
     time_t now;
 
     /* Use a common time basis for everything that follows. */
@@ -823,10 +825,9 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
                                        krbconf);
     request.service = &token->token.webkdc_service;
 
-    /* Create an array for credentials. */
-    creds = apr_array_make(ctx->pool, 3, sizeof(struct webauth_token *));
-
-    /* Add the webkdc-proxy tokens to the array. */
+    /* Build the array of webkdc-proxy tokens. */
+    size = sizeof(struct webauth_webkdc_proxy_data);
+    wkproxies = apr_array_make(ctx->pool, 3, size);
     for (i = 0; i < ARRAY_SIZE(test->request.wkproxies); i++) {
         if (test->request.wkproxies[i].subject == NULL)
             break;
@@ -834,10 +835,16 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
                                          krbconf);
         if (token->token.webkdc_proxy.creation == 0)
             token->token.webkdc_proxy.creation = now;
-        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
+        pd = &APR_ARRAY_PUSH(wkproxies, struct webauth_webkdc_proxy_data);
+        pd->source = token->token.webkdc_proxy.session_factors;
+        s = webauth_token_encode(ctx, token, ring, &pd->token);
+        if (s != WA_ERR_NONE)
+            bail("cannot encode webkdc-proxy token: %s",
+                 webauth_error_message(ctx, s));
     }
 
-    /* Add the webkdc-factor tokens to the array. */
+    /* Build the array of webkdc-factor tokens. */
+    wkfactors = apr_array_make(ctx->pool, 3, sizeof(const char *));
     for (i = 0; i < ARRAY_SIZE(test->request.wkfactors); i++) {
         if (test->request.wkfactors[i].subject == NULL)
             break;
@@ -845,21 +852,32 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
                                           now, krbconf);
         if (token->token.webkdc_factor.creation == 0)
             token->token.webkdc_factor.creation = now;
-        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
+        encoded = &APR_ARRAY_PUSH(wkfactors, const char *);
+        s = webauth_token_encode(ctx, token, ring, encoded);
+        if (s != WA_ERR_NONE)
+            bail("cannot encode webkdc-factor token: %s",
+                 webauth_error_message(ctx, s));
     }
 
-    /* Add the login tokens to the array. */
+    /* Build the array of login tokens. */
+    logins = apr_array_make(ctx->pool, 3, sizeof(const char *));
     for (i = 0; i < ARRAY_SIZE(test->request.logins); i++) {
         if (test->request.logins[i].username == NULL)
             break;
         token = build_token_login(ctx, &test->request.logins[i], now, krbconf);
         if (token->token.login.creation == 0)
             token->token.login.creation = now;
-        APR_ARRAY_PUSH(creds, struct webauth_token *) = token;
+        encoded = &APR_ARRAY_PUSH(logins, const char *);
+        s = webauth_token_encode(ctx, token, ring, encoded);
+        if (s != WA_ERR_NONE)
+            bail("cannot encode webkdc-factor token: %s",
+                 webauth_error_message(ctx, s));
     }
 
-    /* Add the remaining data to the request. */
-    request.creds         = creds;
+    /* Add the data to the request. */
+    request.wkproxies     = wkproxies;
+    request.wkfactors     = wkfactors;
+    request.logins        = logins;
     request.request       = &test->request.request;
     request.authz_subject = test->request.authz_subject;
 

@@ -17,8 +17,8 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
+#include <apr_lib.h>
 #include <assert.h>
-#include <ctype.h>
 
 #include <lib/internal.h>
 #include <webauth/basic.h>
@@ -765,7 +765,7 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
             goto done;
         }
         p = buf;
-        while (isspace((int) *p))
+        while (apr_isspace(*p))
             p++;
         if (*p == '#' || *p == '\0')
             continue;
@@ -964,6 +964,168 @@ create_proxy_token(struct webauth_context *ctx,
 
 
 /*
+ * Given a message, scan it for whitespace or double quotes.  If there are
+ * any, enclose it in double quotes and escape any inner double quotes.
+ */
+static const char *
+log_escape(apr_pool_t *pool, const char *message)
+{
+    size_t length = 0;
+    size_t quotes = 0;
+    bool escape = false;
+    const char *p;
+    char *q, *result;
+
+    /* Convert NULL strings into the empty string for logging. */
+    if (message == NULL)
+        return "";
+
+    /*
+     * Scan the string for whitespace or double quotes.  Count double quotes,
+     * since we're going to double each one.
+     */
+    for (p = message; *p != '\0'; p++) {
+        length++;
+        if (apr_isspace(*p))
+            escape = true;
+        else if (*p == '"') {
+            escape = true;
+            quotes++;
+        }
+    };
+
+    /* If nothing special is going on, return the string verbatim. */
+    if (!escape)
+        return message;
+
+    /*
+     * Allocate room for the leading and trailing quotes plus an extra
+     * character for each quote we're doubling.
+     */
+    result = apr_palloc(pool, length + quotes + 3);
+    result[0] = '"';
+    for (p = message, q = result + 1; *p != '\0'; p++, q++) {
+        *q = *p;
+        if (*p == '"')
+            *q++ = '"';
+    }
+    *q++ = '"';
+    *q++ = '\0';
+    return result;
+}
+
+
+/*
+ * Add a given key/value attribute to the log message (given as a buffer).
+ * Escapes the value if necessary, and handles NULL values.
+ */
+static void
+log_attribute(struct buffer *message, const char *key, const char *value)
+{
+    const char *escaped;
+
+    if (message->used != 0)
+        wai_buffer_append(message, " ", 1);
+    escaped = log_escape(message->pool, value);
+    wai_buffer_append_sprintf(message, "%s=%s", key, escaped);
+}
+
+
+/*
+ * Log the login request.  We do this once we determine whether the request
+ * will be successful or not, as the last thing that we do before returning to
+ * the caller.  This function constructs a general key/value pair log format.
+ *
+ * Takes the request, the response, and the list of login tokens.  The latter
+ * is used to log what login methods were used.
+ */
+static void
+log_login(struct webauth_context *ctx,
+          const struct webauth_webkdc_login_request *request,
+          const struct webauth_webkdc_login_response *response,
+          apr_array_header_t *logins)
+{
+    struct buffer *message;
+    const char *subject, *login_type;
+    int i;
+
+    /* We're going to accumulate the log message in this buffer. */
+    message = wai_buffer_new(ctx->pool);
+
+    /*
+     * Add basic information from the request.
+     *
+     * FIXME: No current way to get the useragent_ip, need to pass that in.
+     */
+    log_attribute(message, "event",    "requestToken");
+    log_attribute(message, "from",     "127.0.0.1");
+    log_attribute(message, "clientIp", request->remote_ip);
+    log_attribute(message, "server",   response->requester);
+    log_attribute(message, "url",      response->return_url);
+
+    /* If we were unable to authenticate the user, log them as <unknown>. */
+    subject = (response->subject == NULL) ? "<unknown>" : response->subject;
+    log_attribute(message, "user", subject);
+
+    /* Gather information about the login tokens. */
+    login_type = NULL;
+    for (i = 0; i < logins->nelts; i++) {
+        const struct webauth_token *token;
+
+        token = APR_ARRAY_IDX(logins, i, struct webauth_token *);
+        assert(token->type == WA_TOKEN_LOGIN);
+        if (token->token.login.password != NULL) {
+            if (login_type == NULL)
+                login_type = "password";
+            else if (strcmp(login_type, "otp") == 0)
+                login_type = "password,otp";
+        } else if (token->token.login.otp != NULL) {
+            if (login_type == NULL)
+                login_type = "otp";
+            else if (strcmp(login_type, "password") == 0)
+                login_type = "password,otp";
+        }
+    }
+
+    /* Log information about the request. */
+    log_attribute(message, "rtt", request->request->type);
+    if (strcmp(request->request->type, "id") == 0)
+        log_attribute(message, "sa", request->request->auth);
+    else if (strcmp(request->request->type, "proxy") == 0)
+        log_attribute(message, "pt", request->request->proxy_type);
+    if (request->request->initial_factors != NULL)
+        log_attribute(message, "wifactors", request->request->initial_factors);
+    if (request->request->session_factors != NULL)
+        log_attribute(message, "wsfactors", request->request->session_factors);
+    if (request->request->loa > 0)
+        wai_buffer_append_sprintf(message, " wloa=%lu", request->request->loa);
+    if (request->request->options != NULL)
+        log_attribute(message, "ro", request->request->options);
+    if (login_type != NULL)
+        log_attribute(message, "login", login_type);
+
+    /* Log information about the authentication. */
+    if (response->authz_subject != NULL)
+        log_attribute(message, "authz", response->authz_subject);
+    if (response->initial_factors != NULL)
+        log_attribute(message, "ifactors", response->initial_factors);
+    if (response->session_factors != NULL)
+        log_attribute(message, "sfactors", response->session_factors);
+    if (response->loa > 0)
+        wai_buffer_append_sprintf(message, " loa=%lu", response->loa);
+
+    /* Finally, log the error code and error message. */
+    wai_buffer_append_sprintf(message, " lec=%d", response->login_error);
+    if (response->login_message != NULL)
+        log_attribute(message, "lem", response->login_message);
+
+    /* Actually log the message. */
+    wai_buffer_append(message, "", 1);
+    wai_log_notice(ctx, "%s", message->data);
+}
+
+
+/*
  * Given the data from a <requestTokenRequest> login attempt, process that
  * attempted login and return the information for a <requestTokenResponse> in
  * a newly-allocated struct from pool memory.  All of the tokens included in
@@ -981,9 +1143,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
                      struct webauth_webkdc_login_response **response,
                      const struct webauth_keyring *ring)
 {
-    apr_array_header_t *wkproxies = NULL;
-    apr_array_header_t *wkfactors = NULL;
-    struct webauth_token *cred, *newproxy, *token;
+    apr_array_header_t *wkproxies, *wkfactors, *logins;
+    struct webauth_token *newproxy, *token;
     struct webauth_token cancel;
     struct webauth_token *wkfactor = NULL;
     const struct webauth_token_request *req;
@@ -999,7 +1160,10 @@ webauth_webkdc_login(struct webauth_context *ctx,
     const char *allowed, *authz_subject;
 
     /* Basic sanity checking. */
-    if (request->service == NULL || request->creds == NULL
+    if (request->service == NULL
+        || request->wkproxies == NULL
+        || request->wkfactors == NULL
+        || request->logins == NULL
         || request->request == NULL) {
         status = WA_ERR_CORRUPT;
         wai_error_set(ctx, status, "incomplete login request data");
@@ -1051,49 +1215,89 @@ webauth_webkdc_login(struct webauth_context *ctx,
     }
 
     /*
-     * We have one input list of credentials, but we want separate lists of
-     * webkdc-proxy credentials and webkdc-factor credentials.  Process the
-     * list, building a list of webkdc-proxy tokens and webkdc-factor tokens,
-     * and validating the login tokens as we find them.
+     * Process the incoming webkdc-proxy credentials.  We warn about but
+     * ignore any webkdc-proxy credentials that fail to decrypt or decode.
      */
     wkproxies = apr_array_make(ctx->pool, 2, sizeof(struct webauth_token *));
-    wkfactors = apr_array_make(ctx->pool, 2, sizeof(struct webauth_token *));
-    for (i = 0; i < request->creds->nelts; i++) {
-        cred = APR_ARRAY_IDX(request->creds, i, struct webauth_token *);
+    for (i = 0; i < request->wkproxies->nelts; i++) {
+        const struct webauth_webkdc_proxy_data *pd;
 
-        /* Shuffle proxy and factor tokens into the correct list. */
-        if (cred->type == WA_TOKEN_WEBKDC_PROXY)
-            APR_ARRAY_PUSH(wkproxies, struct webauth_token *) = cred;
-        else if (cred->type == WA_TOKEN_WEBKDC_FACTOR)
-            APR_ARRAY_PUSH(wkfactors, struct webauth_token *) = cred;
-
-        /* Silently ignore unknown token types. */
-        if (cred->type != WA_TOKEN_LOGIN)
+        pd = &APR_ARRAY_IDX(request->wkproxies, i,
+                            const struct webauth_webkdc_proxy_data);
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
+                                      ring, &token);
+        if (status != WA_ERR_NONE) {
+            wai_error_add_context(ctx, "parsing webkdc-proxy token"
+                                  " (ignoring)");
+            wai_log_error(ctx, WA_LOG_INFO, status);
             continue;
+        }
+        token->token.webkdc_proxy.session_factors = pd->source;
+        APR_ARRAY_PUSH(wkproxies, struct webauth_token *) = token;
+    }
+
+    /* Likewise for the webkdc-factor credentials. */
+    wkfactors = apr_array_make(ctx->pool, 2, sizeof(struct webauth_token *));
+    for (i = 0; i < request->wkproxies->nelts; i++) {
+        const char *encoded;
+
+        encoded = APR_ARRAY_IDX(request->wkfactors, i, const char *);
+        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, encoded,
+                                      ring, &token);
+        if (status != WA_ERR_NONE) {
+            wai_error_add_context(ctx, "parsing webkdc-factor token"
+                                  " (ignoring)");
+            wai_log_error(ctx, WA_LOG_INFO, status);
+            continue;
+        }
+        APR_ARRAY_PUSH(wkfactors, struct webauth_token *) = token;
+    }
+
+    /*
+     * Process the login credentials.  Report a fatal error if we can't decode
+     * these.  We either process a password login or an OTP login depending on
+     * the contents, and then add the resulting tokens to the wkproxies and
+     * wkfactors structs.
+     *
+     * Keep the login tokens around since we need them for logging later.
+     */
+    logins = apr_array_make(ctx->pool, 1, sizeof(struct webauth_token *));
+    for (i = 0; i < request->logins->nelts; i++) {
+        const char *encoded;
+
+        /* Decode the login token. */
+        encoded = APR_ARRAY_IDX(request->logins, i, const char *);
+        status = webauth_token_decode(ctx, WA_TOKEN_LOGIN, encoded, ring,
+                                      &token);
+        if (status != WA_ERR_NONE) {
+            wai_error_add_context(ctx, "parsing login token");
+            return status;
+        }
+        APR_ARRAY_PUSH(logins, struct webauth_token *) = token;
 
         /* Process the login token appropriately. */
-        token = NULL;
+        newproxy = NULL;
         wkfactor = NULL;
-        if (cred->token.login.otp != NULL)
-            status = do_otp(ctx, *response, &cred->token.login,
+        if (token->token.login.otp != NULL)
+            status = do_otp(ctx, *response, &token->token.login,
                             request->remote_ip, request->login_state,
-                            &token, &wkfactor);
+                            &newproxy, &wkfactor);
         else
-            status = do_login(ctx, *response, &cred->token.login, &token);
+            status = do_login(ctx, *response, &token->token.login, &newproxy);
+
+        /* If the login failed, abort. */
         if (status != WA_ERR_NONE)
             return status;
+        if ((*response)->login_error != 0)
+            goto done;
 
         /* If we got new tokens, add them to the appropriate arrays. */
-        if (token != NULL) {
-            APR_ARRAY_PUSH(wkproxies, struct webauth_token *) = token;
+        if (newproxy != NULL) {
+            APR_ARRAY_PUSH(wkproxies, struct webauth_token *) = newproxy;
             did_login = true;
         }
         if (wkfactor != NULL)
             APR_ARRAY_PUSH(wkfactors, struct webauth_token *) = wkfactor;
-
-        /* If the login failed, return what we have so far. */
-        if ((*response)->login_error != 0)
-            return WA_ERR_NONE;
     }
 
     /*
@@ -1125,7 +1329,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         wai_log_error(ctx, WA_LOG_WARN, status);
         (*response)->login_error = WA_PEC_UNAUTHORIZED;
         (*response)->login_message = "not authorized to use proxy token";
-        return WA_ERR_NONE;
+        goto done;
     } else if (status != WA_ERR_NONE)
         return status;
 
@@ -1143,7 +1347,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
             (*response)->login_message
                 = apr_psprintf(ctx->pool, "proxy subject %s not allowed",
                                wkproxy->proxy_subject);
-            return WA_ERR_NONE;
+            goto done;
         }
     }
 
@@ -1169,7 +1373,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
             (*response)->login_message
                 = "authentication rejected by user information service";
             (*response)->user_message = info->error;
-            return WA_ERR_NONE;
+            goto done;
         }
 
         /*
@@ -1224,7 +1428,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     if (wkproxy == NULL) {
         (*response)->login_error = WA_PEC_PROXY_TOKEN_REQUIRED;
         (*response)->login_message = "need a proxy token";
-        return WA_ERR_NONE;
+        goto done;
     }
 
     /*
@@ -1241,7 +1445,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (!webauth_factors_interactive(ctx, factors)) {
             (*response)->login_error = WA_PEC_LOGIN_FORCED;
             (*response)->login_message = "forced authentication, need to login";
-            return WA_ERR_NONE;
+            goto done;
         }
     }
 
@@ -1255,7 +1459,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     if (status != WA_ERR_NONE)
         return status;
     if ((*response)->login_error != 0)
-        return WA_ERR_NONE;
+        goto done;
 
     /*
      * We have to ensure that the webkdc-proxy token we have available is
@@ -1270,7 +1474,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (strcmp(wkproxy->proxy_type, "krb5") != 0) {
             (*response)->login_error = WA_PEC_PROXY_TOKEN_REQUIRED;
             (*response)->login_message = "need a proxy token";
-            return WA_ERR_NONE;
+            goto done;
         }
 
     /*
@@ -1284,7 +1488,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         && strcmp(wkproxy->proxy_subject, request->service->subject) != 0) {
         (*response)->login_error = WA_PEC_UNAUTHORIZED;
         (*response)->login_message = "not authorized to use proxy token";
-        return WA_ERR_NONE;
+        goto done;
     }
 
     /* Determine if the user is allowed to assert alternate identities. */
@@ -1315,7 +1519,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     if (authz_subject != NULL && (*response)->authz_subject == NULL) {
         (*response)->login_error = WA_PEC_UNAUTHORIZED;
         (*response)->login_message = "not authorized to assert that identity";
-        return WA_ERR_NONE;
+        goto done;
     }
 
     /*
@@ -1337,6 +1541,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
         wai_error_set(ctx, status, "unsupported requested token type %s",
                       req->type);
     }
+    if (status != WA_ERR_NONE)
+        return status;
 
     /*
      * Set the factor tokens in the response if we have a webkdc-factor token
@@ -1355,5 +1561,9 @@ webauth_webkdc_login(struct webauth_context *ctx,
             return status;
         (*response)->factor_tokens = factor_tokens;
     }
-    return status;
+
+done:
+    /* For any case where we're not returning a WebAuth error, log. */
+    log_login(ctx, request, *response, logins);
+    return WA_ERR_NONE;
 }
