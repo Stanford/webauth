@@ -120,7 +120,6 @@ read_service_token_cache(server_rec *server, struct server_config *sconf,
     struct webauth_was_token_cache cache;
     MWA_SERVICE_TOKEN *token;
     int status;
-    static const char *mwa_func = "mwa_read_service_token_cache";
 
     memset(&cache, 0, sizeof(cache));
     status = webauth_was_token_cache_read(sconf->ctx, sconf->st_cache_path,
@@ -128,8 +127,10 @@ read_service_token_cache(server_rec *server, struct server_config *sconf,
     if (status == WA_ERR_FILE_NOT_FOUND)
         return NULL;
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, status, mwa_func,
-                              "webauth_was_token_cache_read", NULL);
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                     "mod_webauth: cannot read service token cache %s: %s",
+                     sconf->st_cache_path,
+                     webauth_error_message(sconf->ctx, status));
         return NULL;
     }
     token = new_service_token_from_cache(pool, &cache);
@@ -143,7 +144,6 @@ write_service_token_cache(server_rec *server, struct server_config *sconf,
 {
     struct webauth_was_token_cache cache;
     int status;
-    static const char *mwa_func = "write_service_token_cache";
 
     /* Convert to the data structure that the library expects. */
     memset(&cache, 0, sizeof(cache));
@@ -160,8 +160,10 @@ write_service_token_cache(server_rec *server, struct server_config *sconf,
     status = webauth_was_token_cache_write(sconf->ctx, &cache,
                                            sconf->st_cache_path);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, status, mwa_func,
-                              "webauth_was_token_cache_write", NULL);
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                     "mod_webauth: cannot write service token cache %s: %s",
+                     sconf->st_cache_path,
+                     webauth_error_message(sconf->ctx, status));
         return 0;
     }
     return 1;
@@ -565,8 +567,9 @@ set_app_state(struct webauth_context *ctx, server_rec *server,
     app.token.app.expiration = token->expires;
     status = webauth_token_encode_raw(ctx, &app, sconf->ring, &as, &length);
     if (status != WA_ERR_NONE)
-        mwa_log_webauth_error(server, status, "set_app_state",
-                              "webauth_token_encode", NULL);
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                     "mod_webauth: cannot encode state token: %s",
+                     webauth_error_message(ctx, status));
     else {
         token->app_state = as;
         token->app_state_len = length;
@@ -727,8 +730,8 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, const char *cmd)
     req.token.request.command = cmd;
     status = webauth_token_encode(rc->ctx, &req, ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_encode_request", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func,
+                              "webauth_token_encode", NULL);
         return NULL;
     }
     return token;

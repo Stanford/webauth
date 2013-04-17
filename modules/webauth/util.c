@@ -104,7 +104,7 @@ mwa_log_apr_error(server_rec *server,
                   const char *path2)
 {
     char errbuff[512];
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+    ap_log_error(APLOG_MARK, APLOG_ERR, astatus, server,
                  "mod_webauth: %s: %s (%s%s%s): %s (%d)",
                  mwa_func,
                  ap_func,
@@ -150,19 +150,13 @@ mwa_log_request(request_rec *r, const char *msg)
 
 
 void
-mwa_log_webauth_error(server_rec *s,
-                       int status,
-                      const char *mwa_func,
-                      const char *func,
-                      const char *extra)
+mwa_log_webauth_error(MWA_REQ_CTXT *rc, int status, const char *mwa_func,
+                      const char *func, const char *extra)
 {
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, s,
-                 "mod_webauth: %s: %s%s%s failed: %s (%d)",
-                 mwa_func,
-                 func,
-                 extra == NULL ? "" : " ",
-                 extra == NULL ? "" : extra,
-                 webauth_error_message(NULL, status), status);
+    ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+                 "mod_webauth: %s: %s%s%s failed: %s", mwa_func, func,
+                 extra == NULL ? "" : " ", extra == NULL ? "" : extra,
+                 webauth_error_message(rc->ctx, status));
 }
 
 
@@ -173,28 +167,20 @@ mwa_cache_keyring(server_rec *serv, struct server_config *sconf)
     enum webauth_kau_status kau_status;
     int update_status;
 
-    static const char *mwa_func = "mwa_cache_keyring";
-
     status = webauth_keyring_auto_update(sconf->ctx, sconf->keyring_path,
                  sconf->keyring_auto_update,
                  sconf->keyring_auto_update ? sconf->keyring_key_lifetime : 0,
                  &sconf->ring, &kau_status, &update_status);
-
-    if (status != WA_ERR_NONE) {
-            mwa_log_webauth_error(serv, status, mwa_func,
-                                  "webauth_keyring_auto_update",
-                                  sconf->keyring_path);
-    }
-
-    if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE) {
-            mwa_log_webauth_error(serv, status, mwa_func,
-                                  "webauth_keyring_auto_update",
-                                  sconf->keyring_path);
-            /* complain even more */
-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, serv,
-                         "mod_webauth: %s: couldn't update ring: %s",
-                         mwa_func, sconf->keyring_path);
-    }
+    if (status != WA_ERR_NONE)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                     "mod_webauth: opening keyring %s failed: %s",
+                     sconf->keyring_path,
+                     webauth_error_message(sconf->ctx, status));
+    if (kau_status == WA_KAU_UPDATE && update_status != WA_ERR_NONE)
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
+                     "mod_webauth: updating keyring %s failed: %s",
+                     sconf->keyring_path,
+                     webauth_error_message(sconf->ctx, update_status));
 
     if (sconf->debug) {
         const char *msg;
@@ -276,8 +262,8 @@ mwa_parse_cred_token(char *token, struct webauth_keyring *ring,
     }
     status = webauth_token_decode(rc->ctx, WA_TOKEN_CRED, token, ring, &data);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status,
-                              mwa_func, "webauth_token_decode", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return NULL;
     }
     return &data->token.cred;

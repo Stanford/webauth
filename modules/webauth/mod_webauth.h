@@ -289,11 +289,8 @@ mwa_log_request(request_rec *r, const char *msg);
  * log a webauth-related error
  */
 void
-mwa_log_webauth_error(server_rec *r,
-                      int status,
-                      const char *mwa_func,
-                      const char *func,
-                      const char *extra);
+mwa_log_webauth_error(MWA_REQ_CTXT *rc, int status, const char *mwa_func,
+                      const char *func, const char *extra);
 
 /*
  * this should only be called in the module init routine

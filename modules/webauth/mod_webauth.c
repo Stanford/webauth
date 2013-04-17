@@ -766,7 +766,7 @@ make_proxy_cookie(const char *proxy_type,
     pt->expiration = expiration_time;
     status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
+        mwa_log_webauth_error(rc, status, mwa_func,
                               "webauth_token_encode_proxy", subject);
         return 0;
     }
@@ -793,9 +793,8 @@ make_cred_cookie(struct webauth_token_cred *ct, MWA_REQ_CTXT *rc)
     data.token.cred = *ct;
     status = webauth_token_encode(rc->ctx, &data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_encode_cred",
-                              ct->subject);
+        mwa_log_webauth_error(rc, status, mwa_func,
+                              "webauth_token_encode_cred", ct->subject);
         return 0;
     }
     fixup_setcookie(rc, cred_cookie_name(ct->type, ct->service, rc), token);
@@ -850,7 +849,7 @@ make_app_cookie(const char *subject,
     app->expiration = expiration_time;
     status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
+        mwa_log_webauth_error(rc, status, mwa_func,
                               "webauth_token_encode_app", subject);
         return 0;
     }
@@ -933,8 +932,8 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
                      " expired", app_cookie_name());
         return 0;
     } else if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_decode_app", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return 0;
     }
     rc->at = &app->token.app;
@@ -996,8 +995,8 @@ parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
     status = webauth_token_decode(rc->ctx, WA_TOKEN_PROXY, token,
                                   rc->sconf->ring, &pt);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status,
-                              mwa_func, "webauth_token_decode_proxy", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return NULL;
     }
     return &pt->token.proxy;
@@ -1052,8 +1051,8 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     status = webauth_token_decode(rc->ctx, WA_TOKEN_APP, token,
                                   rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status,
-                              mwa_func, "webauth_token_decode_app", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return NULL;
     }
     app = &data->token.app;
@@ -1224,8 +1223,8 @@ parse_returned_token(char *token, struct webauth_key *key, MWA_REQ_CTXT *rc)
     ring = webauth_keyring_from_key(rc->ctx, key);
     status = webauth_token_decode(rc->ctx, type, token, ring, &data);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_decode", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return code;
     }
 
@@ -1463,8 +1462,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     ring = webauth_keyring_from_key(rc->ctx, &st->key);
     status = webauth_token_encode(rc->ctx, &data, ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_encode_request", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_encode",
+                              NULL);
         return failure_redirect(rc);
     }
 
