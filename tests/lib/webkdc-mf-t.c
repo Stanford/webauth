@@ -947,7 +947,7 @@ static const struct wat_login_test tests_default[] = {
             WA_PEC_MULTIFACTOR_REQUIRED,
             "multifactor login required",
             NULL,
-            "", "p,m,o,o2",
+            NULL, "p,m,o,o2",
             {
                 {
                     "normal", "remuser", "WEBKDC:remuser", "normal", 6,

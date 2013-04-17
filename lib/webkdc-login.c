@@ -202,7 +202,7 @@ do_otp(struct webauth_context *ctx,
     pt->proxy_subject = "WEBKDC:otp";
     pt->data = login->username;
     pt->data_len = strlen(login->username);
-    pt->initial_factors = apr_array_pstrcat(ctx->pool, validate->factors, ',');
+    pt->initial_factors = webauth_factors_string(ctx, validate->factors);
     pt->session_factors = pt->initial_factors;
     pt->loa = validate->loa;
     pt->expiration = validate->factors_expiration;
@@ -217,12 +217,12 @@ do_otp(struct webauth_context *ctx,
      * If there are any persistent-factor tokens, create a webkdc-factor
      * token and add it to the response.
      */
-    if (validate->persistent != NULL && validate->persistent->nelts > 0) {
+    if (validate->persistent != NULL) {
         *wkfactor = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
         (*wkfactor)->type = WA_TOKEN_WEBKDC_FACTOR;
         ft = &(*wkfactor)->token.webkdc_factor;
         ft->subject = login->username;
-        ft->factors = apr_array_pstrcat(ctx->pool, validate->persistent, ',');
+        ft->factors = webauth_factors_string(ctx, validate->persistent);
         ft->expiration = validate->persistent_expiration;
         ft->creation = time(NULL);
     }
@@ -581,9 +581,9 @@ add_user_info(struct webauth_context *ctx,
 
     /* Add additional factors if we have any and we did a login. */
     if (did_login && (*info)->additional != NULL) {
-        struct webauth_factors *add;
+        const struct webauth_factors *add;
 
-        add = webauth_factors_new(ctx, (*info)->additional);
+        add = (*info)->additional;
         iwkfactors = webauth_factors_union(ctx, iwkfactors, add);
         swkfactors = webauth_factors_union(ctx, swkfactors, add);
     }
@@ -615,8 +615,8 @@ check_multifactor(struct webauth_context *ctx,
                   struct webauth_token_webkdc_proxy *wkproxy,
                   struct webauth_user_info *info)
 {
-    struct webauth_factors *wanted, *swanted, *have, *shave, *required;
-    struct webauth_factors *configured, *all_wanted;
+    struct webauth_factors *wanted, *swanted, *have, *shave;
+    const struct webauth_factors *configured;
     const struct webauth_token_request *req;
 
     /* Figure out what factors we want and have. */
@@ -630,10 +630,8 @@ check_multifactor(struct webauth_context *ctx,
      * Check if there are factors required by user configuration.  If so, add
      * them to the initial factors that we require.
      */
-    if (info != NULL && info->required != NULL && info->required->nelts > 0) {
-        required = webauth_factors_new(ctx, info->required);
-        wanted = webauth_factors_union(ctx, wanted, required);
-    }
+    if (info != NULL && info->required != NULL)
+        wanted = webauth_factors_union(ctx, wanted, info->required);
 
     /*
      * Second, check the level of assurance required.  If the user cannot
@@ -693,13 +691,12 @@ check_multifactor(struct webauth_context *ctx,
      *
      * Assume we can do password authentication even without user information.
      */
-    if (info == NULL || info->factors == NULL || info->factors->nelts == 0)
+    if (info == NULL || info->factors == NULL)
         configured = webauth_factors_parse(ctx, WA_FA_PASSWORD);
     else
-        configured = webauth_factors_new(ctx, info->factors);
-    all_wanted = webauth_factors_union(ctx, wanted, swanted);
-    response->factors_wanted = webauth_factors_array(ctx, all_wanted);
-    response->factors_configured = webauth_factors_array(ctx, configured);
+        configured = info->factors;
+    response->factors_wanted = webauth_factors_union(ctx, wanted, swanted);
+    response->factors_configured = configured;
     if (!webauth_factors_satisfies(ctx, configured, wanted)) {
         response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
         response->login_message = "multifactor required but not configured";

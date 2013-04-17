@@ -36,6 +36,7 @@
 #include <sys/types.h>
 
 struct webauth_context;
+struct webauth_factors;
 struct webauth_keyring;
 
 /*
@@ -107,8 +108,8 @@ struct webauth_webkdc_login_response {
     const char *login_message;
     const char *user_message;
     const char *login_state;
-    const WA_APR_ARRAY_HEADER_T *factors_wanted;     /* char * factors. */
-    const WA_APR_ARRAY_HEADER_T *factors_configured; /* char * factors. */
+    const struct webauth_factors *factors_wanted;
+    const struct webauth_factors *factors_configured;
     const WA_APR_ARRAY_HEADER_T *proxies;         /* webkdc_proxy_data. */
     const WA_APR_ARRAY_HEADER_T *factor_tokens;   /* webkdc_factor_data. */
     const char *return_url;
@@ -182,9 +183,9 @@ struct webauth_login {
  * about a user, returned from the site-local user information middleware.
  */
 struct webauth_user_info {
-    const WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factors. */
-    const WA_APR_ARRAY_HEADER_T *additional;  /* Array of char * factors. */
-    const WA_APR_ARRAY_HEADER_T *required;    /* Array of char * factors. */
+    const struct webauth_factors *factors;
+    const struct webauth_factors *additional;
+    const struct webauth_factors *required;
     time_t valid_threshold;             /* Cutoff for persistent validity. */
     int random_multifactor;             /* If random multifactor was done. */
     unsigned long max_loa;              /* Maximum level of assurance. */
@@ -203,9 +204,9 @@ struct webauth_user_info {
  */
 struct webauth_user_validate {
     int success;                        /* Whether the validation succeeded. */
-    const WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factors. */
+    const struct webauth_factors *factors;
     time_t factors_expiration;          /* Expiration time of factors. */
-    const WA_APR_ARRAY_HEADER_T *persistent;  /* Array of char * factors. */
+    const struct webauth_factors *persistent;
     time_t persistent_expiration;       /* Expiration time of persistent. */
     time_t valid_threshold;             /* Cutoff for persistent validity. */
     unsigned long loa;                  /* Level of assurance. */

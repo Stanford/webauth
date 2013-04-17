@@ -18,6 +18,7 @@
 #include <tests/tap/kerberos.h>
 #include <tests/tap/remctl.h>
 #include <webauth/basic.h>
+#include <webauth/factors.h>
 #include <webauth/webkdc.h>
 
 
@@ -53,31 +54,15 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
     is_int(WA_ERR_NONE, status, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
     if (validate == NULL)
-        ok_block(11, 0, "Validate failed");
+        ok_block(6, 0, "Validate failed");
     else {
         is_int(success, validate->success, "...validation correct");
-        ok(validate->factors != NULL, "...factors is not NULL");
-        if (validate->factors == NULL)
-            ok_block(3, 0, "...factors is not NULL");
-        else {
-            is_int(2, validate->factors->nelts, "...two factors");
-            is_string("o", APR_ARRAY_IDX(validate->factors, 0, char *),
-                      "...first is correct");
-            is_string("o3", APR_ARRAY_IDX(validate->factors, 1, char *),
-                      "...second is correct");
-        }
+        is_string("o,o3", webauth_factors_string(ctx, validate->factors),
+                  "...result factors are correct");
         is_int(1893484800, validate->factors_expiration,
                "...factors expiration");
-        if (validate->persistent == NULL)
-            ok_block(3, 0, "...persistent factors is not NULL");
-        else {
-            is_int(2, validate->persistent->nelts,
-                   "...two persistent factors");
-            is_string("d", APR_ARRAY_IDX(validate->persistent, 0, char *),
-                      "...first is correct");
-            is_string("u", APR_ARRAY_IDX(validate->persistent, 1, char *),
-                      "...second is correct");
-        }
+        is_string("d,u", webauth_factors_string(ctx, validate->persistent),
+                  "...persistent factors are correct");
         is_int(1893484802, validate->persistent_expiration,
                "...persistent expiration");
         is_int(1365630519, validate->valid_threshold, "...valid threshold");
@@ -115,7 +100,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(217);
+    plan(172);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -167,41 +152,17 @@ main(void)
     ok(info != NULL, "...info is not NULL");
     if (info == NULL) {
         is_string("", webauth_error_message(ctx, status), "...no error");
-        ok_block(18, 0, "...info is not NULL");
+        ok_block(16, 0, "...info is not NULL");
     } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(3, info->max_loa, "...max LoA");
         is_int(1310675733, info->password_expires, "...password expires");
         is_int(1365630519, info->valid_threshold,
                "...valid threshold is correct");
-        ok(info->factors != NULL, "...factors is not NULL");
-        if (info->factors == NULL)
-            ok_block(5, 0, "...factors is not NULL");
-        else {
-            is_int(4, info->factors->nelts, "...four factors");
-            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
-                      "...first is correct");
-            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
-                      "...second is correct");
-            is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
-                      "...third is correct");
-            is_string("o3", APR_ARRAY_IDX(info->factors, 3, char *),
-                      "...fourth is correct");
-        }
-        ok(info->required != NULL, "...required is not NULL");
-        if (info->required == NULL)
-            ok_block(5, 0, "...required is not NULL");
-        else {
-            is_int(4, info->required->nelts, "...four required");
-            is_string("p", APR_ARRAY_IDX(info->required, 0, char *),
-                      "...first is correct");
-            is_string("m", APR_ARRAY_IDX(info->required, 1, char *),
-                      "...second is correct");
-            is_string("o", APR_ARRAY_IDX(info->required, 2, char *),
-                      "...third is correct");
-            is_string("o3", APR_ARRAY_IDX(info->required, 3, char *),
-                      "...fourth is correct");
-        }
+        is_string("p,m,o,o3", webauth_factors_string(ctx, info->factors),
+                  "...factors are correct");
+        is_string("p,m,o,o3", webauth_factors_string(ctx, info->required),
+                  "...required factors are correct");
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins != NULL, "...logins is not NULL");
         if (info->logins == NULL)
@@ -265,32 +226,16 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for factor succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
-        ok_block(11, 0, "Metadata failed");
+        ok_block(6, 0, "Metadata failed");
     else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         is_int(0, info->valid_threshold, "...valid threshold");
-        if (info->factors == NULL)
-            ok_block(5, 0, "...factors is not NULL");
-        else {
-            is_int(4, info->factors->nelts, "...four factors");
-            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
-                      "...first is correct");
-            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
-                      "...second is correct");
-            is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
-                      "...third is correct");
-            is_string("o2", APR_ARRAY_IDX(info->factors, 3, char *),
-                      "...fourth is correct");
-        }
-        if (info->required == NULL)
-            ok_block(2, 0, "...required is not NULL");
-        else {
-            is_int(1, info->required->nelts, "...one required factor");
-            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
-                      "...which is the multifactor factor");
-        }
+        is_string("p,m,o,o2", webauth_factors_string(ctx, info->factors),
+                  "...factors are correct");
+        is_string("m", webauth_factors_string(ctx, info->required),
+                  "...required factors are correct");
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
         is_string(NULL, info->user_message, "...user message is NULL");
@@ -302,25 +247,14 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for factor with d succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
-        ok_block(11, 0, "Metadata failed");
+        ok_block(7, 0, "Metadata failed");
     else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         is_int(0, info->valid_threshold, "...valid threshold");
-        if (info->factors == NULL)
-            ok_block(5, 0, "...factors is not NULL");
-        else {
-            is_int(4, info->factors->nelts, "...four factors");
-            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
-                      "...first is correct");
-            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
-                      "...second is correct");
-            is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
-                      "...third is correct");
-            is_string("o2", APR_ARRAY_IDX(info->factors, 3, char *),
-                      "...fourth is correct");
-        }
+        is_string("p,m,o,o2", webauth_factors_string(ctx, info->factors),
+                  "...factors are correct");
         ok(info->required == NULL, "...required is NULL");
         ok(info->additional == NULL, "...additional is NULL");
         ok(info->logins == NULL, "...logins is NULL");
@@ -333,31 +267,17 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for additional succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
-        ok_block(12, 0, "Metadata failed");
+        ok_block(8, 0, "Metadata failed");
     else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         is_int(0, info->valid_threshold, "...valid threshold");
-        if (info->factors == NULL)
-            ok_block(4, 0, "...factors is not NULL");
-        else {
-            is_int(3, info->factors->nelts, "...three factors");
-            is_string("h", APR_ARRAY_IDX(info->factors, 0, char *),
-                      "...first is correct");
-            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
-                      "...second is correct");
-            is_string("p", APR_ARRAY_IDX(info->factors, 2, char *),
-                      "...third is correct");
-        }
+        is_string("h,m,p", webauth_factors_string(ctx, info->factors),
+                  "...factors are correct");
         ok(info->required == NULL, "...required is NULL");
-        if (info->additional == NULL)
-            ok_block(2, 0, "...additional is not NULL");
-        else {
-            is_int(1, info->additional->nelts, "...one additional factor");
-            is_string("h", APR_ARRAY_IDX(info->additional, 0, char *),
-                      "...first is correct");
-        }
+        is_string("h", webauth_factors_string(ctx, info->additional),
+                  "...additional factors are correct");
         ok(info->logins == NULL, "...logins is NULL");
         is_string(NULL, info->user_message, "...user message is NULL");
         is_string(NULL, info->login_state, "...login state is NULL");
@@ -368,33 +288,16 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for message succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
-        ok_block(12, 0, "Metadata failed");
+        ok_block(6, 0, "Metadata failed");
     else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         is_int(0, info->valid_threshold, "...valid threshold");
-        if (info->factors == NULL)
-            ok_block(5, 0, "...factors is not NULL");
-        else {
-            is_int(4, info->factors->nelts, "...four factors");
-            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
-                      "...first is correct");
-            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
-                      "...second is correct");
-            is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
-                      "...third is correct");
-            is_string("o3", APR_ARRAY_IDX(info->factors, 3, char *),
-                      "...fourth is correct");
-        }
-        ok(info->required != NULL, "...required is not NULL");
-        if (info->required == NULL)
-            ok_block(2, 0, "...required is not NULL");
-        else {
-            is_int(1, info->required->nelts, "...one required");
-            is_string("o3", APR_ARRAY_IDX(info->required, 0, char *),
-                      "...and it is correct");
-        }
+        is_string("p,m,o,o3", webauth_factors_string(ctx, info->factors),
+                  "...factors are correct");
+        is_string("o3", webauth_factors_string(ctx, info->required),
+                  "...required factors are correct");
         is_string("Hi <strong>you</strong>. &lt;_&lt;;", info->user_message,
                   "...user message is correct");
     }
@@ -404,34 +307,18 @@ main(void)
     is_int(WA_ERR_NONE, status, "Metadata for message succeeded");
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL)
-        ok_block(12, 0, "Metadata failed");
+        ok_block(7, 0, "Metadata failed");
     else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         is_int(0, info->valid_threshold, "...valid threshold");
-        if (info->factors == NULL)
-            ok_block(5, 0, "...factors is not NULL");
-        else {
-            is_int(4, info->factors->nelts, "...four factors");
-            is_string("p", APR_ARRAY_IDX(info->factors, 0, char *),
-                      "...first is correct");
-            is_string("m", APR_ARRAY_IDX(info->factors, 1, char *),
-                      "...second is correct");
-            is_string("o", APR_ARRAY_IDX(info->factors, 2, char *),
-                      "...third is correct");
-            is_string("o3", APR_ARRAY_IDX(info->factors, 3, char *),
-                      "...fourth is correct");
-        }
-        ok(info->required != NULL, "...required is not NULL");
-        if (info->required == NULL)
-            ok_block(2, 0, "...required is not NULL");
-        else {
-            is_int(1, info->required->nelts, "...one required");
-            is_string("o3", APR_ARRAY_IDX(info->required, 0, char *),
-                      "...and it is correct");
-        }
-        is_string("BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDVdBUk5fTE9DQVRJT04AAAAFc3RhdGU=", info->login_state,
+        is_string("p,m,o,o3", webauth_factors_string(ctx, info->factors),
+                  "...factors are correct");
+        is_string("o3", webauth_factors_string(ctx, info->required),
+                  "...required factors are correct");
+        is_string("BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDVdBUk5fTE9DQVRJT0"
+                  "4AAAAFc3RhdGU=", info->login_state,
                   "...login state is correct");
     }
 
@@ -443,7 +330,7 @@ main(void)
 
     /* Attempt a login for a user who doesn't have multifactor configured. */
     status = webauth_user_validate(ctx, "mini", NULL, "123456", "o1",
-                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"\
+                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                                    "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for invalid user fails");
     is_string("a remote service call failed (unknown user mini)",
@@ -461,7 +348,7 @@ main(void)
 
     /* Attempt a login for a user that should time out. */
     status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
-                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"\
+                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                                    "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
     is_string("a remote service call failed"
@@ -513,7 +400,7 @@ main(void)
     free(warnings);
     warnings = NULL;
     status = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
-                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"\
+                                   "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                                    "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, status, "Validate for delay fails");
     is_string("a remote service call failed"

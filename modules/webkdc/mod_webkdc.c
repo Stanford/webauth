@@ -20,6 +20,7 @@
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
 #include <webauth/basic.h>
+#include <webauth/factors.h>
 #include <webauth/keys.h>
 #include <webauth/krb5.h>
 #include <webauth/tokens.h>
@@ -1726,9 +1727,14 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     if (response->factors_configured != NULL) {
+        apr_array_header_t *wanted, *configured;
+
+        wanted = webauth_factors_array(rc->ctx, response->factors_wanted);
+        configured = webauth_factors_array(rc->ctx,
+                                           response->factors_configured);
         ap_rvputs(rc->r, "<multifactorRequired>", NULL);
-        print_xml_array(rc, "factor", response->factors_wanted);
-        print_xml_array(rc, "configuredFactor", response->factors_configured);
+        print_xml_array(rc, "factor", wanted);
+        print_xml_array(rc, "configuredFactor", configured);
         ap_rvputs(rc->r, "</multifactorRequired>", NULL);
     }
 

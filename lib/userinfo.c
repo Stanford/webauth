@@ -129,14 +129,14 @@ convert_number(struct webauth_context *ctx, const char *string,
 
 /*
  * Parse the factors or persistent-factors sections of a userinfo XML
- * document.  Stores the results in the provided factors APR array.  If
+ * document.  Stores the results in the provided factors struct.  If
  * expiration is non-NULL, accept and parse a user expiration time into that
  * time_t pointer.  If valid_threshold is non-NULL, accept and parse a cutoff
  * time into that time_t pointer.  Returns a status code.
  */
 static int UNUSED
 parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
-              const apr_array_header_t **result, time_t *expiration,
+              const struct webauth_factors **result, time_t *expiration,
               time_t *valid_threshold)
 {
     apr_xml_elem *child;
@@ -189,7 +189,7 @@ parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
 
     /* Save the factors if we found any and the caller wants them. */
     if (factors != NULL && result != NULL)
-        *result = factors;
+        *result = webauth_factors_new(ctx, factors);
 
     /* FIXME: Warn if expiration != NULL but no expiration was found. */
     return WA_ERR_NONE;
@@ -302,13 +302,8 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
      * For backwards compatibility, if <multifactor-required /> was present
      * but not <required-factors>, add m as a required factor.
      */
-    if (info->required == NULL && multifactor_required) {
-        apr_array_header_t *required;
-
-        required = apr_array_make(ctx->pool, 1, sizeof(const char *));
-        APR_ARRAY_PUSH(required, const char *) = WA_FA_MULTIFACTOR;
-        info->required = required;
-    }
+    if (info->required == NULL && multifactor_required)
+        info->required = webauth_factors_parse(ctx, WA_FA_MULTIFACTOR);
 
     /* Return the results. */
     *result = info;

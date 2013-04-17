@@ -23,6 +23,7 @@
 #include <tests/tap/kerberos.h>
 #include <tests/tap/string.h>
 #include <tests/tap/webauth.h>
+#include <webauth/factors.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
 #include <webauth/webkdc.h>
@@ -570,7 +571,7 @@ check_login_response(struct webauth_context *ctx,
     if (response->factors_wanted == NULL)
         ok(test->response.factors_wanted == NULL, "... has wanted factors");
     else {
-        factors = apr_array_pstrcat(ctx->pool, response->factors_wanted, ',');
+        factors = webauth_factors_string(ctx, response->factors_wanted);
         is_string(test->response.factors_wanted, factors,
                   "... wanted factors");
     }
@@ -578,8 +579,7 @@ check_login_response(struct webauth_context *ctx,
         ok(test->response.factors_configured == NULL,
            "... has configured factors");
     else {
-        factors
-            = apr_array_pstrcat(ctx->pool, response->factors_configured, ',');
+        factors = webauth_factors_string(ctx, response->factors_configured);
         is_string(test->response.factors_configured, factors,
                   "... configured factors");
     }
