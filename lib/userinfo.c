@@ -664,7 +664,7 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
     if (s == WA_ERR_NONE && random_mf)
         (*info)->random_multifactor = true;
     else if (s == WA_ERR_REMOTE_FAILURE && ctx->user->ignore_failure) {
-        wai_log_error(ctx, WA_LOG_WARN, s);
+        wai_log_error(ctx, WA_LOG_WARN, s, "user information service failure");
         s = WA_ERR_NONE;
         *info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
     }

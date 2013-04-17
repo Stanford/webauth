@@ -54,7 +54,7 @@ error_string(struct webauth_context *ctx, int s)
     case WA_ERR_APR:               return "APR error";
     case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
     case WA_ERR_INVALID:           return "invalid argument to function";
-    case WA_ERR_REMOTE_FAILURE:    return "a remote service call failed";
+    case WA_ERR_REMOTE_FAILURE:    return "remote call failed";
     case WA_ERR_FILE_NOT_FOUND:    return "file does not exist";
     case WA_ERR_TOKEN_REJECTED:    return "token used in invalid context";
     default:
@@ -292,11 +292,19 @@ LOG_FUNCTION(warn,   WA_LOG_WARN)
  */
 void
 wai_log_error(struct webauth_context *ctx, enum webauth_log_level level,
-              int s)
+              int s, const char *format, ...)
 {
     const char *message;
+    char *extra;
+    va_list args;
 
     message = webauth_error_message(ctx, s);
+    if (format != NULL) {
+        va_start(args, format);
+        extra = apr_pvsprintf(ctx->pool, format, args);
+        message = apr_pstrcat(ctx->pool, extra, ": ", message, (char *) 0);
+        va_end(args);
+    }
     log_message(ctx, level, message);
     ctx->error  = NULL;
     ctx->status = 0;

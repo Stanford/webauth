@@ -333,7 +333,7 @@ main(void)
                               "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                               "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for invalid user fails");
-    is_string("a remote service call failed (unknown user mini)",
+    is_string("remote call failed (unknown user mini)",
               webauth_error_message(ctx, s), "...with correct error");
 
     /* Do a query for a user that should time out. */
@@ -342,8 +342,7 @@ main(void)
     is_int(WA_ERR_NONE, s, "Config with timeout");
     s = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_REMOTE_FAILURE, s, "Metadata for delay fails");
-    is_string("a remote service call failed"
-              " (error receiving token: timed out)",
+    is_string("remote call failed (error receiving token: timed out)",
               webauth_error_message(ctx, s), "...with correct error");
 
     /* Attempt a login for a user that should time out. */
@@ -351,8 +350,7 @@ main(void)
                               "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                               "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for delay fails");
-    is_string("a remote service call failed"
-              " (error receiving token: timed out)",
+    is_string("remote call failed (error receiving token: timed out)",
               webauth_error_message(ctx, s), "...with correct error");
 
     /* Try the query again with ignore_failure set and capture warnings. */
@@ -373,7 +371,7 @@ main(void)
         ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
-    is_string("a remote service call failed"
+    is_string("user information service failure: remote call failed"
               " (error receiving token: timed out)", warnings,
               "...and logged warning is correct");
 
@@ -392,7 +390,7 @@ main(void)
         ok(info->required == NULL, "...required is NULL");
         ok(info->logins == NULL, "...logins is NULL");
     }
-    is_string("a remote service call failed"
+    is_string("user information service failure: remote call failed"
               " (error receiving token: timed out)", warnings,
               "...and logged warning is correct");
 
@@ -403,8 +401,7 @@ main(void)
                               "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                               "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for delay fails");
-    is_string("a remote service call failed"
-              " (error receiving token: timed out)",
+    is_string("remote call failed (error receiving token: timed out)",
               webauth_error_message(ctx, s), "...with correct error");
     is_string(NULL, warnings, "...and there are no warnings");
 

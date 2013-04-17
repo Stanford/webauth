@@ -56,8 +56,16 @@ test_wai_log(struct webauth_context *ctx, enum webauth_log_level level,
     log_func(ctx, "%d", 42);
     is_string("42", output, "log output for level %d", level);
     wai_error_set(ctx, WA_ERR_BAD_HMAC, "test error %d", 42);
-    wai_log_error(ctx, level, WA_ERR_BAD_HMAC);
+    wai_log_error(ctx, level, WA_ERR_BAD_HMAC, NULL);
     is_string("HMAC check failed (test error 42)", output,
+              "wai_log_error output for level %d", level);
+
+    /* Now try wai_log_error with extra information. */
+    free(output);
+    output = NULL;
+    wai_error_set(ctx, WA_ERR_BAD_HMAC, "test error %d", 42);
+    wai_log_error(ctx, level, WA_ERR_BAD_HMAC, "failure %d", 19);
+    is_string("failure 19: HMAC check failed (test error 42)", output,
               "wai_log_error output for level %d", level);
 
     /* Clear the output and try logging with no callback. */
@@ -68,7 +76,7 @@ test_wai_log(struct webauth_context *ctx, enum webauth_log_level level,
     log_func(ctx, "%d", 42);
     is_string(NULL, output, "...and wai_log_* is affected");
     wai_error_set(ctx, WA_ERR_BAD_HMAC, "test error %d", 42);
-    wai_log_error(ctx, level, WA_ERR_BAD_HMAC);
+    wai_log_error(ctx, level, WA_ERR_BAD_HMAC, NULL);
     is_string(NULL, output, "...and wai_log_error is affected");
 }
 
@@ -81,7 +89,7 @@ main(void)
     char *output = NULL;
     char buf[BUFSIZ];
 
-    plan(39);
+    plan(43);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -156,13 +164,13 @@ main(void)
     wai_log_notice(ctx, "%d", 1);
     wai_log_trace(ctx, "%d", 1);
     wai_log_warn(ctx, "%d", 1);
-    wai_log_error(ctx, WA_LOG_INFO, WA_ERR_APR);
+    wai_log_error(ctx, WA_LOG_INFO, WA_ERR_APR, NULL);
     wai_error_set_apr(ctx, WA_ERR_APR, APR_ENOSTAT, "%d", 1);
-    wai_log_error(ctx, WA_LOG_NOTICE, WA_ERR_APR);
+    wai_log_error(ctx, WA_LOG_NOTICE, WA_ERR_APR, NULL);
     wai_error_set_apr(ctx, WA_ERR_APR, APR_ENOSTAT, "%d", 1);
-    wai_log_error(ctx, WA_LOG_TRACE, WA_ERR_APR);
+    wai_log_error(ctx, WA_LOG_TRACE, WA_ERR_APR, NULL);
     wai_error_set_apr(ctx, WA_ERR_APR, APR_ENOSTAT, "%d", 1);
-    wai_log_error(ctx, WA_LOG_WARN, WA_ERR_APR);
+    wai_log_error(ctx, WA_LOG_WARN, WA_ERR_APR, NULL);
 
     /* Now do some real testing for each log level. */
     test_wai_log(ctx, WA_LOG_INFO, wai_log_info);
@@ -180,7 +188,7 @@ main(void)
            webauth_log_callback(ctx, WA_LOG_WARN, log_callback, &output),
            "setting log callback for WA_LOG_WARN");
     wai_error_set(ctx, WA_ERR_BAD_HMAC, "test error %d", 42);
-    wai_log_error(ctx, INT_MAX, WA_ERR_BAD_HMAC);
+    wai_log_error(ctx, INT_MAX, WA_ERR_BAD_HMAC, NULL);
     basprintf(&expected, "internal error: unknown log level %d (message: %s)",
               INT_MAX, "HMAC check failed (test error 42)");
     is_string(expected, output,

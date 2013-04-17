@@ -361,11 +361,13 @@ void wai_log_warn(struct webauth_context *, const char *format, ...)
 
 /*
  * The same, but the message is the result of calling webauth_error_message on
- * the provided error code and the level at which to log it is identified by
- * an enum.
+ * the provided WebAuth status and the level at which to log it is identified
+ * by an enum.  An additional message to log at the start of the log message
+ * can be provided via the printf format, which may be NULL.
  */
-void wai_log_error(struct webauth_context *, enum webauth_log_level, int code)
-    __attribute__((__nonnull__));
+void wai_log_error(struct webauth_context *, enum webauth_log_level, int,
+                   const char *format, ...)
+    __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
 
 /*
  * Map a token type code to the corresponding encoding rule set and data

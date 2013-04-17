@@ -1372,7 +1372,7 @@ static const struct wat_login_test tests_timeout[] = {
     {
         "User information service timeout",
         WA_ERR_REMOTE_FAILURE,
-        "a remote service call failed (error receiving token: timed out)",
+        "remote call failed (error receiving token: timed out)",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,

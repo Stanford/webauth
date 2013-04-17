@@ -1076,8 +1076,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         s = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token, ring,
                                  &token);
         if (s != WA_ERR_NONE) {
-            wai_error_context(ctx, "parsing webkdc-proxy token (ignoring)");
-            wai_log_error(ctx, WA_LOG_INFO, s);
+            wai_log_error(ctx, WA_LOG_INFO, s, "ignoring webkdc-proxy token");
             continue;
         }
         token->token.webkdc_proxy.session_factors = pd->source;
@@ -1093,8 +1092,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         s = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, encoded, ring,
                                  &token);
         if (s != WA_ERR_NONE) {
-            wai_error_context(ctx, "parsing webkdc-factor token (ignoring)");
-            wai_log_error(ctx, WA_LOG_INFO, s);
+            wai_log_error(ctx, WA_LOG_INFO, s, "ignoring webkdc-factor token");
             continue;
         }
         APR_ARRAY_PUSH(wkfactors, struct webauth_token *) = token;
@@ -1115,10 +1113,8 @@ webauth_webkdc_login(struct webauth_context *ctx,
         /* Decode the login token. */
         encoded = APR_ARRAY_IDX(request->logins, i, const char *);
         s = webauth_token_decode(ctx, WA_TOKEN_LOGIN, encoded, ring, &token);
-        if (s != WA_ERR_NONE) {
-            wai_error_context(ctx, "parsing login token");
+        if (s != WA_ERR_NONE)
             return s;
-        }
         APR_ARRAY_PUSH(logins, struct webauth_token *) = token;
 
         /* Process the login token appropriately. */
@@ -1171,7 +1167,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     if (s != WA_ERR_NONE)
         wai_error_context(ctx, "merging webkdc-proxy tokens");
     if (s == WA_ERR_TOKEN_REJECTED) {
-        wai_log_error(ctx, WA_LOG_WARN, s);
+        wai_log_error(ctx, WA_LOG_WARN, s, "rejecting webkdc-proxy tokens");
         (*response)->login_error = WA_PEC_UNAUTHORIZED;
         (*response)->login_message = "not authorized to use proxy token";
         goto done;
