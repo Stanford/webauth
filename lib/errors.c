@@ -107,8 +107,9 @@ wai_error_context(struct webauth_context *ctx, const char *format, ...)
 
 /*
  * Set the error message and code to the provided values, supporting
- * printf-style formatting.  This function is internal to the WebAuth library
- * and is not exposed to external consumers.
+ * printf-style formatting.  If format is NULL, that indicates the generic
+ * error string is sufficient.  This function is internal to the WebAuth
+ * library and is not exposed to external consumers.
  */
 void
 wai_error_set(struct webauth_context *ctx, int s, const char *format, ...)
@@ -116,6 +117,11 @@ wai_error_set(struct webauth_context *ctx, int s, const char *format, ...)
     va_list args;
     char *string, *message;
 
+    if (format == NULL) {
+        ctx->error  = error_string(ctx, s);
+        ctx->status = s;
+        return;
+    }
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
@@ -132,18 +138,24 @@ wai_error_set(struct webauth_context *ctx, int s, const char *format, ...)
  * exposed to external consumers.
  */
 void
-wai_error_set_apr(struct webauth_context *ctx, int s, apr_status_t status,
+wai_error_set_apr(struct webauth_context *ctx, int s, apr_status_t code,
                   const char *format, ...)
 {
     va_list args;
     char *string;
     char buf[BUFSIZ];
 
+    if (format == NULL) {
+        ctx->error = apr_psprintf(ctx->pool, "%s (%s)", error_string(ctx, s),
+                                  apr_strerror(code, buf, sizeof(buf)));
+        ctx->status = s;
+        return;
+    }
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
     ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, s),
-                              string, apr_strerror(status, buf, sizeof(buf)));
+                              string, apr_strerror(code, buf, sizeof(buf)));
     ctx->status = s;
 }
 
@@ -161,6 +173,12 @@ wai_error_set_system(struct webauth_context *ctx, int s, int syserr,
     va_list args;
     char *string;
 
+    if (format == NULL) {
+        ctx->error = apr_psprintf(ctx->pool, "%s (%s)", error_string(ctx, s),
+                                  strerror(syserr));
+        ctx->status = s;
+        return;
+    }
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
