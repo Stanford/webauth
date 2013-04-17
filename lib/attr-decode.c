@@ -404,7 +404,7 @@ wai_decode_token(struct webauth_context *ctx, const void *input,
         return s;
     value = apr_hash_get(attrs, "t", strlen("t"));
     if (value == NULL) {
-        wai_error_set(ctx, WA_ERR_CORRUPT, "token has no type attribute");
+        wai_error_set(ctx, WA_ERR_CORRUPT, "no token type attribute");
         return WA_ERR_CORRUPT;
     }
     decode_string(ctx, value, &type);

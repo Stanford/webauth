@@ -459,7 +459,8 @@ check_webkdc_service_token(struct webauth_context *ctx,
     check_ ## name ## _error(struct webauth_context *ctx,               \
                              struct webauth_token_ ## name *name,       \
                              const struct webauth_keyring *ring,        \
-                             const char *summ, const char *message)     \
+                             const char *summ, const char *message,     \
+                             const char *type)                          \
     {                                                                   \
         struct webauth_token data;                                      \
         const char *token = "foo";                                      \
@@ -471,8 +472,8 @@ check_webkdc_service_token(struct webauth_context *ctx,
         s = webauth_token_encode(ctx, &data, ring, &token);             \
         is_int(WA_ERR_CORRUPT, s, "Encoding " STRINGIFY(name)           \
                " %s fails", summ);                                      \
-        if (asprintf(&err, "data is incorrectly formatted (%s)",        \
-                     message) < 0)                                      \
+        if (asprintf(&err, "data is incorrectly formatted (%s) while"   \
+                     " encoding %s token", message, type) < 0)          \
             sysbail("cannot allocate memory");                          \
         is_string(err, webauth_error_message(ctx, s), "...with error"); \
         is_string(NULL, token, "...and token is NULL");                 \
@@ -557,25 +558,25 @@ main(void)
     /* Test for error cases for missing or invalid data. */
     app.session_key = NULL;
     app.session_key_len = 0;
-    check_app_error(ctx, &app, ring, "without subject",
-                    "missing subject in app token");
+    check_app_error(ctx, &app, ring, "without subject", "missing subject",
+                    "app");
     app.subject = "testuser";
     app.expiration = 0;
     check_app_error(ctx, &app, ring, "without expiration",
-                    "missing expiration in app token");
+                    "missing expiration", "app");
     app.session_key = "\0\0;s=test;\0";
     app.session_key_len = 11;
     app.expiration = now + 60;
     check_app_error(ctx, &app, ring, "with subject and session key",
-                    "subject not valid with session key in app token");
+                    "subject not valid with session key", "app");
     app.subject = NULL;
     app.last_used = now;
     check_app_error(ctx, &app, ring, "with session key and last used",
-                    "last_used not valid with session key in app token");
+                    "last_used not valid with session key", "app");
     app.last_used = 0;
     app.authz_subject = "otheruser";
     check_app_error(ctx, &app, ring, "with session key and last used",
-                    "authz_subject not valid with session key in app token");
+                    "authz_subject not valid with session key", "app");
 
     /* Flesh out a credential token, and then encode and decode it. */
     cred.subject = "testuser";
@@ -593,31 +594,29 @@ main(void)
 
     /* Test for error cases for missing data. */
     cred.subject = NULL;
-    check_cred_error(ctx, &cred, ring, "without subject",
-                     "missing subject in cred token");
+    check_cred_error(ctx, &cred, ring, "without subject", "missing subject",
+                     "cred");
     cred.subject = "testuser";
     cred.type = NULL;
-    check_cred_error(ctx, &cred, ring, "without type",
-                     "missing type in cred token");
+    check_cred_error(ctx, &cred, ring, "without type", "missing type", "cred");
     cred.type = "random";
     check_cred_error(ctx, &cred, ring, "with bad type",
-                     "unknown credential type random in cred token");
+                     "unknown credential type random", "cred");
     cred.type = "krb5";
     cred.service = NULL;
-    check_cred_error(ctx, &cred, ring, "without service",
-                     "missing service in cred token");
+    check_cred_error(ctx, &cred, ring, "without service", "missing service",
+                     "cred");
     cred.service = "webauth/example.com@EXAMPLE.COM";
     cred.data = NULL;
-    check_cred_error(ctx, &cred, ring, "without data",
-                     "missing data in cred token");
+    check_cred_error(ctx, &cred, ring, "without data", "missing data", "cred");
     cred.data = "s=ome\0da;;ta";
     cred.data_len = 0;
-    check_cred_error(ctx, &cred, ring, "without data length",
-                     "empty data in cred token");
+    check_cred_error(ctx, &cred, ring, "without data length", "empty data",
+                     "cred");
     cred.data_len = 12;
     cred.expiration = 0;
     check_cred_error(ctx, &cred, ring, "without expiration",
-                     "missing expiration in cred token");
+                     "missing expiration", "cred");
 
     /* Flesh out an error token, and then encode and decode it. */
     err.code = 12;
@@ -629,12 +628,12 @@ main(void)
 
     /* Test for error cases for missing data. */
     err.code = 0;
-    check_error_error(ctx, &err, ring, "without code",
-                      "missing code in error token");
+    check_error_error(ctx, &err, ring, "without code", "missing code",
+                      "error");
     err.code = 12;
     err.message = NULL;
-    check_error_error(ctx, &err, ring, "without message",
-                      "missing message in error token");
+    check_error_error(ctx, &err, ring, "without message", "missing message",
+                      "error");
 
     /* Flesh out an id token, and then encode and decode it. */
     id.subject = NULL;
@@ -662,26 +661,25 @@ main(void)
 
     /* Test for error cases for missing data. */
     id.subject = NULL;
-    check_id_error(ctx, &id, ring, "without subject",
-                      "missing subject in id token");
+    check_id_error(ctx, &id, ring, "without subject", "missing subject", "id");
     id.subject = "testuser";
     id.auth = NULL;
-    check_id_error(ctx, &id, ring, "without subject auth",
-                      "missing auth in id token");
+    check_id_error(ctx, &id, ring, "without subject auth", "missing auth",
+                   "id");
     id.auth = "random";
     check_id_error(ctx, &id, ring, "with bad subject auth",
-                      "unknown auth type random in id token");
+                   "unknown auth type random", "id");
     id.auth = "krb5";
     check_id_error(ctx, &id, ring, "without auth data for krb5",
-                      "missing auth_data in id token");
+                   "missing auth_data", "id");
     id.auth_data = "s=ome\0da;;ta";
     id.auth_data_len = 0;
     check_id_error(ctx, &id, ring, "without auth data length for krb5",
-                      "empty auth_data in id token");
+                   "empty auth_data", "id");
     id.auth_data_len = 12;
     id.expiration = 0;
-    check_id_error(ctx, &id, ring, "without expiration",
-                      "missing expiration in id token");
+    check_id_error(ctx, &id, ring, "without expiration", "missing expiration",
+                   "id");
 
     /* Flesh out an login token, and then encode and decode it. */
     login.username = "testuser";
@@ -700,20 +698,20 @@ main(void)
     /* Test for error cases for missing or inconsistent data. */
     login.username = NULL;
     check_login_error(ctx, &login, ring, "without username",
-                      "missing username in login token");
+                      "missing username", "login");
     login.username = "testuser";
     login.otp = NULL;
     login.otp_type = NULL;
     check_login_error(ctx, &login, ring, "without password or otp",
-                      "either password or otp required in login token");
+                      "either password or otp required", "login");
     login.password = "password";
     login.otp = "123456";
     check_login_error(ctx, &login, ring, "both password and otp",
-                      "both password and otp set in login token");
+                      "both password and otp set", "login");
     login.otp = NULL;
     login.otp_type = "o3";
     check_login_error(ctx, &login, ring, "otp type without otp",
-                      "otp_type not valid with password in login token");
+                      "otp_type not valid with password", "login");
 
     /* Flesh out a proxy token, and then encode and decode it. */
     proxy.subject = "testuser";
@@ -735,27 +733,27 @@ main(void)
 
     /* Test for error cases for missing data. */
     proxy.subject = NULL;
-    check_proxy_error(ctx, &proxy, ring, "without subject",
-                      "missing subject in proxy token");
+    check_proxy_error(ctx, &proxy, ring, "without subject", "missing subject",
+                      "proxy");
     proxy.subject = "testuser";
     proxy.type = NULL;
-    check_proxy_error(ctx, &proxy, ring, "without type",
-                      "missing type in proxy token");
+    check_proxy_error(ctx, &proxy, ring, "without type", "missing type",
+                      "proxy");
     proxy.type = "random";
     check_proxy_error(ctx, &proxy, ring, "with bad type",
-                      "unknown proxy type random in proxy token");
+                      "unknown proxy type random", "proxy");
     proxy.type = "krb5";
     proxy.webkdc_proxy = NULL;
     check_proxy_error(ctx, &proxy, ring, "without webkdc_proxy",
-                      "missing webkdc_proxy in proxy token");
+                      "missing webkdc_proxy", "proxy");
     proxy.webkdc_proxy = "s=ome\0da;;ta";
     proxy.webkdc_proxy_len = 0;
     check_proxy_error(ctx, &proxy, ring, "without webkdc_proxy length",
-                      "empty webkdc_proxy in proxy token");
+                      "empty webkdc_proxy", "proxy");
     proxy.webkdc_proxy_len = 12;
     proxy.expiration = 0;
     check_proxy_error(ctx, &proxy, ring, "without expiration",
-                      "missing expiration in proxy token");
+                      "missing expiration", "proxy");
 
     /*
      * Flesh out a request token, and then encode and decode it.  There are a
@@ -798,29 +796,28 @@ main(void)
     /* Test various error cases. */
     req.command = NULL;
     check_request_error(ctx, &req, ring, "without type or command",
-                        "missing type in request token");
+                        "missing type", "req");
     req.type = "random";
     check_request_error(ctx, &req, ring, "without return URL",
-                        "missing return_url in request token");
+                        "missing return_url", "req");
     req.return_url = "https://example.com/";
     check_request_error(ctx, &req, ring, "with unknown type",
-                        "unknown requested token type random in request"
-                        " token");
+                        "unknown requested token type random", "req");
     req.type = "id";
-    check_request_error(ctx, &req, ring, "without auth",
-                        "missing auth in request token");
+    check_request_error(ctx, &req, ring, "without auth", "missing auth",
+                        "req");
     req.auth = "random";
     check_request_error(ctx, &req, ring, "with unknown auth",
-                        "unknown auth type random in request token");
+                        "unknown auth type random", "req");
     req.type = "proxy";
     check_request_error(ctx, &req, ring, "without proxy_type",
-                        "missing proxy_type in request token");
+                        "missing proxy_type", "req");
     req.proxy_type = "random";
     check_request_error(ctx, &req, ring, "with unknown proxy_type",
-                        "unknown proxy type random in request token");
+                        "unknown proxy type random", "req");
     req.command = "getTokensRequest";
     check_request_error(ctx, &req, ring, "with command and type",
-                        "type not valid with command in request token");
+                        "type not valid with command", "req");
 
     /* Flesh out a webkdc-factor token, and then encode and decode it. */
     wkfactor.subject = "testuser";
@@ -834,15 +831,15 @@ main(void)
     /* Test for error cases for missing data. */
     wkfactor.subject = NULL;
     check_webkdc_factor_error(ctx, &wkfactor, ring, "without subject",
-                              "missing subject in webkdc_factor token");
+                              "missing subject", "webkdc-factor");
     wkfactor.subject = "testuser";
     wkfactor.factors = NULL;
     check_webkdc_factor_error(ctx, &wkfactor, ring, "without factors",
-                              "missing factors in webkdc_factor token");
+                              "missing factors", "webkdc-factor");
     wkfactor.factors = "d";
     wkfactor.expiration = 0;
     check_webkdc_factor_error(ctx, &wkfactor, ring, "without expiration",
-                              "missing expiration in webkdc_factor token");
+                              "missing expiration", "webkdc-factor");
 
     /* Flesh out a webkdc-proxy token, and then encode and decode it. */
     wkproxy.subject = "testuser";
@@ -867,23 +864,22 @@ main(void)
     /* Test for error cases for missing data. */
     wkproxy.subject = NULL;
     check_webkdc_proxy_error(ctx, &wkproxy, ring, "without subject",
-                             "missing subject in webkdc_proxy token");
+                             "missing subject", "webkdc-proxy");
     wkproxy.subject = "testuser";
     wkproxy.proxy_type = NULL;
     check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy type",
-                             "missing proxy_type in webkdc_proxy token");
+                             "missing proxy_type", "webkdc-proxy");
     wkproxy.proxy_type = "random";
     check_webkdc_proxy_error(ctx, &wkproxy, ring, "with bad proxy type",
-                             "unknown proxy type random in webkdc-proxy"
-                             " token");
+                             "unknown proxy type random", "webkdc-proxy");
     wkproxy.proxy_type = "krb5";
     wkproxy.proxy_subject = NULL;
     check_webkdc_proxy_error(ctx, &wkproxy, ring, "without proxy subject",
-                             "missing proxy_subject in webkdc_proxy token");
+                             "missing proxy_subject", "webkdc-proxy");
     wkproxy.proxy_subject = "krb5:webauth/example.com@EXAMPLE.COM";
     wkproxy.expiration = 0;
     check_webkdc_proxy_error(ctx, &wkproxy, ring, "without expiration",
-                             "missing expiration in webkdc_proxy token");
+                             "missing expiration", "webkdc-proxy");
 
     /* Flesh out a webkdc-service token, and then encode and decode it. */
     service.subject = "testuser";
@@ -898,20 +894,20 @@ main(void)
     /* Test for error cases for missing data. */
     service.subject = NULL;
     check_webkdc_service_error(ctx, &service, ring, "without subject",
-                               "missing subject in webkdc_service token");
+                               "missing subject", "webkdc-service");
     service.subject = "testuser";
     service.session_key = NULL;
     check_webkdc_service_error(ctx, &service, ring, "without session key",
-                               "missing session_key in webkdc_service token");
+                               "missing session_key", "webkdc-service");
     service.session_key = "so\0me";
     service.session_key_len = 0;
     check_webkdc_service_error(ctx, &service, ring,
                                "without session key length",
-                               "empty session_key in webkdc_service token");
+                               "empty session_key", "webkdc-service");
     service.session_key_len = 5;
     service.expiration = 0;
     check_webkdc_service_error(ctx, &service, ring, "without expiration",
-                               "missing expiration in webkdc_service token");
+                               "missing expiration", "webkdc-service");
 
     /*
      * Test encoding and decoding of a raw webkdc-service token.  We don't
@@ -936,8 +932,8 @@ main(void)
     bad_ring = webauth_keyring_from_key(ctx, key);
     s = webauth_token_encode(ctx, &in, bad_ring, &result);
     is_int(WA_ERR_BAD_KEY, s, "Encoding with invalid key fails");
-    is_string("unable to use key (cannot set encryption key)",
-              webauth_error_message(ctx, s),
+    is_string("unable to use key (cannot set encryption key) while encoding"
+              " webkdc-service token", webauth_error_message(ctx, s),
               "...with correct error message");
 
     /* Clean up. */

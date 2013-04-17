@@ -1013,17 +1013,13 @@ webauth_webkdc_login(struct webauth_context *ctx,
     /* Decrypt the webkdc-service and request tokens. */
     s = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, request->service,
                              ring, &token);
-    if (s != WA_ERR_NONE) {
-        wai_error_context(ctx, "parsing webkdc-service token");
+    if (s != WA_ERR_NONE)
         return s;
-    }
     service = &token->token.webkdc_service;
     s = webauth_token_decode(ctx, WA_TOKEN_REQUEST, request->request, ring,
                              &token);
-    if (s != WA_ERR_NONE) {
-        wai_error_context(ctx, "parsing request token");
+    if (s != WA_ERR_NONE)
         return s;
-    }
     req = &token->token.request;
 
     /* Fill in the basics of our response. */

@@ -56,56 +56,49 @@ enum encode_mode { ENCODE, DECODE };
  * encoding.  Takes the name of the struct and the struct member, and assumes
  * ctx is the WebAuth context.
  */
-#define CHECK_DATA(token, attr)                                         \
-    do {                                                                \
-        if (token->attr == NULL || token->attr ## _len == 0) {          \
-            const char *err                                             \
-                = (token->attr == NULL) ? "missing" : "empty";          \
-            wai_error_set(ctx, WA_ERR_CORRUPT, "%s %s in %s token",     \
-                          err, APR_STRINGIFY(attr),                     \
-                          APR_STRINGIFY(token));                        \
-            return WA_ERR_CORRUPT;                                      \
-        }                                                               \
+#define CHECK_DATA(token, attr)                                 \
+    do {                                                        \
+        if (token->attr == NULL || token->attr ## _len == 0) {  \
+            const char *err;                                    \
+            err = (token->attr == NULL) ? "missing" : "empty";  \
+            wai_error_set(ctx, WA_ERR_CORRUPT, "%s %s", err,    \
+                          APR_STRINGIFY(attr));                 \
+            return WA_ERR_CORRUPT;                              \
+        }                                                       \
     } while (0)
-#define CHECK_NUM(token, attr)                                          \
-    do {                                                                \
-        if (token->attr == 0) {                                         \
-            wai_error_set(ctx, WA_ERR_CORRUPT,                          \
-                          "missing %s in %s token",                     \
-                          APR_STRINGIFY(attr), APR_STRINGIFY(token));   \
-            return WA_ERR_CORRUPT;                                      \
-        }                                                               \
+#define CHECK_NUM(token, attr)                                  \
+    do {                                                        \
+        if (token->attr == 0) {                                 \
+            wai_error_set(ctx, WA_ERR_CORRUPT, "missing %s",    \
+                          APR_STRINGIFY(attr));                 \
+            return WA_ERR_CORRUPT;                              \
+        }                                                       \
     } while (0)
-#define CHECK_STR(token, attr)                                          \
-    do {                                                                \
-        if (token->attr == NULL) {                                      \
-            wai_error_set(ctx, WA_ERR_CORRUPT,                          \
-                          "missing %s in %s token",                     \
-                          APR_STRINGIFY(attr), APR_STRINGIFY(token));   \
-            return WA_ERR_CORRUPT;                                      \
-        }                                                               \
+#define CHECK_STR(token, attr)                                  \
+    do {                                                        \
+        if (token->attr == NULL) {                              \
+            wai_error_set(ctx, WA_ERR_CORRUPT, "missing %s",    \
+                          APR_STRINGIFY(attr));                 \
+            return WA_ERR_CORRUPT;                              \
+        }                                                       \
     } while (0)
 
 /* Check that a pointer that should be NULL is. */
 #define CHECK_NULL(token, attr, reason)                                 \
     do {                                                                \
         if (token->attr != NULL) {                                      \
-            wai_error_set(ctx, WA_ERR_CORRUPT,                          \
-                          "%s not valid with %s in %s token",           \
-                          APR_STRINGIFY(attr), reason,                  \
-                          APR_STRINGIFY(token));                        \
-            return WA_ERR_CORRUPT;                                      \
-        }                                                               \
+            wai_error_set(ctx, WA_ERR_CORRUPT, "%s not valid with %s",  \
+                          APR_STRINGIFY(attr), reason);                 \
+        return WA_ERR_CORRUPT;                                          \
+    }                                                                   \
     } while (0)
 
 /* Check that a value that should be numerically zero is. */
 #define CHECK_ZERO(token, attr, reason)                                 \
     do {                                                                \
         if (token->attr != 0) {                                         \
-            wai_error_set(ctx, WA_ERR_CORRUPT,                          \
-                          "%s not valid with %s in %s token",           \
-                          APR_STRINGIFY(attr), reason,                  \
-                          APR_STRINGIFY(token));                        \
+            wai_error_set(ctx, WA_ERR_CORRUPT, "%s not valid with %s",  \
+                          APR_STRINGIFY(attr), reason);                 \
             return WA_ERR_CORRUPT;                                      \
         }                                                               \
     } while (0)
@@ -245,20 +238,17 @@ check_expiration(struct webauth_context *ctx, time_t expiration)
 
 /*
  * Check the provided value to determine whether it's a valid credential type.
- * Takes the token type as well as the credential type.  Assumes the
- * credential type is non-NULL.  Returns a WebAuth error code and sets the
- * error message if needed.
+ * Assumes the credential type is non-NULL.  Returns a WebAuth error code and
+ * sets the error message if needed.
  */
 static int
-check_cred_type(struct webauth_context *ctx, const char *cred_type,
-                 const char *type)
+check_cred_type(struct webauth_context *ctx, const char *cred_type)
 {
     int s = WA_ERR_NONE;
 
     if (strcmp(cred_type, "krb5") != 0) {
         s = WA_ERR_CORRUPT;
-        wai_error_set(ctx, s, "unknown credential type %s in %s token",
-                      cred_type, type);
+        wai_error_set(ctx, s, "unknown credential type %s", cred_type);
     }
     return s;
 }
@@ -266,20 +256,17 @@ check_cred_type(struct webauth_context *ctx, const char *cred_type,
 
 /*
  * Check the provided value to determine whether it's a valid proxy type.
- * Takes the token type as well as the proxy type.  Assumes the proxy type is
- * non-NULL.  Returns a WebAuth error code and sets the error message if
- * needed.
+ * Assumes the proxy type is non-NULL.  Returns a WebAuth error code and sets
+ * the error message if needed.
  */
 static int
-check_proxy_type(struct webauth_context *ctx, const char *proxy_type,
-                 const char *type)
+check_proxy_type(struct webauth_context *ctx, const char *proxy_type)
 {
     int s = WA_ERR_NONE;
 
     if (strcmp(proxy_type, "krb5") != 0) {
         s = WA_ERR_CORRUPT;
-        wai_error_set(ctx, s, "unknown proxy type %s in %s token",
-                      proxy_type, type);
+        wai_error_set(ctx, s, "unknown proxy type %s", proxy_type);
     }
     return s;
 }
@@ -287,19 +274,17 @@ check_proxy_type(struct webauth_context *ctx, const char *proxy_type,
 
 /*
  * Check the provided value to determine whether it's a valid subject auth
- * type.  Takes the token type as well as the subject auth type.  Assumes the
- * subject auth type is non-NULL.  Returns a WebAuth error code and sets the
- * error message if needed.
+ * type.  Assumes the subject auth type is non-NULL.  Returns a WebAuth error
+ * code and sets the error message if needed.
  */
 static int
-check_subject_auth(struct webauth_context *ctx, const char *auth,
-                   const char *type)
+check_subject_auth(struct webauth_context *ctx, const char *auth)
 {
     int s = WA_ERR_NONE;
 
     if (strcmp(auth, "krb5") != 0 && strcmp(auth, "webkdc") != 0) {
         s = WA_ERR_CORRUPT;
-        wai_error_set(ctx, s, "unknown auth type %s in %s token", auth, type);
+        wai_error_set(ctx, s, "unknown auth type %s", auth);
     }
     return s;
 }
@@ -339,7 +324,7 @@ check_cred(struct webauth_context *ctx, const struct webauth_token_cred *cred,
     CHECK_STR( cred, service);
     CHECK_DATA(cred, data);
     CHECK_EXP( cred, expiration, mode);
-    return check_cred_type(ctx, cred->type, "cred");
+    return check_cred_type(ctx, cred->type);
 }
 
 
@@ -370,7 +355,7 @@ check_id(struct webauth_context *ctx, const struct webauth_token_id *id,
         CHECK_STR(id, subject);
     if (strcmp(id->auth, "krb5") == 0)
         CHECK_DATA(id, auth_data);
-    return check_subject_auth(ctx, id->auth, "id");
+    return check_subject_auth(ctx, id->auth);
 }
 
 
@@ -384,13 +369,11 @@ check_login(struct webauth_context *ctx,
 {
     CHECK_STR(login, username);
     if (login->password == NULL && login->otp == NULL) {
-        wai_error_set(ctx, WA_ERR_CORRUPT,
-                      "either password or otp required in login token");
+        wai_error_set(ctx, WA_ERR_CORRUPT, "either password or otp required");
         return WA_ERR_CORRUPT;
     }
     if (login->password != NULL && login->otp != NULL) {
-        wai_error_set(ctx, WA_ERR_CORRUPT,
-                      "both password and otp set in login token");
+        wai_error_set(ctx, WA_ERR_CORRUPT, "both password and otp set");
         return WA_ERR_CORRUPT;
     }
     if (login->password != NULL)
@@ -410,7 +393,7 @@ check_proxy(struct webauth_context *ctx,
     CHECK_STR( proxy, type);
     CHECK_DATA(proxy, webkdc_proxy);
     CHECK_EXP( proxy, expiration, mode);
-    return check_proxy_type(ctx, proxy->type, "proxy");
+    return check_proxy_type(ctx, proxy->type);
 }
 
 
@@ -438,22 +421,21 @@ check_request(struct webauth_context *ctx,
         CHECK_NULL(request, initial_factors, "command");
         CHECK_NULL(request, session_factors, "command");
     } else {
-        CHECK_STR( request, type);
-        CHECK_STR( request, return_url);
+        CHECK_STR(request, type);
+        CHECK_STR(request, return_url);
         if (strcmp(request->type, "id") == 0) {
-            CHECK_STR( request, auth);
-            s = check_subject_auth(ctx, request->auth, "request");
+            CHECK_STR(request, auth);
+            s = check_subject_auth(ctx, request->auth);
             if (s != WA_ERR_NONE)
                 return s;
         } else if (strcmp(request->type, "proxy") == 0) {
-            CHECK_STR( request, proxy_type);
-            s = check_proxy_type(ctx, request->proxy_type, "request");
+            CHECK_STR(request, proxy_type);
+            s = check_proxy_type(ctx, request->proxy_type);
             if (s != WA_ERR_NONE)
                 return s;
         } else {
             wai_error_set(ctx, WA_ERR_CORRUPT,
-                          "unknown requested token type %s in request token",
-                          request->type);
+                          "unknown requested token type %s", request->type);
             return WA_ERR_CORRUPT;
         }
     }
@@ -491,8 +473,7 @@ check_webkdc_proxy(struct webauth_context *ctx,
     if (strcmp(webkdc_proxy->proxy_type, "krb5") != 0
         && strcmp(webkdc_proxy->proxy_type, "remuser") != 0
         && strcmp(webkdc_proxy->proxy_type, "otp") != 0) {
-        wai_error_set(ctx, WA_ERR_CORRUPT,
-                      "unknown proxy type %s in webkdc-proxy token",
+        wai_error_set(ctx, WA_ERR_CORRUPT, "unknown proxy type %s",
                       webkdc_proxy->proxy_type);
         return WA_ERR_CORRUPT;
     }
@@ -548,8 +529,8 @@ check_token(struct webauth_context *ctx, const struct webauth_token *token,
     case WA_TOKEN_UNKNOWN:
     case WA_TOKEN_ANY:
     default:
-        wai_error_set(ctx, WA_ERR_INVALID,
-                      "unknown token type %d in encode", token->type);
+        wai_error_set(ctx, WA_ERR_INVALID, "unknown token type %d",
+                      token->type);
         return WA_ERR_INVALID;
     }
 }
@@ -581,36 +562,45 @@ webauth_token_decode_raw(struct webauth_context *ctx,
     /* Do some initial sanity checking. */
     type_string = webauth_token_type_string(type);
     if (type_string == NULL && type != WA_TOKEN_ANY) {
-        wai_error_set(ctx, WA_ERR_INVALID, "unknown token type %d", type);
-        return WA_ERR_INVALID;
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "unknown token type %d", type);
+        goto fail;
     }
 
     /* Decrypt the token. */
     s = webauth_token_decrypt(ctx, token, length, &attrs, &alen, ring);
     if (s != WA_ERR_NONE)
-        return s;
+        goto fail;
 
     /* Decode the attributes. */
     s = wai_decode_token(ctx, attrs, alen, out);
     if (s != WA_ERR_NONE)
-        return s;
+        goto fail;
 
     /* Check the token type to see if it's what we expect. */
     if (type != WA_TOKEN_ANY && type != out->type) {
         s = WA_ERR_CORRUPT;
-        wai_error_set(ctx, s, "wrong token type %s, expected %s",
-                      webauth_token_type_string(out->type), type_string);
-        return s;
+        wai_error_set(ctx, s, "wrong token type %s",
+                      webauth_token_type_string(out->type));
+        goto fail;
     }
+    type_string = webauth_token_type_string(out->type);
 
     /* Check the token data for consistency. */
     s = check_token(ctx, out, DECODE);
     if (s != WA_ERR_NONE)
-        return s;
+        goto fail;
 
     /* Success. */
     *decoded = out;
     return WA_ERR_NONE;
+
+fail:
+    if (type_string == NULL)
+        wai_error_context(ctx, "decoding token");
+    else
+        wai_error_context(ctx, "decoding %s token", type_string);
+    return s;
 }
 
 
@@ -631,7 +621,7 @@ webauth_token_decode(struct webauth_context *ctx,
     void *input;
 
     if (token == NULL) {
-        wai_error_set(ctx, WA_ERR_CORRUPT, "decoding null token");
+        wai_error_set(ctx, WA_ERR_CORRUPT, "token is NULL");
         return WA_ERR_CORRUPT;
     }
     length = apr_base64_decode_len(token);
@@ -654,26 +644,39 @@ webauth_token_encode_raw(struct webauth_context *ctx,
                          const struct webauth_keyring *ring,
                          const void **token, size_t *length)
 {
+    const char *type;
     void *attrs, *output;
     size_t alen;
     int s;
 
+    /* Get the token type for error context reporting. */
+    type = webauth_token_type_string(data->type);
+    if (type == NULL)
+        type = "unknown";
+
+    /* Sanity check the arguments. */
     if (ring == NULL) {
-        wai_error_set(ctx, WA_ERR_BAD_KEY,
-                      "keyring is NULL while encoding token");
-        return WA_ERR_BAD_KEY;
+        s = WA_ERR_BAD_KEY;
+        wai_error_set(ctx, s, "keyring is NULL");
+        goto fail;
     }
     s = check_token(ctx, data, ENCODE);
     if (s != WA_ERR_NONE)
-        return s;
+        goto fail;
+
+    /* Encode and encrypt the token. */
     s = wai_encode_token(ctx, data, &attrs, &alen);
     if (s != WA_ERR_NONE)
-        return s;
+        goto fail;
     s = webauth_token_encrypt(ctx, attrs, alen, &output, length, ring);
     if (s != WA_ERR_NONE)
-        return s;
+        goto fail;
     *token = output;
     return WA_ERR_NONE;
+
+fail:
+    wai_error_context(ctx, "encoding %s token", type);
+    return s;
 }
 
 
@@ -702,11 +705,9 @@ webauth_token_encode(struct webauth_context *ctx,
     *token = NULL;
     s = webauth_token_encode_raw(ctx, data, ring, &raw, &length);
     if (s != WA_ERR_NONE)
-        goto done;
+        return s;
     btoken = apr_palloc(ctx->pool, apr_base64_encode_len(length));
     apr_base64_encode(btoken, raw, length);
     *token = btoken;
-
-done:
-    return s;
+    return WA_ERR_NONE;
 }
