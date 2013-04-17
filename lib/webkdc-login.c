@@ -1330,20 +1330,6 @@ webauth_webkdc_login(struct webauth_context *ctx,
             goto done;
         }
 
-    /*
-     * Protect against an attacker using the WebLogin XML interface and
-     * sending, as the webkdc-proxy token, a webkdc-proxy token obtained by a
-     * WAS to use to get delegated credentials.  That's only allowed to
-     * generate an id token if it's for the WAS that we're talking to.
-     */
-    if (wkproxy != NULL
-        && strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0
-        && strcmp(wkproxy->proxy_subject, service->subject) != 0) {
-        (*response)->login_error = WA_PEC_UNAUTHORIZED;
-        (*response)->login_message = "not authorized to use proxy token";
-        goto done;
-    }
-
     /* Determine if the user is allowed to assert alternate identities. */
     status = build_identity_list(ctx, (*response)->subject,
                                  service->subject,
