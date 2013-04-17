@@ -1052,13 +1052,9 @@ log_login(struct webauth_context *ctx,
     /* We're going to accumulate the log message in this buffer. */
     message = wai_buffer_new(ctx->pool);
 
-    /*
-     * Add basic information from the request.
-     *
-     * FIXME: No current way to get the useragent_ip, need to pass that in.
-     */
+    /* Add basic information from the request. */
     log_attribute(message, "event",    "requestToken");
-    log_attribute(message, "from",     "127.0.0.1");
+    log_attribute(message, "from",     request->client_ip);
     log_attribute(message, "clientIp", request->remote_ip);
     log_attribute(message, "server",   response->requester);
     log_attribute(message, "url",      response->return_url);

@@ -1500,6 +1500,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     *req_subject_out = "<unkknown>";
 
     memset(&request, 0, sizeof(request));
+    request.client_ip = rc->r->useragent_ip;
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {

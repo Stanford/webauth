@@ -94,6 +94,7 @@ struct webauth_webkdc_login_request {
     const char *authz_subject;          /* Requested authorization identity. */
     const char *login_state;            /* Opaque object for multifactor. */
     const struct webauth_token_request *request;
+    const char *client_ip;
     const char *remote_user;
     const char *local_ip;
     const char *local_port;
