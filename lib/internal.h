@@ -274,7 +274,7 @@ int wai_encode_token(struct webauth_context *,
     __attribute__((__nonnull__));
 
 /* Add context to the current error, whatever it is. */
-void wai_error_add_context(struct webauth_context *, const char *, ...)
+void wai_error_context(struct webauth_context *, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 2, 3)));
 
 /* Set the internal WebAuth error message and error code. */

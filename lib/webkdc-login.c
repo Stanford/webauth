@@ -1169,14 +1169,14 @@ webauth_webkdc_login(struct webauth_context *ctx,
     status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_SERVICE,
                                   request->service, ring, &token);
     if (status != WA_ERR_NONE) {
-        wai_error_add_context(ctx, "parsing webkdc-service token");
+        wai_error_context(ctx, "parsing webkdc-service token");
         return status;
     }
     service = &token->token.webkdc_service;
     status = webauth_token_decode(ctx, WA_TOKEN_REQUEST, request->request,
                                   ring, &token);
     if (status != WA_ERR_NONE) {
-        wai_error_add_context(ctx, "parsing request token");
+        wai_error_context(ctx, "parsing request token");
         return status;
     }
     req = &token->token.request;
@@ -1235,8 +1235,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
                                       ring, &token);
         if (status != WA_ERR_NONE) {
-            wai_error_add_context(ctx, "parsing webkdc-proxy token"
-                                  " (ignoring)");
+            wai_error_context(ctx, "parsing webkdc-proxy token (ignoring)");
             wai_log_error(ctx, WA_LOG_INFO, status);
             continue;
         }
@@ -1253,8 +1252,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, encoded,
                                       ring, &token);
         if (status != WA_ERR_NONE) {
-            wai_error_add_context(ctx, "parsing webkdc-factor token"
-                                  " (ignoring)");
+            wai_error_context(ctx, "parsing webkdc-factor token (ignoring)");
             wai_log_error(ctx, WA_LOG_INFO, status);
             continue;
         }
@@ -1278,7 +1276,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         status = webauth_token_decode(ctx, WA_TOKEN_LOGIN, encoded, ring,
                                       &token);
         if (status != WA_ERR_NONE) {
-            wai_error_add_context(ctx, "parsing login token");
+            wai_error_context(ctx, "parsing login token");
             return status;
         }
         APR_ARRAY_PUSH(logins, struct webauth_token *) = token;
@@ -1332,7 +1330,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
                                           ctx->webkdc->login_time_limit,
                                           &newproxy);
     if (status != WA_ERR_NONE)
-        wai_error_add_context(ctx, "merging webkdc-proxy tokens");
+        wai_error_context(ctx, "merging webkdc-proxy tokens");
     if (status == WA_ERR_TOKEN_REJECTED) {
         wai_log_error(ctx, WA_LOG_WARN, status);
         (*response)->login_error = WA_PEC_UNAUTHORIZED;
@@ -1391,7 +1389,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
          */
         status = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
         if (status != WA_ERR_NONE) {
-            wai_error_add_context(ctx, "merging webkdc-factor tokens");
+            wai_error_context(ctx, "merging webkdc-factor tokens");
             return status;
         }
     } else if (ctx->user == NULL && wkproxy != NULL) {
@@ -1399,15 +1397,15 @@ webauth_webkdc_login(struct webauth_context *ctx,
 
         status = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
         if (status != WA_ERR_NONE) {
-            wai_error_add_context(ctx, "merging webkdc-factor tokens");
+            wai_error_context(ctx, "merging webkdc-factor tokens");
             return status;
         }
         status = wai_token_merge_webkdc_proxy_factor(ctx, oldproxy, wkfactor,
                                                      &newproxy);
         wkproxy = &newproxy->token.webkdc_proxy;
         if (status != WA_ERR_NONE) {
-            wai_error_add_context(ctx, "merging webkdc-proxy and"
-                                  " webkdc-factor tokens");
+            wai_error_context(ctx, "merging webkdc-proxy and webkdc-factor"
+                              " tokens");
             return status;
         }
     }

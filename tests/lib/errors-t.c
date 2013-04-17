@@ -140,11 +140,11 @@ main(void)
     free(expected);
 
     /* Add additional context to an existing error message. */
-    wai_error_add_context(ctx, "testing add %s", "context");
+    wai_error_context(ctx, "testing add %s", "context");
     basprintf(&expected, "APR error (foo bar: %s) while testing add context",
               apr_strerror(APR_ENOSTAT, buf, sizeof(buf)));
     is_string(expected, webauth_error_message(ctx, WA_ERR_APR),
-              "wai_error_add_context");
+              "wai_error_context");
     free(expected);
 
     /*

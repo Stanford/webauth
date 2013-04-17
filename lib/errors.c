@@ -92,7 +92,7 @@ webauth_error_message(struct webauth_context *ctx, int err)
  * error reporting routines).
  */
 void
-wai_error_add_context(struct webauth_context *ctx, const char *format, ...)
+wai_error_context(struct webauth_context *ctx, const char *format, ...)
 {
     va_list args;
     char *string;
