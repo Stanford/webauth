@@ -932,7 +932,7 @@ static enum mwk_status
 parse_request_token(MWK_REQ_CTXT *rc,
                     char *token,
                     const struct webauth_token_webkdc_service *st,
-                    const struct webauth_token_request **rt)
+                    struct webauth_token_request **rt)
 {
     int status;
     struct webauth_token *data;
@@ -978,6 +978,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
     return MWK_OK;
 }
 
+
 static enum mwk_status
 handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                         const char **req_subject_out,
@@ -987,7 +988,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     static const char *mwk_func="handle_getTokensRequest";
     const char *mid = NULL;
     char *request_token;
-    const struct webauth_token_request *req_token;
+    struct webauth_token_request *req_token = NULL;
     MWK_REQUESTER_CREDENTIAL req_cred;
     MWK_SUBJECT_CREDENTIAL sub_cred;
     int req_cred_parsed = 0;
@@ -1306,7 +1307,8 @@ get_subject(MWK_REQ_CTXT *rc, struct webauth_krb5 *kc,
  */
 static enum mwk_status
 parse_service_token(MWK_REQ_CTXT *rc, apr_xml_elem *e,
-                    struct webauth_webkdc_login_request *request)
+                    struct webauth_webkdc_login_request *request,
+                    struct webauth_token_webkdc_service **service)
 {
     static const char *mwk_func = "parse_service_token";
     int status;
@@ -1350,7 +1352,8 @@ parse_service_token(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         }
         return MWK_ERROR;
     }
-    request->service = &data->token.webkdc_service;
+    request->service = token;
+    *service = &data->token.webkdc_service;
     return MWK_OK;
 }
 
@@ -1491,6 +1494,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     int i, status;
     struct webauth_webkdc_login_request request;
     struct webauth_webkdc_login_response *response;
+    struct webauth_token_webkdc_service *service = NULL;
+    struct webauth_token_request *req = NULL;
 
     /*
      * FIXME: These should be set to NULL, not <unknown>.  Chase down all the
@@ -1505,14 +1510,16 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_service_token(rc, child, &request))
+            if (!parse_service_token(rc, child, &request, &service))
                 return MWK_ERROR;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
             if (!parse_subject_credentials(rc, child, &request))
                 return MWK_ERROR;
         } else if (strcmp(child->name, "requestToken") == 0) {
-            request_token = get_elem_text(rc, child, mwk_func);
+            request.request = get_elem_text(rc, child, mwk_func);
             if (request_token == NULL)
+                return MWK_ERROR;
+            if (!parse_request_token(rc, request_token, service, &req))
                 return MWK_ERROR;
         } else if (strcmp(child->name, "authzSubject") == 0) {
             request.authz_subject = get_elem_text(rc, child, mwk_func);
@@ -1532,13 +1539,11 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* make sure we found requesterCredential */
-    if (request.service == NULL) {
+    if (request.service == NULL || service == NULL)
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requesterCredential>",
                                  mwk_func, true);
-    }
-    if (request.service != NULL)
-        *req_subject_out = request.service->subject;
+    *req_subject_out = service->subject;
 
     /*
      * Make sure we found <subjectCredential>.  Note that the array may be
@@ -1551,32 +1556,25 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                  mwk_func, true);
 
     /* make sure we found requestToken */
-    if (request_token == NULL) {
+    if (request.request == NULL)
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requestToken>",
                                  mwk_func, true);
-    }
-    if (!parse_request_token(rc, request_token, request.service,
-                             &request.request))
-        return MWK_ERROR;
 
     /*
      * Based on the type of token requested, check that the requesting WAS is
      * permitted to get that type of token.
      */
-    if (strcmp(request.request->type, "id") == 0) {
-        if (!mwk_has_id_access(rc, request.service->subject)) {
+    if (strcmp(req->type, "id") == 0) {
+        if (!mwk_has_id_access(rc, service->subject))
             return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                      "not authorized to get an id token",
                                      mwk_func, true);
-        }
-    } else if (strcmp(request.request->type, "proxy") == 0) {
-        if (!mwk_has_proxy_access(rc, request.service->subject,
-                                  request.request->proxy_type)) {
+    } else if (strcmp(req->type, "proxy") == 0) {
+        if (!mwk_has_proxy_access(rc, service->subject, req->proxy_type))
             return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get a proxy token",
                                  mwk_func, true);
-        }
     }
 
     /* need to base64 decode loginState */

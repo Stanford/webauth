@@ -823,7 +823,12 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     session = webauth_keyring_from_key(ctx, key);
     token = build_token_webkdc_service(ctx, &test->request.service, key, now,
                                        krbconf);
-    request.service = &token->token.webkdc_service;
+    if (token->token.webkdc_service.expiration == 0)
+        token->token.webkdc_service.expiration = now + 60 * 60;
+    s = webauth_token_encode(ctx, token, ring, &request.service);
+    if (s != WA_ERR_NONE)
+        bail("cannot encode webkdc-service token: %s",
+             webauth_error_message(ctx, s));
 
     /* Build the array of webkdc-proxy tokens. */
     size = sizeof(struct webauth_webkdc_proxy_data);
@@ -874,11 +879,18 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
                  webauth_error_message(ctx, s));
     }
 
+    /* Encrypt the request token. */
+    token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+    token->type = WA_TOKEN_REQUEST;
+    token->token.request = test->request.request;
+    s = webauth_token_encode(ctx, token, ring, &request.request);
+    if (s != WA_ERR_NONE)
+        bail("cannot encode request token: %s", webauth_error_message(ctx, s));
+
     /* Add the data to the request. */
     request.wkproxies     = wkproxies;
     request.wkfactors     = wkfactors;
     request.logins        = logins;
-    request.request       = &test->request.request;
     request.authz_subject = test->request.authz_subject;
 
     /* Make the actual call. */
