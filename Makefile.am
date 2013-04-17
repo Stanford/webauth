@@ -117,7 +117,8 @@ lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
 	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c \
 	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	  \
 	lib/token-merge.c lib/userinfo.c lib/util.c lib/was-cache.c	  \
-	lib/webkdc-config.c lib/webkdc-login.c lib/xml.c
+	lib/webkdc-config.c lib/webkdc-logging.c lib/webkdc-login.c	  \
+	lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
 	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\

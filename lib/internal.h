@@ -21,6 +21,9 @@
 
 struct webauth_keyring;
 struct webauth_token;
+struct webauth_token_request;
+struct webauth_webkdc_login_request;
+struct webauth_webkdc_login_response;
 
 /*
  * Data for a logging callback for a WebAuth context.  The function pointer is
@@ -407,6 +410,17 @@ int wai_token_merge_webkdc_proxy_factor(struct webauth_context *,
                                         struct webauth_token *wkfactor,
                                         struct webauth_token **)
     __attribute__((__nonnull__(1, 2, 4)));
+
+/*
+ * Log the results of a <requestTokenRequest>.  The array argument is an array
+ * of login tokens for analysis to determine what type of login was done.
+ */
+void wai_webkdc_log_login(struct webauth_context *,
+                          const struct webauth_webkdc_login_request *,
+                          const struct webauth_webkdc_login_response *,
+                          apr_array_header_t *logins,
+                          const struct webauth_token_request *)
+    __attribute__((__nonnull__));
 
 /* Retrieve all of the text inside an XML element and return it. */
 int wai_xml_content(struct webauth_context *, apr_xml_elem *, const char **)
