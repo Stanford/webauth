@@ -61,7 +61,9 @@ struct webauth_context {
 
 /*
  * An APR-managed buffer, used to accumulate data that comes in chunks.  This
- * is managed by the wai_buffer_* functions.
+ * is managed by the wai_buffer_* functions.  The data will always be
+ * nul-terminated, but the nul won't be counted as part of the used size, and
+ * nul characters are permitted in the buffer.
  */
 struct wai_buffer {
     apr_pool_t *pool;

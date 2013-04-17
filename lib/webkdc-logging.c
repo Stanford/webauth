@@ -184,6 +184,5 @@ wai_webkdc_log_login(struct webauth_context *ctx,
         log_attribute(message, "lem", response->login_message);
 
     /* Actually log the message. */
-    wai_buffer_append(message, "", 1);
     wai_log_notice(ctx, "%s", message->data);
 }
