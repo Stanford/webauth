@@ -1047,6 +1047,10 @@ log_login(struct webauth_context *ctx,
     const char *subject, *login_type;
     int i;
 
+    /* If we don't have a notice logging handler, avoid lots of work. */
+    if (ctx->notice.callback == NULL)
+        return;
+
     /* We're going to accumulate the log message in this buffer. */
     message = wai_buffer_new(ctx->pool);
 
