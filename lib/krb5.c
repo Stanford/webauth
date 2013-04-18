@@ -330,14 +330,14 @@ translate_error(struct webauth_context *ctx, krb5_error_code code)
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KDC_ERR_PREAUTH_FAILED:
     case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
-        ctx->status = WA_ERR_LOGIN_FAILED;
+        ctx->status = WA_PEC_LOGIN_FAILED;
         break;
     case KRB5KDC_ERR_KEY_EXP:
-        ctx->status = WA_ERR_CREDS_EXPIRED;
+        ctx->status = WA_PEC_CREDS_EXPIRED;
         break;
     case KRB5KDC_ERR_POLICY:
     case KRB5KDC_ERR_NAME_EXP:
-        ctx->status = WA_ERR_USER_REJECTED;
+        ctx->status = WA_PEC_USER_REJECTED;
         break;
     default:
         ctx->status = WA_ERR_KRB5;

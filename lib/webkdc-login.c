@@ -263,18 +263,10 @@ do_login(struct webauth_context *ctx,
     switch (s) {
     case WA_ERR_NONE:
         break;
-    case WA_ERR_LOGIN_FAILED:
-        response->login_error = WA_PEC_LOGIN_FAILED;
-        response->login_message = webauth_error_message(ctx, s);
-        s = WA_ERR_NONE;
-        goto cleanup;
-    case WA_ERR_CREDS_EXPIRED:
-        response->login_error = WA_PEC_CREDS_EXPIRED;
-        response->login_message = webauth_error_message(ctx, s);
-        s = WA_ERR_NONE;
-        goto cleanup;
-    case WA_ERR_USER_REJECTED:
-        response->login_error = WA_PEC_USER_REJECTED;
+    case WA_PEC_CREDS_EXPIRED:
+    case WA_PEC_LOGIN_FAILED:
+    case WA_PEC_USER_REJECTED:
+        response->login_error = s;
         response->login_message = webauth_error_message(ctx, s);
         s = WA_ERR_NONE;
         goto cleanup;

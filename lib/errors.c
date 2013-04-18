@@ -74,7 +74,6 @@ error_string(struct webauth_context *ctx, int s)
     case WA_ERR_BAD_HMAC:          return "HMAC check failed";
     case WA_ERR_BAD_KEY:           return "unable to use key";
     case WA_ERR_CORRUPT:           return "data is incorrectly formatted";
-    case WA_ERR_CREDS_EXPIRED:     return "password has expired";
     case WA_ERR_FILE_NOT_FOUND:    return "file does not exist";
     case WA_ERR_FILE_OPENREAD:     return "unable to open file for reading";
     case WA_ERR_FILE_OPENWRITE:    return "unable to open file for writing";
@@ -84,7 +83,6 @@ error_string(struct webauth_context *ctx, int s)
     case WA_ERR_INVALID:           return "invalid argument to function";
     case WA_ERR_INVALID_CONTEXT:   return "invalid context passed to function";
     case WA_ERR_KRB5:              return "Kerberos error";
-    case WA_ERR_LOGIN_FAILED:      return "login failed";
     case WA_ERR_NOT_FOUND:         return "item not found while searching";
     case WA_ERR_NO_MEM:            return "no memory";
     case WA_ERR_NO_ROOM:           return "supplied buffer too small";
