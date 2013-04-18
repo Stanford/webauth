@@ -1,11 +1,3 @@
-WEBAUTH_3 {
-    global:
-        webauth_parse_interval;
-
-    local:
-        *;
-};
-
 WEBAUTH_4_5 {
     global:
         webauth_context_free;
@@ -50,6 +42,7 @@ WEBAUTH_4_5 {
         webauth_krb5_read_auth;
         webauth_krb5_read_auth_data;
         webauth_log_callback;
+        webauth_parse_interval;
         webauth_token_decode;
         webauth_token_decode_raw;
         webauth_token_decrypt;
@@ -65,4 +58,7 @@ WEBAUTH_4_5 {
         webauth_was_token_cache_write;
         webauth_webkdc_config;
         webauth_webkdc_login;
-} WEBAUTH_3;
+
+    local:
+        *;
+};

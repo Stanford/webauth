@@ -70,30 +70,30 @@ error_string(struct webauth_context *ctx, int s)
 
     /* Internal errors. */
     case WA_ERR_INTERNAL:          return "internal error";
-    case WA_ERR_NO_ROOM:           return "supplied buffer too small";
-    case WA_ERR_CORRUPT:           return "data is incorrectly formatted";
-    case WA_ERR_NO_MEM:            return "no memory";
+    case WA_ERR_APR:               return "APR error";
     case WA_ERR_BAD_HMAC:          return "HMAC check failed";
-    case WA_ERR_RAND_FAILURE:      return "unable to get random data";
     case WA_ERR_BAD_KEY:           return "unable to use key";
-    case WA_ERR_FILE_OPENWRITE:    return "unable to open file for writing";
-    case WA_ERR_FILE_WRITE:        return "error writing to file";
+    case WA_ERR_CORRUPT:           return "data is incorrectly formatted";
+    case WA_ERR_CREDS_EXPIRED:     return "password has expired";
+    case WA_ERR_FILE_NOT_FOUND:    return "file does not exist";
     case WA_ERR_FILE_OPENREAD:     return "unable to open file for reading";
+    case WA_ERR_FILE_OPENWRITE:    return "unable to open file for writing";
     case WA_ERR_FILE_READ:         return "error reading from file";
     case WA_ERR_FILE_VERSION:      return "bad file data version";
-    case WA_ERR_NOT_FOUND:         return "item not found while searching";
-    case WA_ERR_KRB5:              return "Kerberos error";
-    case WA_ERR_INVALID_CONTEXT:   return "invalid context passed to function";
-    case WA_ERR_LOGIN_FAILED:      return "login failed";
-    case WA_ERR_TOKEN_EXPIRED:     return "token has expired";
-    case WA_ERR_TOKEN_STALE:       return "token is stale";
-    case WA_ERR_CREDS_EXPIRED:     return "password has expired";
-    case WA_ERR_APR:               return "APR error";
-    case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
+    case WA_ERR_FILE_WRITE:        return "error writing to file";
     case WA_ERR_INVALID:           return "invalid argument to function";
+    case WA_ERR_INVALID_CONTEXT:   return "invalid context passed to function";
+    case WA_ERR_KRB5:              return "Kerberos error";
+    case WA_ERR_LOGIN_FAILED:      return "login failed";
+    case WA_ERR_NOT_FOUND:         return "item not found while searching";
+    case WA_ERR_NO_MEM:            return "no memory";
+    case WA_ERR_NO_ROOM:           return "supplied buffer too small";
+    case WA_ERR_RAND_FAILURE:      return "unable to get random data";
     case WA_ERR_REMOTE_FAILURE:    return "remote call failed";
-    case WA_ERR_FILE_NOT_FOUND:    return "file does not exist";
+    case WA_ERR_TOKEN_EXPIRED:     return "token has expired";
     case WA_ERR_TOKEN_REJECTED:    return "token used in invalid context";
+    case WA_ERR_TOKEN_STALE:       return "token is stale";
+    case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
     default:
         if (ctx != NULL)
             return apr_psprintf(ctx->pool, "unknown status code %d", s);
