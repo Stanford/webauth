@@ -35,7 +35,7 @@ struct webauth_keyring;
 #define EMPTY_LOGIN { NULL, NULL, 0 }
 
 /* Helper macro for a successful login with no message in WebKDC login data. */
-#define LOGIN_SUCCESS 0, NULL, NULL
+#define LOGIN_SUCCESS 0, NULL
 
 /* Helper macro for no factor information in WebKDC login data. */
 #define NO_FACTOR_DATA NULL, NULL
@@ -176,9 +176,8 @@ struct wat_login_request {
  * doesn't contain encrypted tokens that will vary with each run.
  */
 struct wat_login_response {
-    int login_error;
-    const char *login_message;
     const char *user_message;
+    const char *login_state;
 
     /* Represented as strings of comma-separated factors. */
     const char *factors_wanted;

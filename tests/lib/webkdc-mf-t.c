@@ -31,8 +31,7 @@ static const struct wat_login_test tests_default[] = {
     /* Test basic authentication with a user information service. */
     {
         "Basic authentication",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -52,7 +51,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -74,8 +73,8 @@ static const struct wat_login_test tests_default[] = {
     /* The same, but attempt to access a restricted URL. */
     {
         "Authentication to restricted URL",
-        0,
-        NULL,
+        WA_PEC_AUTH_REJECTED,
+        "authentication rejected (rejected by user information service)",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -95,9 +94,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_AUTH_REJECTED,
-            "authentication rejected by user information service",
-            "<strong>You are restricted!</strong>  &lt;_&lt;;",
+            "<strong>You are restricted!</strong>  &lt;_&lt;;", NULL,
             NO_FACTOR_DATA,
             NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
@@ -116,8 +113,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Authentication requiring an X.509 factor",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -137,7 +133,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -159,8 +155,8 @@ static const struct wat_login_test tests_default[] = {
     /* Request a level of assurance that cannot be satisfied. */
     {
         "Authentication requiring a too-high LoA",
-        0,
-        NULL,
+        WA_PEC_LOA_UNAVAILABLE,
+        "insufficient level of assurance",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -180,9 +176,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_LOA_UNAVAILABLE,
-            "insufficient level of assurance",
-            NULL,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -212,8 +206,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Authentication requiring a p session factor, old proxy",
-        0,
-        NULL,
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -233,9 +227,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_LOGIN_FORCED,
-            "forced authentication, need to login",
-            NULL,
+            NULL, NULL,
             "p", "p",
             {
                 {
@@ -261,8 +253,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Authentication requiring a p session factor, current proxy",
-        0,
-        NULL,
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -282,9 +274,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_LOGIN_FORCED,
-            "forced authentication, need to login",
-            NULL,
+            NULL, NULL,
             "p", "p",
             {
                 {
@@ -306,8 +296,7 @@ static const struct wat_login_test tests_default[] = {
     /* Instead, request an X.509 session factor.  This should work. */
     {
         "Authentication requiring an x session factor",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -327,7 +316,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -352,8 +341,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Require an unavailable factor",
-        0,
-        NULL,
+        WA_PEC_MULTIFACTOR_UNAVAILABLE,
+        "multifactor required but not configured",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -373,9 +362,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_MULTIFACTOR_UNAVAILABLE,
-            "multifactor required but not configured",
-            NULL,
+            NULL, NULL,
             "o", "p",
             {
                 {
@@ -400,8 +387,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "User information service requires factor from arg",
-        0,
-        NULL,
+        WA_PEC_MULTIFACTOR_REQUIRED,
+        "multifactor login required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -421,9 +408,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_MULTIFACTOR_REQUIRED,
-            "multifactor login required",
-            NULL,
+            NULL, NULL,
             "m", "p,m,o,o2",
             {
                 {
@@ -448,8 +433,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Provide factor required by userinfo in arg",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -469,7 +453,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -495,8 +479,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Require an available factor",
-        0,
-        NULL,
+        WA_PEC_MULTIFACTOR_REQUIRED,
+        "multifactor login required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -516,9 +500,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_MULTIFACTOR_REQUIRED,
-            "multifactor login required",
-            NULL,
+            NULL, NULL,
             "o,m,o3", "p,m,o,o3",
             {
                 {
@@ -540,8 +522,7 @@ static const struct wat_login_test tests_default[] = {
     /* Add a second webkdc-proxy token representing an OTP login. */
     {
         "Successful authentication with two proxy tokens",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -564,7 +545,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -589,8 +570,8 @@ static const struct wat_login_test tests_default[] = {
     /* Attempt OTP with an incorrect code. */
     {
         "Incorrect OTP authentication",
-        0,
-        NULL,
+        WA_PEC_LOGIN_REJECTED,
+        "user may not authenticate (rejected by validation service)",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -607,9 +588,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_LOGIN_REJECTED,
-            "login rejected by validation service",
-            "<em>OTP3</em> down.  &lt;_&lt;;",
+            "<em>OTP3</em> down.  &lt;_&lt;;", "RESET_PIN",
             NO_FACTOR_DATA,
             NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
@@ -632,8 +611,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Successful authentication with OTP login and proxy",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -657,7 +635,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -686,8 +664,7 @@ static const struct wat_login_test tests_default[] = {
     /* Same authentication, but add an input webkdc-factor token. */
     {
         "Successful authentication with OTP login, proxy, and factor",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -715,7 +692,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -748,8 +725,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Old webkdc-factor token",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -777,7 +753,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -811,8 +787,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Session multifactor with old proxy",
-        0,
-        NULL,
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -836,9 +812,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_LOGIN_FORCED,
-            "forced authentication, need to login",
-            NULL,
+            NULL, NULL,
             "m", "p,m,o,o3",
             {
                 {
@@ -864,8 +838,7 @@ static const struct wat_login_test tests_default[] = {
     /* But if the webkdc-proxy token is current, this does work. */
     {
         "Session multifactor with current proxy",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -889,7 +862,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -923,8 +896,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Meetable but unmet LoA requirement",
-        0,
-        NULL,
+        WA_PEC_MULTIFACTOR_REQUIRED,
+        "multifactor login required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -944,9 +917,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_MULTIFACTOR_REQUIRED,
-            "multifactor login required",
-            NULL,
+            NULL, NULL,
             NULL, "p,m,o,o2",
             {
                 {
@@ -973,8 +944,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Additional factors not added for proxy authentication",
-        0,
-        NULL,
+        WA_PEC_MULTIFACTOR_REQUIRED,
+        "multifactor login required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -994,9 +965,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_MULTIFACTOR_REQUIRED,
-            "multifactor login required",
-            NULL,
+            NULL, NULL,
             "m", "h,m,p",
             {
                 {
@@ -1021,8 +990,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Factors added for login authentication",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
@@ -1039,7 +1007,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -1067,8 +1035,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Random multifactor for lucky user",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1088,7 +1055,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -1118,8 +1085,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Existing random multifactor",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1139,7 +1105,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -1169,8 +1135,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Unlucky random multifactor for session",
-        0,
-        NULL,
+        WA_PEC_MULTIFACTOR_REQUIRED,
+        "multifactor login required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1190,9 +1156,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_MULTIFACTOR_REQUIRED,
-            "multifactor login required",
-            NULL,
+            NULL, NULL,
             "m", "p,m,o,o2",
             {
                 {
@@ -1218,8 +1182,8 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Unlucky random multifactor for initial",
-        0,
-        NULL,
+        WA_PEC_MULTIFACTOR_REQUIRED,
+        "multifactor login required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1239,9 +1203,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            WA_PEC_MULTIFACTOR_REQUIRED,
-            "multifactor login required",
-            NULL,
+            NULL, NULL,
             "m", "p,m,o,o2",
             {
                 {
@@ -1267,8 +1229,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Multifactor satisfies random",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1288,7 +1249,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -1317,8 +1278,7 @@ static const struct wat_login_test tests_default[] = {
      */
     {
         "Multifactor satisfies random session",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1338,7 +1298,7 @@ static const struct wat_login_test tests_default[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -1371,8 +1331,8 @@ static const struct wat_login_test tests_timeout[] = {
      */
     {
         "User information service timeout",
-        WA_ERR_REMOTE_FAILURE,
-        "remote call failed (error receiving token: timed out)",
+        WA_PEC_SERVER_FAILURE,
+        "internal server failure",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1392,7 +1352,7 @@ static const struct wat_login_test tests_timeout[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
@@ -1415,8 +1375,7 @@ static const struct wat_login_test tests_ignore_failure[] = {
      */
     {
         "Random multifactor with multifactor and timeout",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1436,7 +1395,7 @@ static const struct wat_login_test tests_ignore_failure[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -1465,8 +1424,8 @@ static const struct wat_login_test tests_ignore_failure[] = {
      */
     {
         "Random multifactor without multifactor and timeout",
-        0,
-        NULL,
+        WA_PEC_MULTIFACTOR_UNAVAILABLE,
+        "multifactor required but not configured",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1486,9 +1445,7 @@ static const struct wat_login_test tests_ignore_failure[] = {
             }
         },
         {
-            WA_PEC_MULTIFACTOR_UNAVAILABLE,
-            "multifactor required but not configured",
-            NULL,
+            NULL, NULL,
             "rm", "p",
             {
                 {

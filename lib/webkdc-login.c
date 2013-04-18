@@ -99,8 +99,7 @@ canonicalize_user(struct webauth_context *ctx, struct webauth_krb5 *kc,
  * message appropriately.
  */
 static int
-realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc,
-                struct webauth_webkdc_login_response *response)
+realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc)
 {
     int s, i;
     char *realm;
@@ -124,12 +123,13 @@ realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc,
             break;
         }
     }
-    if (!okay) {
-        response->login_error = WA_PEC_USER_REJECTED;
-        response->login_message
-            = apr_psprintf(ctx->pool, "realm %s is not permitted", realm);
+    if (okay)
+        s = WA_ERR_NONE;
+    else {
+        s = WA_PEC_USER_REJECTED;
+        wai_error_set(ctx, s, "realm %s is not permitted", realm);
     }
-    return WA_ERR_NONE;
+    return s;
 }
 
 
@@ -173,15 +173,15 @@ do_otp(struct webauth_context *ctx,
      */
     if (!validate->success) {
         if (validate->user_message == NULL && validate->login_state == NULL) {
-            response->login_error = WA_PEC_LOGIN_FAILED;
-            response->login_message = "login incorrect";
+            s = WA_PEC_LOGIN_FAILED;
+            wai_error_set(ctx, s, NULL);
         } else {
-            response->login_error = WA_PEC_LOGIN_REJECTED;
-            response->login_message = "login rejected by validation service";
+            s = WA_PEC_LOGIN_REJECTED;
+            wai_error_set(ctx, s, "rejected by validation service");
             response->user_message = validate->user_message;
-            response->login_state = validate->login_state;
+            response->login_state  = validate->login_state;
         }
-        return WA_ERR_NONE;
+        return s;
     }
 
     /*
@@ -239,9 +239,7 @@ do_otp(struct webauth_context *ctx,
  * response.  On a more fundamental failure, return an error code.
  */
 static int
-do_login(struct webauth_context *ctx,
-         struct webauth_webkdc_login_response *response,
-         struct webauth_token_login *login,
+do_login(struct webauth_context *ctx, struct webauth_token_login *login,
          struct webauth_token **wkproxy)
 {
     int s;
@@ -260,19 +258,8 @@ do_login(struct webauth_context *ctx,
                                        login->password, NULL,
                                        ctx->webkdc->keytab_path,
                                        ctx->webkdc->principal, NULL, &webkdc);
-    switch (s) {
-    case WA_ERR_NONE:
-        break;
-    case WA_PEC_CREDS_EXPIRED:
-    case WA_PEC_LOGIN_FAILED:
-    case WA_PEC_USER_REJECTED:
-        response->login_error = s;
-        response->login_message = webauth_error_message(ctx, s);
-        s = WA_ERR_NONE;
+    if (s != WA_ERR_NONE)
         goto cleanup;
-    default:
-        return s;
-    }
 
     /*
      * webauth_krb5_init_via_password determined the principal of the WebKDC
@@ -285,8 +272,8 @@ do_login(struct webauth_context *ctx,
      * Check if the realm of the authenticated principal is permitted and
      * then canonicalize the user's identity.
      */
-    s = realm_permitted(ctx, kc, response);
-    if (s != WA_ERR_NONE || response->login_error != 0)
+    s = realm_permitted(ctx, kc);
+    if (s != WA_ERR_NONE)
         goto cleanup;
     s = canonicalize_user(ctx, kc, &subject);
     if (s != WA_ERR_NONE)
@@ -598,10 +585,8 @@ add_user_info(struct webauth_context *ctx,
  * assurance restriction is already satisfied or unnecessary, required, or
  * impossible.
  *
- * Returns WA_ERR_NONE and leaves request->login_error unchanged if any
- * multifactor requirements are satisfied.  Sets request->login_error if
- * multifactor is required or unavailable.  Returns an error code on errors in
- * processing.
+ * Returns a WebAuth status code, and sets the configured and required factors
+ * if multifactor is needed and can be met by the user's configured factors.
  */
 static int
 check_multifactor(struct webauth_context *ctx,
@@ -612,12 +597,13 @@ check_multifactor(struct webauth_context *ctx,
 {
     struct webauth_factors *wanted, *swanted, *have, *shave;
     const struct webauth_factors *configured;
+    int s = WA_ERR_NONE;
 
     /* Figure out what factors we want and have. */
-    wanted = webauth_factors_parse(ctx, req->initial_factors);
+    wanted  = webauth_factors_parse(ctx, req->initial_factors);
     swanted = webauth_factors_parse(ctx, req->session_factors);
-    have = webauth_factors_parse(ctx, wkproxy->initial_factors);
-    shave = webauth_factors_parse(ctx, wkproxy->session_factors);
+    have    = webauth_factors_parse(ctx, wkproxy->initial_factors);
+    shave   = webauth_factors_parse(ctx, wkproxy->session_factors);
 
     /*
      * Check if there are factors required by user configuration.  If so, add
@@ -633,13 +619,10 @@ check_multifactor(struct webauth_context *ctx,
      */
     if (req->loa > wkproxy->loa) {
         if (info != NULL && req->loa > info->max_loa) {
-            response->login_error = WA_PEC_LOA_UNAVAILABLE;
-            response->login_message = "insufficient level of assurance";
-            return WA_ERR_NONE;
-        } else {
-            response->login_error = WA_PEC_MULTIFACTOR_REQUIRED;
-            response->login_message = "multifactor login required";
+            wai_error_set(ctx, WA_PEC_LOA_UNAVAILABLE, NULL);
+            return WA_PEC_LOA_UNAVAILABLE;
         }
+        s = WA_PEC_MULTIFACTOR_REQUIRED;
     }
 
     /*
@@ -654,17 +637,14 @@ check_multifactor(struct webauth_context *ctx,
      * works for the most common cases.
      */
     if (webauth_factors_satisfies(ctx, have, wanted)) {
-        if (webauth_factors_satisfies(ctx, shave, swanted)) {
-            if (response->login_error == 0)
-                return WA_ERR_NONE;
-        } else if (response->login_error == 0) {
-            response->login_error = WA_PEC_LOGIN_FORCED;
-            response->login_message = "forced authentication, need to login";
-        }
+        if (!webauth_factors_satisfies(ctx, shave, swanted))
+            if (s == WA_ERR_NONE)
+                s = WA_PEC_LOGIN_FORCED;
     } else {
-        response->login_error = WA_PEC_MULTIFACTOR_REQUIRED;
-        response->login_message = "multifactor login required";
+        s = WA_PEC_MULTIFACTOR_REQUIRED;
     }
+    if (s == WA_ERR_NONE)
+        return WA_ERR_NONE;
 
     /*
      * Fourth, remove the factors the user already has from the factors that
@@ -674,7 +654,7 @@ check_multifactor(struct webauth_context *ctx,
      * report to WebLogin the additional factors the user needs but doesn't
      * have, not the full list that they've partially satisfied.
      */
-    wanted = webauth_factors_subtract(ctx, wanted, have);
+    wanted  = webauth_factors_subtract(ctx, wanted, have);
     swanted = webauth_factors_subtract(ctx, swanted, shave);
 
     /*
@@ -690,14 +670,15 @@ check_multifactor(struct webauth_context *ctx,
         configured = info->factors;
     response->factors_wanted = webauth_factors_union(ctx, wanted, swanted);
     response->factors_configured = configured;
-    if (!webauth_factors_satisfies(ctx, configured, wanted)) {
-        response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
-        response->login_message = "multifactor required but not configured";
-    } else if (!webauth_factors_satisfies(ctx, configured, swanted)) {
-        response->login_error = WA_PEC_MULTIFACTOR_UNAVAILABLE;
-        response->login_message = "multifactor required but not configured";
-    }
-    return WA_ERR_NONE;
+    if (!webauth_factors_satisfies(ctx, configured, wanted))
+        s = WA_PEC_MULTIFACTOR_UNAVAILABLE;
+    else if (!webauth_factors_satisfies(ctx, configured, swanted))
+        s = WA_PEC_MULTIFACTOR_UNAVAILABLE;
+
+    /* If there was an error, set the error text. */
+    if (s != WA_ERR_NONE)
+        wai_error_set(ctx, s, NULL);
+    return s;
 }
 
 
@@ -887,10 +868,10 @@ create_id_token(struct webauth_context *ctx,
         s = get_krb5_authenticator(ctx, service->subject, wkproxy, &krb5_auth,
                                    &krb5_auth_len);
         if (s == WA_ERR_KRB5) {
-            response->login_error   = WA_PEC_PROXY_TOKEN_INVALID;
-            response->login_message = webauth_error_message(ctx, s);
-            return WA_ERR_NONE;
-        } else if (s != WA_ERR_NONE)
+            wai_error_change(ctx, s, WA_PEC_PROXY_TOKEN_INVALID);
+            s = WA_PEC_PROXY_TOKEN_INVALID;
+        }
+        if (s != WA_ERR_NONE)
             return s;
         id->auth_data     = krb5_auth;
         id->auth_data_len = krb5_auth_len;
@@ -974,11 +955,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
                      struct webauth_webkdc_login_response **response,
                      const struct webauth_keyring *ring)
 {
-    apr_array_header_t *wkproxies, *wkfactors, *logins;
+    apr_array_header_t *wkproxies, *wkfactors;
+    apr_array_header_t *logins = NULL;
     struct webauth_token *newproxy, *token;
     struct webauth_token cancel;
     struct webauth_token *wkfactor = NULL;
-    struct webauth_token_request *req;
+    struct webauth_token_request *req = NULL;
     struct webauth_token_webkdc_service *service;
     struct webauth_token_webkdc_proxy *wkproxy = NULL;
     int i, s;
@@ -999,19 +981,32 @@ webauth_webkdc_login(struct webauth_context *ctx,
         || request->request == NULL) {
         s = WA_ERR_CORRUPT;
         wai_error_set(ctx, s, "incomplete login request data");
-        return s;
+        goto fail;
     }
 
-    /* Decrypt the webkdc-service and request tokens. */
+    /* Decrypt the webkdc-service token. */
     s = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, request->service,
                              ring, &token);
-    if (s != WA_ERR_NONE)
-        return s;
+    if (s == WA_ERR_TOKEN_EXPIRED) {
+        s = wai_error_change(ctx, s, WA_PEC_SERVICE_TOKEN_EXPIRED);
+        goto fail;
+    } else if (s != WA_ERR_NONE) {
+        s = wai_error_change(ctx, s, WA_PEC_SERVICE_TOKEN_INVALID);
+        goto fail;
+    }
     service = &token->token.webkdc_service;
+
+    /*
+     * Decrypt the request token.
+     *
+     * FIXME: Move token_max_ttl processing here.
+     */
     s = webauth_token_decode(ctx, WA_TOKEN_REQUEST, request->request, ring,
                              &token);
-    if (s != WA_ERR_NONE)
-        return s;
+    if (s != WA_ERR_NONE) {
+        s = wai_error_change(ctx, s, WA_PEC_REQUEST_TOKEN_INVALID);
+        goto fail;
+    }
     req = &token->token.request;
 
     /* Fill in the basics of our response. */
@@ -1030,11 +1025,14 @@ webauth_webkdc_login(struct webauth_context *ctx,
     size = service->session_key_len;
     key_data = service->session_key;
     s = webauth_key_create(ctx, WA_KEY_AES, size, key_data, &key);
-    if (s != WA_ERR_NONE)
-        return s;
+    if (s != WA_ERR_NONE) {
+        wai_log_error(ctx, s, WA_LOG_WARN,
+                      "invalid session key in webkdc-service token");
+        s = WA_PEC_SERVICE_TOKEN_INVALID;
+        wai_error_set(ctx, s, NULL);
+        goto fail;
+    }
     session = webauth_keyring_from_key(ctx, key);
-    if (s != WA_ERR_NONE)
-        return s;
 
     /*
      * If the WAS requested login cancel support, generate an error token
@@ -1046,12 +1044,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
      */
     if (req->options != NULL && strstr(req->options, "lc") != NULL) {
         cancel.type = WA_TOKEN_ERROR;
-        cancel.token.error.code = WA_PEC_LOGIN_CANCELED;
-        cancel.token.error.message = "user canceled login";
+        cancel.token.error.code     = WA_PEC_LOGIN_CANCELED;
+        cancel.token.error.message  = "user canceled login";
         cancel.token.error.creation = 0;
         s = webauth_token_encode(ctx, &cancel, session, &etoken);
         if (s != WA_ERR_NONE)
-            return s;
+            goto fail;
         (*response)->login_cancel = etoken;
     }
 
@@ -1117,13 +1115,11 @@ webauth_webkdc_login(struct webauth_context *ctx,
                        request->remote_ip, request->login_state, &newproxy,
                        &wkfactor);
         else
-            s = do_login(ctx, *response, &token->token.login, &newproxy);
+            s = do_login(ctx, &token->token.login, &newproxy);
 
         /* If the login failed, abort. */
         if (s != WA_ERR_NONE)
-            return s;
-        if ((*response)->login_error != 0)
-            goto done;
+            goto fail;
 
         /* If we got new tokens, add them to the appropriate arrays. */
         if (newproxy != NULL) {
@@ -1156,15 +1152,15 @@ webauth_webkdc_login(struct webauth_context *ctx,
     wkproxy = NULL;
     s = wai_token_merge_webkdc_proxy(ctx, wkproxies,
                                      ctx->webkdc->login_time_limit, &newproxy);
-    if (s != WA_ERR_NONE)
-        wai_error_context(ctx, "merging webkdc-proxy tokens");
     if (s == WA_ERR_TOKEN_REJECTED) {
         wai_log_error(ctx, WA_LOG_WARN, s, "rejecting webkdc-proxy tokens");
-        (*response)->login_error = WA_PEC_UNAUTHORIZED;
-        (*response)->login_message = "not authorized to use proxy token";
-        goto done;
-    } else if (s != WA_ERR_NONE)
-        return s;
+        s = WA_PEC_UNAUTHORIZED;
+        wai_error_set(ctx, s, "may not use webkdc-proxy token");
+        goto fail;
+    } else if (s != WA_ERR_NONE) {
+        wai_error_context(ctx, "merging webkdc-proxy tokens");
+        goto fail;
+    }
 
     /*
      * If we have a new webkdc-proxy token, encode it in the response in case
@@ -1176,11 +1172,10 @@ webauth_webkdc_login(struct webauth_context *ctx,
     if (newproxy != NULL) {
         wkproxy = &newproxy->token.webkdc_proxy;
         if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0) {
-            (*response)->login_error = WA_PEC_PROXY_TOKEN_INVALID;
-            (*response)->login_message
-                = apr_psprintf(ctx->pool, "proxy subject %s not allowed",
-                               wkproxy->proxy_subject);
-            goto done;
+            s = WA_PEC_PROXY_TOKEN_INVALID;
+            wai_error_set(ctx, s, "proxy subject %s not allowed",
+                          wkproxy->proxy_subject);
+            goto fail;
         }
     }
 
@@ -1200,13 +1195,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
         s = add_user_info(ctx, req, request->remote_ip, response, newproxy,
                           wkfactors, did_login, &info);
         if (s != WA_ERR_NONE)
-            return s;
+            goto fail;
         if (info->error != NULL) {
-            (*response)->login_error = WA_PEC_AUTH_REJECTED;
-            (*response)->login_message
-                = "authentication rejected by user information service";
             (*response)->user_message = info->error;
-            goto done;
+            s = WA_PEC_AUTH_REJECTED;
+            wai_error_set(ctx, s, "rejected by user information service");
+            goto fail;
         }
 
         /*
@@ -1217,7 +1211,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         s = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
         if (s != WA_ERR_NONE) {
             wai_error_context(ctx, "merging webkdc-factor tokens");
-            return s;
+            goto fail;
         }
     } else if (ctx->user == NULL && wkproxy != NULL) {
         struct webauth_token *oldproxy = newproxy;
@@ -1225,7 +1219,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         s = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
         if (s != WA_ERR_NONE) {
             wai_error_context(ctx, "merging webkdc-factor tokens");
-            return s;
+            goto fail;
         }
         s = wai_token_merge_webkdc_proxy_factor(ctx, oldproxy, wkfactor,
                                                 &newproxy);
@@ -1233,7 +1227,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         if (s != WA_ERR_NONE) {
             wai_error_context(ctx, "merging webkdc-proxy and webkdc-factor"
                               " tokens");
-            return s;
+            goto fail;
         }
     }
 
@@ -1248,7 +1242,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
         data->type = wkproxy->proxy_type;
         s = webauth_token_encode(ctx, newproxy, ring, &data->token);
         if (s != WA_ERR_NONE)
-            return s;
+            goto fail;
         (*response)->proxies = proxies;
         (*response)->subject = wkproxy->subject;
     }
@@ -1259,9 +1253,9 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * we do have.
      */
     if (wkproxy == NULL) {
-        (*response)->login_error = WA_PEC_PROXY_TOKEN_REQUIRED;
-        (*response)->login_message = "need a proxy token";
-        goto done;
+        s = WA_PEC_PROXY_TOKEN_REQUIRED;
+        wai_error_set(ctx, s, NULL);
+        goto fail;
     }
 
     /*
@@ -1276,9 +1270,9 @@ webauth_webkdc_login(struct webauth_context *ctx,
 
         factors = webauth_factors_parse(ctx, wkproxy->session_factors);
         if (!webauth_factors_interactive(ctx, factors)) {
-            (*response)->login_error = WA_PEC_LOGIN_FORCED;
-            (*response)->login_message = "forced authentication, need to login";
-            goto done;
+            s = WA_PEC_LOGIN_FORCED;
+            wai_error_set(ctx, s, NULL);
+            goto fail;
         }
     }
 
@@ -1290,9 +1284,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
      */
     s = check_multifactor(ctx, req, *response, wkproxy, info);
     if (s != WA_ERR_NONE)
-        return s;
-    if ((*response)->login_error != 0)
-        goto done;
+        goto fail;
 
     /*
      * We have to ensure that the webkdc-proxy token we have available is
@@ -1305,16 +1297,16 @@ webauth_webkdc_login(struct webauth_context *ctx,
         || (strcmp(req->type, "proxy") == 0
             && strcmp(req->proxy_type, "krb5") == 0))
         if (strcmp(wkproxy->proxy_type, "krb5") != 0) {
-            (*response)->login_error = WA_PEC_PROXY_TOKEN_REQUIRED;
-            (*response)->login_message = "need a proxy token";
-            goto done;
+            s = WA_PEC_PROXY_TOKEN_REQUIRED;
+            wai_error_set(ctx, s, NULL);
+            goto fail;
         }
 
     /* Determine if the user is allowed to assert alternate identities. */
     s = build_identity_list(ctx, (*response)->subject, service->subject,
                             &(*response)->permitted_authz);
     if (s != WA_ERR_NONE)
-        return s;
+        goto fail;
 
     /*
      * If the user attempts to assert an alternate identity, see if that's
@@ -1335,9 +1327,9 @@ webauth_webkdc_login(struct webauth_context *ctx,
             }
         }
     if (authz_subject != NULL && (*response)->authz_subject == NULL) {
-        (*response)->login_error = WA_PEC_UNAUTHORIZED;
-        (*response)->login_message = "not authorized to assert that identity";
-        goto done;
+        s = WA_PEC_UNAUTHORIZED;
+        wai_error_set(ctx, s, "may not assert that identity");
+        goto fail;
     }
 
     /*
@@ -1355,12 +1347,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
         s = create_proxy_token(ctx, req, service, wkproxy, *response, session,
                                ring);
     else {
-        s = WA_ERR_CORRUPT;
+        s = WA_PEC_REQUEST_TOKEN_INVALID;
         wai_error_set(ctx, s, "unsupported requested token type %s",
                       req->type);
     }
     if (s != WA_ERR_NONE)
-        return s;
+        goto fail;
 
     /*
      * Set the factor tokens in the response if we have a webkdc-factor token
@@ -1376,12 +1368,27 @@ webauth_webkdc_login(struct webauth_context *ctx,
         factor->expiration = wkfactor->token.webkdc_factor.expiration;
         s = webauth_token_encode(ctx, wkfactor, ring, &factor->token);
         if (s != WA_ERR_NONE)
-            return s;
+            goto fail;
         (*response)->factor_tokens = factor_tokens;
     }
 
-done:
-    /* For any case where we're not returning a WebAuth error, log. */
+    /* Successful authentication. */
     wai_webkdc_log_login(ctx, request, *response, logins, req);
     return WA_ERR_NONE;
+
+fail:
+    /*
+     * On failure, fill out login_error and login_message and then log.  If we
+     * mapped the error message to a new one, log the original error message
+     * first so that we don't lose the full context.
+     */
+    (*response)->login_error = wai_error_protocol(ctx, s);
+    if ((*response)->login_error != s) {
+        wai_log_error(ctx, s, WA_LOG_WARN, "cannot handle login request");
+        s = (*response)->login_error;
+        wai_error_set(ctx, s, NULL);
+    }
+    (*response)->login_message = webauth_error_message(ctx, s);
+    wai_webkdc_log_login(ctx, request, *response, logins, req);
+    return s;
 }

@@ -1579,38 +1579,30 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
     /* need to base64 decode loginState */
     if (request.login_state != NULL) {
-        ls_data = apr_palloc(rc->r->pool, apr_base64_decode_len(request.login_state));
+        ls_data = apr_palloc(rc->r->pool,
+                             apr_base64_decode_len(request.login_state));
         apr_base64_decode(ls_data, request.login_state);
         request.login_state = ls_data;
     }
 
     /*
      * Call into libwebauth to process the login information.  This will take
-     * the accumulated data in the request and attempt to fulfill it.  On an
-     * internal error, this function will return a status other than
-     * WA_ERR_NONE.  Otherwise, it may set the login_error and login_message
-     * in the response.  We handle that below when we generate the XML
-     * response.
+     * the accumulated data in the request and attempt to fulfill it.  On
+     * error, it will return a WebAuth status code and also fill in the
+     * login_error and login_message fields.
+     *
+     * Some error messages still return a full <requestTokenResponse> so that
+     * we can carry additional information.  The rest send an <errorResponse>.
      */
     status = webauth_webkdc_login(rc->ctx, &request, &response,
                                   rc->sconf->ring);
-    if (status != WA_ERR_NONE)
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 webauth_error_message(rc->ctx, status),
-                                 mwk_func, true);
-
-    /*
-     * If we saw an error other than proxy token required, multifactor
-     * required, LoA unavailable, or authentication rejected, abort and send
-     * the error message.
-     */
-    if (response->login_error != 0
-        && response->login_error != WA_PEC_PROXY_TOKEN_REQUIRED
-        && response->login_error != WA_PEC_MULTIFACTOR_REQUIRED
-        && response->login_error != WA_PEC_MULTIFACTOR_UNAVAILABLE
-        && response->login_error != WA_PEC_LOA_UNAVAILABLE
-        && response->login_error != WA_PEC_LOGIN_REJECTED
-        && response->login_error != WA_PEC_AUTH_REJECTED)
+    if (status != WA_ERR_NONE
+        && status != WA_PEC_AUTH_REJECTED
+        && status != WA_PEC_LOA_UNAVAILABLE
+        && status != WA_PEC_LOGIN_REJECTED
+        && status != WA_PEC_MULTIFACTOR_REQUIRED
+        && status != WA_PEC_MULTIFACTOR_UNAVAILABLE
+        && status != WA_PEC_PROXY_TOKEN_REQUIRED)
         return set_errorResponse(rc, response->login_error,
                                  response->login_message, mwk_func, true);
 

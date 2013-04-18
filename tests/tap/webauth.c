@@ -534,30 +534,11 @@ check_login_response(struct webauth_context *ctx,
         WA_PEC_LOGIN_CANCELED, "user canceled login", 0
     };
 
-    /*
-     * Check the login error code and message.  We need a better templating
-     * system for the login message; in the meantime, recognize the one
-     * substitution we need to make.
-     */
-    is_int(test->response.login_error, response->login_error,
-           "... login error code");
-    if (test->response.login_message != NULL
-        && strcmp(test->response.login_message,
-                  "realm <realm> is not permitted") == 0) {
-        char *realm_error;
-
-        basprintf(&realm_error, "realm %s is not permitted", krbconf->realm);
-        is_string(realm_error, response->login_message,
-                  "... login error message");
-        free(realm_error);
-    } else {
-        is_string(test->response.login_message, response->login_message,
-                  "... login error message");
-    }
-
     /* Check various simple response parameters. */
     is_string(test->response.user_message, response->user_message,
               "... user message");
+    is_string(test->response.login_state, response->login_state,
+              "... login state");
     is_int(test->response.password_expires, response->password_expires,
            "... password expires");
 
@@ -801,6 +782,7 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     struct webauth_webkdc_login_response *response;
     struct webauth_webkdc_proxy_data *pd;
     apr_array_header_t *wkproxies, *wkfactors, *logins;
+    char *wanted;
     const char *message;
     const char **encoded;
     int s;
@@ -897,16 +879,25 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     s = webauth_webkdc_login(ctx, &request, &response, ring);
 
     /*
-     * Check the WebAuth return code.  If we expect to fail, no other
-     * validation is useful, so don't do anything further.
+     * Check the WebAuth status code and message.  We need a better templating
+     * system for the login message; in the meantime, recognize the one
+     * substitution we need to make.
      */
     if (s != WA_ERR_NONE && test->status == WA_ERR_NONE)
         diag("%s", webauth_error_message(ctx, s));
     is_int(test->status, s, "%s (status)", test->name);
-    if (test->status != WA_ERR_NONE) {
+    if (test->status == WA_ERR_NONE)
+        is_string(test->error, NULL, "... and error message");
+    else if (test->error != NULL
+             && strcmp(test->error, "<realm-error>") == 0) {
+        basprintf(&wanted, "username rejected (realm %s is not permitted)",
+                  krbconf->realm);
+        is_string(wanted, webauth_error_message(ctx, s),
+                  "... and error message");
+        free(wanted);
+    } else {
         message = webauth_error_message(ctx, s);
         is_string(test->error, message, "... and error message");
-        return;
     }
 
     /* Check the response. */

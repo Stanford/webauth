@@ -32,8 +32,7 @@ static const struct wat_login_test tests_no_local[] = {
     /* Basic test for obtaining an id token with a username and password. */
     {
         "Login with password",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -50,7 +49,7 @@ static const struct wat_login_test tests_no_local[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -76,8 +75,7 @@ static const struct wat_login_test tests_no_local[] = {
      */
     {
         "Login with password and forced authentication",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -94,7 +92,7 @@ static const struct wat_login_test tests_no_local[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -116,8 +114,7 @@ static const struct wat_login_test tests_no_local[] = {
     /* Obtain a proxy token instead of an id token. */
     {
         "Login with password, proxy token",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -134,7 +131,7 @@ static const struct wat_login_test tests_no_local[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -156,8 +153,8 @@ static const struct wat_login_test tests_no_local[] = {
     /* Test rejecting mismatched webkdc-proxy and login tokens. */
     {
         "Mismatched webkdc-proxy and login tokens",
-        0,
-        NULL,
+        WA_PEC_UNAUTHORIZED,
+        "authorization denied (may not use webkdc-proxy token)",
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -181,9 +178,7 @@ static const struct wat_login_test tests_no_local[] = {
             }
         },
         {
-            WA_PEC_UNAUTHORIZED,
-            "not authorized to use proxy token",
-            NULL,
+            NULL, NULL,
             NO_FACTOR_DATA,
             NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
@@ -202,8 +197,7 @@ static const struct wat_login_test tests_no_local[] = {
      */
     {
         "Login and webkdc-proxy token with same factors",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -227,7 +221,7 @@ static const struct wat_login_test tests_no_local[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -251,8 +245,7 @@ static const struct wat_login_test tests_no_local[] = {
 static const struct wat_login_test tests_permitted[] = {
     {
         "Login with password and a permitted realm",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -269,7 +262,7 @@ static const struct wat_login_test tests_permitted[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -293,8 +286,8 @@ static const struct wat_login_test tests_permitted[] = {
 static const struct wat_login_test tests_not_permitted[] = {
     {
         "Login with password and a forbidden realm",
-        0,
-        NULL,
+        WA_PEC_USER_REJECTED,
+        "<realm-error>",
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -311,9 +304,7 @@ static const struct wat_login_test tests_not_permitted[] = {
             }
         },
         {
-            WA_PEC_USER_REJECTED,
-            "realm <realm> is not permitted",
-            NULL,
+            NULL, NULL,
             NO_FACTOR_DATA,
             NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
@@ -332,8 +323,7 @@ static const struct wat_login_test tests_local[] = {
     /* Pass in the full principal name, which should get canonicalized. */
     {
         "Login with full principal in the local realm",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -350,7 +340,7 @@ static const struct wat_login_test tests_local[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -372,8 +362,7 @@ static const struct wat_login_test tests_local[] = {
     /* Pass in just the username portion. */
     {
         "Login with partial principal in the local realm",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -390,7 +379,7 @@ static const struct wat_login_test tests_local[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -416,8 +405,7 @@ static const struct wat_login_test tests_local[] = {
      */
     {
         "Login with full principal and webkdc-proxy token",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -441,7 +429,7 @@ static const struct wat_login_test tests_local[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -470,8 +458,7 @@ static const struct wat_login_test tests_id_acl[] = {
     /* Now assert an authorization identity. */
     {
         "Login for proxy token with authorization identity",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -488,7 +475,7 @@ static const struct wat_login_test tests_id_acl[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {

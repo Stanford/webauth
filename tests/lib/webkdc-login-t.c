@@ -28,8 +28,8 @@ static const struct wat_login_test tests_login[] = {
     /* Attempt login with no authentication. */
     {
         "No authentication",
-        0,
-        NULL,
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -42,9 +42,7 @@ static const struct wat_login_test tests_login[] = {
             }
         },
         {
-            WA_PEC_PROXY_TOKEN_REQUIRED,
-            "need a proxy token",
-            NULL,
+            NULL, NULL,
             NO_FACTOR_DATA,
             NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
@@ -59,8 +57,8 @@ static const struct wat_login_test tests_login[] = {
     /* The same, but with a login cancel token. */
     {
         "No authentication and login cancel",
-        0,
-        NULL,
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -73,9 +71,7 @@ static const struct wat_login_test tests_login[] = {
             }
         },
         {
-            WA_PEC_PROXY_TOKEN_REQUIRED,
-            "need a proxy token",
-            NULL,
+            NULL, NULL,
             NO_FACTOR_DATA,
             NO_TOKENS_WKPROXY,
             EMPTY_TOKEN_WKFACTOR,
@@ -90,8 +86,7 @@ static const struct wat_login_test tests_login[] = {
     /* Pass in a webkdc-proxy token and obtain an id token. */
     {
         "webkdc-proxy authentication",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -111,7 +106,7 @@ static const struct wat_login_test tests_login[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -136,8 +131,7 @@ static const struct wat_login_test tests_login[] = {
     /* The same, but also add a webkdc-factor token. */
     {
         "webkdc-proxy and webkdc-factor authentication",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -161,7 +155,7 @@ static const struct wat_login_test tests_login[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -186,8 +180,8 @@ static const struct wat_login_test tests_login[] = {
     /* Forced login with a proxy token should fail. */
     {
         "Forced login with webkdc-proxy token",
-        0,
-        NULL,
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -207,9 +201,7 @@ static const struct wat_login_test tests_login[] = {
             }
         },
         {
-            WA_PEC_LOGIN_FORCED,
-            "forced authentication, need to login",
-            NULL,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -231,8 +223,8 @@ static const struct wat_login_test tests_login[] = {
     /* A proxy token request with a webkdc-proxy token should fail. */
     {
         "Proxy token request with webkdc-proxy token",
-        0,
-        NULL,
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -252,9 +244,7 @@ static const struct wat_login_test tests_login[] = {
             }
         },
         {
-            WA_PEC_PROXY_TOKEN_REQUIRED,
-            "need a proxy token",
-            NULL,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -280,8 +270,7 @@ static const struct wat_login_test tests_time_limit[] = {
     /* Forced login should succeed with a fresh webkdc-proxy token. */
     {
         "Forced login within login timeout",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -301,7 +290,7 @@ static const struct wat_login_test tests_time_limit[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -330,8 +319,7 @@ static const struct wat_login_test tests_id_acl[] = {
     /* Don't attempt to assert an identity. */
     {
         "Proxy authentication with identity ACL",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -351,7 +339,7 @@ static const struct wat_login_test tests_id_acl[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -376,8 +364,7 @@ static const struct wat_login_test tests_id_acl[] = {
     /* Now assert an authorization identity. */
     {
         "Proxy authentication with authorization identity",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -397,7 +384,7 @@ static const struct wat_login_test tests_id_acl[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -422,8 +409,8 @@ static const struct wat_login_test tests_id_acl[] = {
     /* Assert an identity we're not allowed to assert. */
     {
         "Unauthorized authorization identity",
-        0,
-        NULL,
+        WA_PEC_UNAUTHORIZED,
+        "authorization denied (may not assert that identity)",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -443,9 +430,7 @@ static const struct wat_login_test tests_id_acl[] = {
             }
         },
         {
-            WA_PEC_UNAUTHORIZED,
-            "not authorized to assert that identity",
-            NULL,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
@@ -467,8 +452,7 @@ static const struct wat_login_test tests_id_acl[] = {
     /* Assert the same identity as the subject. */
     {
         "Authorization identity matching subject",
-        0,
-        NULL,
+        LOGIN_SUCCESS,
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -488,7 +472,7 @@ static const struct wat_login_test tests_id_acl[] = {
             }
         },
         {
-            LOGIN_SUCCESS,
+            NULL, NULL,
             NO_FACTOR_DATA,
             {
                 {
