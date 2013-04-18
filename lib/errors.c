@@ -118,6 +118,20 @@ webauth_error_message(struct webauth_context *ctx, int s)
 
 
 /*
+ * Change the saved status code for the current error to a new value, keeping
+ * the message.  Return the new status code for convenience.
+ */
+int
+wai_error_change(struct webauth_context *ctx, int old, int s)
+{
+    if (ctx->status != old)
+        return ctx->status;
+    ctx->status = s;
+    return s;
+}
+
+
+/*
  * Add context to the existing error message.  This appends a string starting
  * with "while" followed by the results of formatting the provided printf
  * string.  If there is no current error, this silently fails (possibly not
@@ -137,6 +151,28 @@ wai_error_context(struct webauth_context *ctx, const char *format, ...)
     string = apr_pvsprintf(ctx->pool, format, args);
     va_end(args);
     ctx->error = apr_pstrcat(ctx->pool, ctx->error, " while ", string, NULL);
+}
+
+
+/*
+ * Given a WebAuth status code, convert it to a status code that can be used
+ * in protocol elements such as error tokens and XML.  Most internal errors
+ * will be mapped to WA_PEC_INVALID_REQUEST or WA_PEC_SERVER_FAILURE.
+ */
+int
+wai_error_protocol(struct webauth_context *ctx UNUSED, int s)
+{
+    if (s < WA_ERR_INTERNAL)
+        return s;
+    else if (   s == WA_ERR_BAD_HMAC
+             || s == WA_ERR_BAD_KEY
+             || s == WA_ERR_CORRUPT
+             || s == WA_ERR_TOKEN_EXPIRED
+             || s == WA_ERR_TOKEN_REJECTED
+             || s == WA_ERR_TOKEN_STALE)
+        return WA_PEC_INVALID_REQUEST;
+    else
+        return WA_PEC_SERVER_FAILURE;
 }
 
 

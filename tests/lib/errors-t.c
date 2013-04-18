@@ -89,7 +89,7 @@ main(void)
     char *output = NULL;
     char buf[BUFSIZ];
 
-    plan(43);
+    plan(49);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -130,6 +130,17 @@ main(void)
     is_string(expected, webauth_error_message(ctx, INT_MAX),
               "mismatch with unknown error code");
     free(expected);
+
+    /* Test changing the error. */
+    is_int(WA_ERR_RAND_FAILURE,
+           wai_error_change(ctx, WA_ERR_BAD_HMAC, WA_ERR_RAND_FAILURE),
+           "changing error code returns expected value");
+    is_string("HMAC check failed (test error 1)",
+              webauth_error_message(ctx, WA_ERR_RAND_FAILURE),
+              "error string is still the same");
+    is_string("HMAC check failed",
+              webauth_error_message(ctx, WA_ERR_BAD_HMAC),
+              "webauth_error_message with old code returns generic string");
 
     /* Set an error from errno. */
     wai_error_set_system(ctx, WA_ERR_NOT_FOUND, ENOMEM, "error %d", 2);
@@ -195,6 +206,14 @@ main(void)
               "wa_log_error with unknown level logged to warn");
     free(expected);
     free(output);
+
+    /* Test a few cases of translation of status codes to protocol codes. */
+    is_int(WA_PEC_LOGIN_FAILED, wai_error_protocol(ctx, WA_PEC_LOGIN_FAILED),
+           "no translation of a protocol code");
+    is_int(WA_PEC_INVALID_REQUEST, wai_error_protocol(ctx, WA_ERR_BAD_HMAC),
+           "WA_ERR_BAD_HMAC translates to WA_PEC_INVALID_REQUEST");
+    is_int(WA_PEC_SERVER_FAILURE, wai_error_protocol(ctx, WA_ERR_NO_ROOM),
+           "WA_ERR_NO_ROOM translates to WA_PEC_SERVER_FAILURE");
 
     /* Clean up. */
     apr_terminate();

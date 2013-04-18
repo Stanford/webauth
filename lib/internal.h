@@ -278,21 +278,37 @@ int wai_encode_token(struct webauth_context *,
                      const struct webauth_token *, void **, size_t *)
     __attribute__((__nonnull__));
 
+/* Change the status code for the current error, keeping the message. */
+int wai_error_change(struct webauth_context *, int old, int s)
+    __attribute__((__nonnull__));
+
 /* Add context to the current error, whatever it is. */
 void wai_error_context(struct webauth_context *, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 2, 3)));
 
+/*
+ * Given a WebAuth status code, convert it to a status code that can be used
+ * in protocol elements such as error tokens and XML.  Most internal errors
+ * will be mapped to WA_PEC_INVALID_REQUEST or WA_PEC_SERVER_FAILURE.
+ *
+ * Note that this cannot convert more general internal error codes, such as
+ * WA_ERR_TOKEN_EXPIRED, to the specific protocol error codes such as
+ * WA_PEC_SERVICE_TOKEN_EXPIRED.  That mapping must be done manually.
+ */
+int wai_error_protocol(struct webauth_context *, int)
+    __attribute__((__nonnull__, __pure__));
+
 /* Set the internal WebAuth error message and error code. */
-void wai_error_set(struct webauth_context *, int err, const char *, ...)
+void wai_error_set(struct webauth_context *, int s, const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 3, 4)));
 
 /* The same, but include the string expansion of an APR error. */
-void wai_error_set_apr(struct webauth_context *, int err, apr_status_t,
+void wai_error_set_apr(struct webauth_context *, int s, apr_status_t,
                        const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
 
 /* The same, but include the string expansion of an errno. */
-void wai_error_set_system(struct webauth_context *, int err, int syserr,
+void wai_error_set_system(struct webauth_context *, int s, int syserr,
                           const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
 
@@ -424,7 +440,7 @@ void wai_webkdc_log_login(struct webauth_context *,
                           const struct webauth_webkdc_login_response *,
                           apr_array_header_t *logins,
                           const struct webauth_token_request *)
-    __attribute__((__nonnull__));
+    __attribute__((__nonnull__(1, 2, 3)));
 
 /* Retrieve all of the text inside an XML element and return it. */
 int wai_xml_content(struct webauth_context *, apr_xml_elem *, const char **)
