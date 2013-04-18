@@ -33,6 +33,43 @@ error_string(struct webauth_context *ctx, int s)
 {
     switch (s) {
     case WA_ERR_NONE:              return "no error occurred";
+
+    /* Protocol errors. */
+    case WA_PEC_SERVICE_TOKEN_EXPIRED: return "expired webkdc-service token";
+    case WA_PEC_SERVICE_TOKEN_INVALID: return "invalid webkdc-service token";
+    case WA_PEC_PROXY_TOKEN_EXPIRED:   return "expired webkdc-proxy token";
+    case WA_PEC_PROXY_TOKEN_INVALID:   return "invalid webkdc-proxy token";
+    case WA_PEC_INVALID_REQUEST:       return "request was invalid";
+    case WA_PEC_UNAUTHORIZED:          return "authorization denied";
+    case WA_PEC_SERVER_FAILURE:        return "internal server failure";
+    case WA_PEC_REQUEST_TOKEN_STALE:   return "stale request token";
+    case WA_PEC_REQUEST_TOKEN_INVALID: return "invalid request token";
+    case WA_PEC_GET_CRED_FAILURE:
+        return "cannot obtain requested credential";
+    case WA_PEC_REQUESTER_KRB5_CRED_INVALID:
+        return "invalid Kerberos authenticator";
+    case WA_PEC_LOGIN_TOKEN_STALE:     return "stale login token";
+    case WA_PEC_LOGIN_TOKEN_INVALID:   return "invalid login token";
+    case WA_PEC_LOGIN_FAILED:          return "login failed";
+    case WA_PEC_PROXY_TOKEN_REQUIRED:  return "webkdc-proxy token required";
+    case WA_PEC_LOGIN_CANCELED:        return "user canceled login";
+    case WA_PEC_LOGIN_FORCED:
+        return "forced authentication, must reauthenticate";
+    case WA_PEC_USER_REJECTED:         return "username rejected";
+    case WA_PEC_CREDS_EXPIRED:         return "user credentials expired";
+    case WA_PEC_MULTIFACTOR_REQUIRED:  return "multifactor login required";
+    case WA_PEC_MULTIFACTOR_UNAVAILABLE:
+        return "multifactor required but not configured";
+    case WA_PEC_LOGIN_REJECTED:        return "user may not authenticate";
+    case WA_PEC_LOA_UNAVAILABLE:
+        return "insufficient level of assurance";
+    case WA_PEC_AUTH_REJECTED:         return "authentication rejected";
+    case WA_PEC_AUTH_REPLAY:
+        return "authentication appears to be a replay";
+    case WA_PEC_AUTH_LOCKOUT:          return "too many failed attempts";
+
+    /* Internal errors. */
+    case WA_ERR_INTERNAL:          return "internal error";
     case WA_ERR_NO_ROOM:           return "supplied buffer too small";
     case WA_ERR_CORRUPT:           return "data is incorrectly formatted";
     case WA_ERR_NO_MEM:            return "no memory";

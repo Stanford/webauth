@@ -43,39 +43,6 @@ struct webauth_context;
 struct webauth_keyring;
 
 /*
- * Protocol error codes (PEC) for error tokens and XML messages.  These
- * numbers must not change, as they are part of the protocol
- */
-enum webauth_error_code {
-    WA_PEC_SERVICE_TOKEN_EXPIRED       =  1,
-    WA_PEC_SERVICE_TOKEN_INVALID       =  2, /* Can't decrypt / bad format */
-    WA_PEC_PROXY_TOKEN_EXPIRED         =  3,
-    WA_PEC_PROXY_TOKEN_INVALID         =  4, /* Can't decrypt / bad format */
-    WA_PEC_INVALID_REQUEST             =  5, /* Missing/incorrect data, etc */
-    WA_PEC_UNAUTHORIZED                =  6, /* Access denied */
-    WA_PEC_SERVER_FAILURE              =  7, /* Server failure, try again */
-    WA_PEC_REQUEST_TOKEN_STALE         =  8,
-    WA_PEC_REQUEST_TOKEN_INVALID       =  9, /* Can't decrypt / bad format */
-    WA_PEC_GET_CRED_FAILURE            = 10, /* Can't get credential */
-    WA_PEC_REQUESTER_KRB5_CRED_INVALID = 11, /* <requesterCredential> was bad */
-    WA_PEC_LOGIN_TOKEN_STALE           = 12,
-    WA_PEC_LOGIN_TOKEN_INVALID         = 13, /* Can't decrypt / bad format */
-    WA_PEC_LOGIN_FAILED                = 14, /* Username/password failed */
-    WA_PEC_PROXY_TOKEN_REQUIRED        = 15, /* Missing required proxy-token */
-    WA_PEC_LOGIN_CANCELED              = 16, /* User cancelled login */
-    WA_PEC_LOGIN_FORCED                = 17, /* User must re-login */
-    WA_PEC_USER_REJECTED               = 18, /* Principal not permitted */
-    WA_PEC_CREDS_EXPIRED               = 19, /* User password expired */
-    WA_PEC_MULTIFACTOR_REQUIRED        = 20, /* Multifactor login required */
-    WA_PEC_MULTIFACTOR_UNAVAILABLE     = 21, /* MF required, not available */
-    WA_PEC_LOGIN_REJECTED              = 22, /* User may not log on now */
-    WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
-    WA_PEC_AUTH_REJECTED               = 24, /* Auth to this site rejected */
-    WA_PEC_AUTH_REPLAY                 = 25, /* Auth was a replay */
-    WA_PEC_AUTH_LOCKOUT                = 26  /* Too many failed attempts */
-};
-
-/*
  * The types of tokens specified in the protocol, used in the type field of
  * the webauth_token struct.  WA_TOKEN_UNKNOWN will never be returned in that
  * struct but is used internally for errors.  WA_TOKEN_ANY is used as the
