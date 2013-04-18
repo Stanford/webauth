@@ -133,40 +133,43 @@ wai_webkdc_log_login(struct webauth_context *ctx,
 
     /* Gather information about the login tokens. */
     login_type = NULL;
-    for (i = 0; i < logins->nelts; i++) {
-        const struct webauth_token *token;
+    if (!apr_is_empty_array(logins))
+        for (i = 0; i < logins->nelts; i++) {
+            const struct webauth_token *token;
 
-        token = APR_ARRAY_IDX(logins, i, struct webauth_token *);
-        assert(token->type == WA_TOKEN_LOGIN);
-        if (token->token.login.password != NULL) {
-            if (login_type == NULL)
-                login_type = "password";
-            else if (strcmp(login_type, "otp") == 0)
-                login_type = "password,otp";
-        } else if (token->token.login.otp != NULL) {
-            if (login_type == NULL)
-                login_type = "otp";
-            else if (strcmp(login_type, "password") == 0)
-                login_type = "password,otp";
+            token = APR_ARRAY_IDX(logins, i, struct webauth_token *);
+            assert(token->type == WA_TOKEN_LOGIN);
+            if (token->token.login.password != NULL) {
+                if (login_type == NULL)
+                    login_type = "password";
+                else if (strcmp(login_type, "otp") == 0)
+                    login_type = "password,otp";
+            } else if (token->token.login.otp != NULL) {
+                if (login_type == NULL)
+                    login_type = "otp";
+                else if (strcmp(login_type, "password") == 0)
+                    login_type = "password,otp";
+            }
         }
-    }
 
     /* Log information about the request. */
-    log_attribute(message, "rtt", req->type);
-    if (strcmp(req->type, "id") == 0)
-        log_attribute(message, "sa", req->auth);
-    else if (strcmp(req->type, "proxy") == 0)
-        log_attribute(message, "pt", req->proxy_type);
-    if (req->initial_factors != NULL)
-        log_attribute(message, "wifactors", req->initial_factors);
-    if (req->session_factors != NULL)
-        log_attribute(message, "wsfactors", req->session_factors);
-    if (req->loa > 0)
-        wai_buffer_append_sprintf(message, " wloa=%lu", req->loa);
-    if (req->options != NULL)
-        log_attribute(message, "ro", req->options);
-    if (login_type != NULL)
-        log_attribute(message, "login", login_type);
+    if (req != NULL) {
+        log_attribute(message, "rtt", req->type);
+        if (strcmp(req->type, "id") == 0)
+            log_attribute(message, "sa", req->auth);
+        else if (strcmp(req->type, "proxy") == 0)
+            log_attribute(message, "pt", req->proxy_type);
+        if (req->initial_factors != NULL)
+            log_attribute(message, "wifactors", req->initial_factors);
+        if (req->session_factors != NULL)
+            log_attribute(message, "wsfactors", req->session_factors);
+        if (req->loa > 0)
+            wai_buffer_append_sprintf(message, " wloa=%lu", req->loa);
+        if (req->options != NULL)
+            log_attribute(message, "ro", req->options);
+        if (login_type != NULL)
+            log_attribute(message, "login", login_type);
+    }
 
     /* Log information about the authentication. */
     if (response->authz_subject != NULL)
