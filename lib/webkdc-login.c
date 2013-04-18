@@ -963,7 +963,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
     struct webauth_token_request *req = NULL;
     struct webauth_token_webkdc_service *service;
     struct webauth_token_webkdc_proxy *wkproxy = NULL;
-    int i, s;
+    int i, s, protocol;
     struct webauth_user_info *info = NULL;
     const char *etoken;
     bool did_login = false;
@@ -1373,22 +1373,21 @@ webauth_webkdc_login(struct webauth_context *ctx,
     }
 
     /* Successful authentication. */
-    wai_webkdc_log_login(ctx, request, *response, logins, req);
+    wai_webkdc_log_login(ctx, request, *response, WA_ERR_NONE, logins, req);
     return WA_ERR_NONE;
 
 fail:
     /*
-     * On failure, fill out login_error and login_message and then log.  If we
-     * mapped the error message to a new one, log the original error message
-     * first so that we don't lose the full context.
+     * On failure, map the status to a protocol status.  If we mapped the
+     * status to a new one, log the original error message first so that we
+     * don't lose the full context.
      */
-    (*response)->login_error = wai_error_protocol(ctx, s);
-    if ((*response)->login_error != s) {
+    protocol = wai_error_protocol(ctx, s);
+    if (protocol != s) {
         wai_log_error(ctx, s, WA_LOG_WARN, "cannot handle login request");
-        s = (*response)->login_error;
-        wai_error_set(ctx, s, NULL);
+        wai_error_set(ctx, protocol, NULL);
+        s = protocol;
     }
-    (*response)->login_message = webauth_error_message(ctx, s);
-    wai_webkdc_log_login(ctx, request, *response, logins, req);
+    wai_webkdc_log_login(ctx, request, *response, s, logins, req);
     return s;
 }

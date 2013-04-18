@@ -1603,17 +1603,18 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         && status != WA_PEC_MULTIFACTOR_REQUIRED
         && status != WA_PEC_MULTIFACTOR_UNAVAILABLE
         && status != WA_PEC_PROXY_TOKEN_REQUIRED)
-        return set_errorResponse(rc, response->login_error,
-                                 response->login_message, mwk_func, true);
+        return set_errorResponse(rc, status,
+                                 webauth_error_message(rc->ctx, status),
+                                 mwk_func, true);
 
     /* Send the XML response. */
     ap_rvputs(rc->r, "<requestTokenResponse>", NULL);
 
-    if (response->login_error != 0) {
-        ap_rprintf(rc->r, "<loginErrorCode>%d</loginErrorCode>",
-                   response->login_error);
+    if (status != WA_ERR_NONE) {
+        ap_rprintf(rc->r, "<loginErrorCode>%d</loginErrorCode>", status);
         ap_rprintf(rc->r, "<loginErrorMessage>%s</loginErrorMessage>",
-                   apr_xml_quote_string(rc->r->pool, response->login_message,
+                   apr_xml_quote_string(rc->r->pool,
+                                        webauth_error_message(rc->ctx, status),
                                         false));
     }
 

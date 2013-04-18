@@ -432,13 +432,14 @@ int wai_token_merge_webkdc_proxy_factor(struct webauth_context *,
     __attribute__((__nonnull__(1, 2, 4)));
 
 /*
- * Log the results of a <requestTokenRequest>.  The array argument is an array
- * of login tokens for analysis to determine what type of login was done.
+ * Log the results of a <requestTokenRequest>.  The int argument is the
+ * WebAuth status of the login.  The array argument is an array of login
+ * tokens for analysis to determine what type of login was done.
  */
 void wai_webkdc_log_login(struct webauth_context *,
                           const struct webauth_webkdc_login_request *,
                           const struct webauth_webkdc_login_response *,
-                          apr_array_header_t *logins,
+                          int, apr_array_header_t *logins,
                           const struct webauth_token_request *)
     __attribute__((__nonnull__(1, 2, 3)));
 

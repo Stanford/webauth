@@ -99,19 +99,29 @@ log_attribute(struct wai_buffer *message, const char *key, const char *value)
  * will be successful or not, as the last thing that we do before returning to
  * the caller.  This function constructs a general key/value pair log format.
  *
- * Takes the request, the response, the list of login tokens (used to log what
- * login methods were used), and the request token.
+ * Takes the request, the response, the WebAuth status of the authentication
+ * (after mapping to a protocol error), the list of login tokens (used to log
+ * what login methods were used), and the request token.  Assumes that any
+ * error message is the current webauth_error_message.
  */
 void
 wai_webkdc_log_login(struct webauth_context *ctx,
                      const struct webauth_webkdc_login_request *request,
                      const struct webauth_webkdc_login_response *response,
-                     apr_array_header_t *logins,
+                     int status, apr_array_header_t *logins,
                      const struct webauth_token_request *req)
 {
     struct wai_buffer *message;
     const char *subject, *login_type;
+    const char *error = NULL;
     int i;
+
+    /*
+     * Get any WebAuth error message first thing in case any subsequent calls
+     * set a WebAuth status.
+     */
+    if (status != WA_ERR_NONE)
+        error = webauth_error_message(ctx, status);
 
     /* If we don't have a notice logging handler, avoid lots of work. */
     if (ctx->notice.callback == NULL)
@@ -182,9 +192,9 @@ wai_webkdc_log_login(struct webauth_context *ctx,
         wai_buffer_append_sprintf(message, " loa=%lu", response->loa);
 
     /* Finally, log the error code and error message. */
-    wai_buffer_append_sprintf(message, " lec=%d", response->login_error);
-    if (response->login_message != NULL)
-        log_attribute(message, "lem", response->login_message);
+    wai_buffer_append_sprintf(message, " lec=%d", status);
+    if (error != NULL)
+        log_attribute(message, "lem", error);
 
     /* Actually log the message. */
     wai_log_notice(ctx, "%s", message->data);
