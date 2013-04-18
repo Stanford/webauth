@@ -65,11 +65,13 @@ struct webauth_context;
  * internally in the WebAuth code, and WA_PEC_* status codes are valid in
  * protocol elements (the code attribute of error tokens, the <errorCode>
  * element of an <errorResponse>, and the <loginErrorCode> element of a
- * <requestTokenResponse>).  Nearly all WebAuth functions only return the
- * internal status codes.  webauth_webkdc_login may return either type.  When
- * using a status code in a context that requires it be a valid protocol
- * element, call webauth_error_protocol to get the mapped code.  Most internal
- * errors will be mapped to WA_PEC_INVALID_REQUEST or WA_PEC_SERVER_FAILURE.
+ * <requestTokenResponse>).  Most WebAuth functions only return the internal
+ * status codes, but webauth_krb5_* calls and webauth_webkdc_login may return
+ * either type.
+ *
+ * The numeric values of the protocol status codes are fixed in the protocol
+ * and must not change for interoperability reasons.  The WA_ERR_* status
+ * codes are internal to the library API and may change with the API.
  */
 enum webauth_status {
     WA_ERR_NONE = 0,
