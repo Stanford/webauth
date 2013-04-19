@@ -1280,7 +1280,7 @@ static const struct wat_login_test tests_default[] = {
 
     /* Try that with session multifactor, which should fail. */
     {
-        "Multifactor satisfies random session",
+        "Initial multifactor does not satisfy random session",
         WA_PEC_LOGIN_FORCED,
         "forced authentication, must reauthenticate",
         {
