@@ -929,8 +929,7 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
  * logs all errors and generates errorResponse if need be.
  */
 static enum mwk_status
-parse_request_token(MWK_REQ_CTXT *rc,
-                    char *token,
+parse_request_token(MWK_REQ_CTXT *rc, const char *token,
                     const struct webauth_token_webkdc_service *st,
                     struct webauth_token_request **rt)
 {
@@ -1489,7 +1488,6 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 {
     apr_xml_elem *child;
     static const char *mwk_func="handle_requestTokenRequest";
-    char *request_token = NULL;
     void *ls_data;
     int i, status;
     struct webauth_webkdc_login_request request;
@@ -1517,18 +1515,22 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 return MWK_ERROR;
         } else if (strcmp(child->name, "requestToken") == 0) {
             request.request = get_elem_text(rc, child, mwk_func);
-            if (request_token == NULL)
-                return MWK_ERROR;
-            if (!parse_request_token(rc, request_token, service, &req))
-                return MWK_ERROR;
+            if (request.request == NULL)
+                return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
+                                         "invalid <requestToken>", mwk_func,
+                                         true);
         } else if (strcmp(child->name, "authzSubject") == 0) {
             request.authz_subject = get_elem_text(rc, child, mwk_func);
             if (request.authz_subject == NULL)
-                return MWK_ERROR;
+                return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
+                                         "invalid <authzSubject>", mwk_func,
+                                         true);
         } else if (strcmp(child->name, "loginState") == 0) {
             request.login_state = get_elem_text(rc, child, mwk_func);
             if (request.login_state == NULL)
-                return MWK_ERROR;
+                return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
+                                         "invalid <loginState>", mwk_func,
+                                         true);
         } else if (strcmp(child->name, "requestInfo") == 0) {
             if (!parse_requestInfo(rc, child, &request))
                 return MWK_ERROR;
@@ -1560,6 +1562,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requestToken>",
                                  mwk_func, true);
+    if (!parse_request_token(rc, request.request, service, &req))
+        return MWK_ERROR;
 
     /*
      * Based on the type of token requested, check that the requesting WAS is
