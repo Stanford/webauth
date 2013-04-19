@@ -25,7 +25,7 @@ main(void)
     struct webauth_factors *one, *two, *result;
     apr_array_header_t *factors;
 
-    plan(51);
+    plan(52);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -168,6 +168,8 @@ main(void)
            "p does not satisfy p,x,m");
     is_int(1, webauth_factors_satisfies(ctx, one, one),
            "p,x,m satisfies itself");
+    is_int(1, webauth_factors_satisfies(ctx, one, NULL),
+           "anything satisfies NULL");
     two = webauth_factors_union(ctx, two, webauth_factors_parse(ctx, "m,x,p"));
     is_int(1, webauth_factors_satisfies(ctx, one, two),
            "satisfies works out of order");

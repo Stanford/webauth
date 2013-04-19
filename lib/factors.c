@@ -348,6 +348,8 @@ webauth_factors_satisfies(struct webauth_context *ctx UNUSED,
     const char *factor;
     int i;
 
+    if (two == NULL)
+        return true;
     if (!one->multifactor && two->multifactor)
         return false;
     for (i = 0; i < two->factors->nelts; i++) {

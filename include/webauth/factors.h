@@ -117,7 +117,7 @@ char *webauth_factors_string(struct webauth_context *,
 int webauth_factors_satisfies(struct webauth_context *,
                               const struct webauth_factors *,
                               const struct webauth_factors *)
-    __attribute__((__nonnull__));
+    __attribute__((__nonnull__(1, 2)));
 
 /*
  * Given two sets of factors (struct webauth_factors), return a new set of
