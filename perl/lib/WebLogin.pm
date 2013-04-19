@@ -239,14 +239,19 @@ sub expire_cookie {
     return $cookie;
 }
 
-# Find out if we were given a factor token back from the webkdc.  Returns 1
-# if so, 0 if not.
-sub is_factor_set {
+# Determine if we should clear a factor token.  We do this if the WebKDC sent
+# some cookies but did not include a webkdc-factor token.  If it sent a
+# webkdc-factor token, that will replace our current one, and if it sent no
+# cookies at all, that may just be an initial login and we shouldn't clear any
+# cookies.
+sub should_clear_factor {
     my ($self) = @_;
     my $cookies = $self->{response}->cookies;
-
-    return 1 if exists $cookies->{webauth_wft};
-    return 0;
+    if ($cookies && %{$cookies} && !exists $cookies->{webauth_wft}) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 # If there's a function pointer set in LOGIN_STATE_UNSERIALIZE, use that
@@ -395,7 +400,7 @@ sub print_headers {
 
     # If we haven't been given a webauth factor token cookie explicitly, then
     # we want to expire any that exist.
-    if (!$self->is_factor_set && $self->{request}->factor_token) {
+    if ($self->should_clear_factor && $self->{request}->factor_token) {
         my $cookie = $self->expire_cookie ('webauth_wft', $secure);
         push (@ca, $cookie);
     }
