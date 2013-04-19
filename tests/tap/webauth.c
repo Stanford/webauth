@@ -642,31 +642,16 @@ check_login_response(struct webauth_context *ctx,
         is_string("id", response->result_type, "... result type");
         is_string(test->response.result_id.authz_subject,
                   response->authz_subject, "... authorization subject");
-        is_string(test->response.result_id.initial_factors,
-                  response->initial_factors, "... initial factors");
-        is_string(test->response.result_id.session_factors,
-                  response->session_factors, "... session factors");
-        is_int(test->response.result_id.loa, response->loa,
-               "... level of assurance");
         type = WA_TOKEN_ID;
     } else if (test->response.result_proxy.subject != NULL) {
         is_string("proxy", response->result_type, "... result type");
         is_string(test->response.result_proxy.authz_subject,
                   response->authz_subject, "... authorization subject");
-        is_string(test->response.result_proxy.initial_factors,
-                  response->initial_factors, "... initial factors");
-        is_string(test->response.result_proxy.session_factors,
-                  response->session_factors, "... session factors");
-        is_int(test->response.result_proxy.loa, response->loa,
-               "... level of assurance");
         type = WA_TOKEN_PROXY;
     } else {
         is_string(NULL, response->result_type, "... result type");
         ok(response->result == NULL, "... no result token");
         is_string(NULL, response->authz_subject, "... authorization subject");
-        is_string(NULL, response->initial_factors, "... initial factors");
-        is_string(NULL, response->session_factors, "... session factors");
-        is_int(0, response->loa, "... level of assurance");
         type = WA_TOKEN_UNKNOWN;
     }
     if (type != WA_TOKEN_UNKNOWN && response->result != NULL) {
@@ -702,16 +687,17 @@ check_login_response(struct webauth_context *ctx,
     }
 
     /* Check the application state. */
-    if (test->request.request.state == NULL) {
+    if (test->request.request.state == NULL)
         ok(response->app_state == NULL, "... no application state");
-        is_int(0, response->app_state_len, "... application state length");
-    } else {
+    else if (response->app_state == NULL)
+        ok(test->request.request.state == response->app_state,
+           "... application state data");
+    else
         ok(memcmp(test->request.request.state, response->app_state,
                   test->request.request.state_len) == 0,
            "... application state data");
-        is_int(test->request.request.state_len, response->app_state_len,
-               "... application state length");
-    }
+    is_int(test->request.request.state_len, response->app_state_len,
+           "... application state length");
 
     /* Check the login data. */
     for (i = 0; i < ARRAY_SIZE(test->response.logins); i++) {
@@ -865,7 +851,7 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
     token->type = WA_TOKEN_REQUEST;
     token->token.request = test->request.request;
-    s = webauth_token_encode(ctx, token, ring, &request.request);
+    s = webauth_token_encode(ctx, token, session, &request.request);
     if (s != WA_ERR_NONE)
         bail("cannot encode request token: %s", webauth_error_message(ctx, s));
 

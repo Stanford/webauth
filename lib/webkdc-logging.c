@@ -106,12 +106,14 @@ log_attribute(struct wai_buffer *message, const char *key, const char *value)
  */
 void
 wai_webkdc_log_login(struct webauth_context *ctx,
-                     const struct webauth_webkdc_login_request *request,
+                     const struct wai_webkdc_login_state *state,
                      const struct webauth_webkdc_login_response *response,
-                     int status, apr_array_header_t *logins,
-                     const struct webauth_token_request *req)
+                     const struct webauth_token *wkproxy,
+                     int result)
 {
     struct wai_buffer *message;
+    struct webauth_token_request *req;
+    const struct webauth_token_webkdc_proxy *wpt;
     const char *subject, *login_type;
     const char *error = NULL;
     int i;
@@ -120,8 +122,8 @@ wai_webkdc_log_login(struct webauth_context *ctx,
      * Get any WebAuth error message first thing in case any subsequent calls
      * set a WebAuth status.
      */
-    if (status != WA_ERR_NONE)
-        error = webauth_error_message(ctx, status);
+    if (result != WA_ERR_NONE)
+        error = webauth_error_message(ctx, result);
 
     /* If we don't have a notice logging handler, avoid lots of work. */
     if (ctx->notice.callback == NULL)
@@ -132,8 +134,8 @@ wai_webkdc_log_login(struct webauth_context *ctx,
 
     /* Add basic information from the request. */
     log_attribute(message, "event",    "requestToken");
-    log_attribute(message, "from",     request->client_ip);
-    log_attribute(message, "clientIp", request->remote_ip);
+    log_attribute(message, "from",     state->client_ip);
+    log_attribute(message, "clientIp", state->remote_ip);
     log_attribute(message, "server",   response->requester);
     log_attribute(message, "url",      response->return_url);
 
@@ -143,11 +145,11 @@ wai_webkdc_log_login(struct webauth_context *ctx,
 
     /* Gather information about the login tokens. */
     login_type = NULL;
-    if (!apr_is_empty_array(logins))
-        for (i = 0; i < logins->nelts; i++) {
+    if (!apr_is_empty_array(state->logins))
+        for (i = 0; i < state->logins->nelts; i++) {
             const struct webauth_token *token;
 
-            token = APR_ARRAY_IDX(logins, i, struct webauth_token *);
+            token = APR_ARRAY_IDX(state->logins, i, struct webauth_token *);
             assert(token->type == WA_TOKEN_LOGIN);
             if (token->token.login.password != NULL) {
                 if (login_type == NULL)
@@ -163,6 +165,7 @@ wai_webkdc_log_login(struct webauth_context *ctx,
         }
 
     /* Log information about the request. */
+    req = state->request;
     if (req != NULL) {
         log_attribute(message, "rtt", req->type);
         if (strcmp(req->type, "id") == 0)
@@ -184,15 +187,18 @@ wai_webkdc_log_login(struct webauth_context *ctx,
     /* Log information about the authentication. */
     if (response->authz_subject != NULL)
         log_attribute(message, "authz", response->authz_subject);
-    if (response->initial_factors != NULL)
-        log_attribute(message, "ifactors", response->initial_factors);
-    if (response->session_factors != NULL)
-        log_attribute(message, "sfactors", response->session_factors);
-    if (response->loa > 0)
-        wai_buffer_append_sprintf(message, " loa=%lu", response->loa);
+    if (wkproxy != NULL) {
+        wpt = &wkproxy->token.webkdc_proxy;
+        if (wpt->initial_factors != NULL)
+            log_attribute(message, "ifactors", wpt->initial_factors);
+        if (wpt->session_factors != NULL)
+            log_attribute(message, "sfactors", wpt->session_factors);
+        if (wpt->loa > 0)
+            wai_buffer_append_sprintf(message, " loa=%lu", wpt->loa);
+    }
 
     /* Finally, log the error code and error message. */
-    wai_buffer_append_sprintf(message, " lec=%d", status);
+    wai_buffer_append_sprintf(message, " lec=%d", result);
     if (error != NULL)
         log_attribute(message, "lem", error);
 

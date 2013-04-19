@@ -16,6 +16,7 @@
 
 #include <apr_errno.h>          /* apr_status_t */
 #include <apr_pools.h>          /* apr_pool_t */
+#include <apr_tables.h>         /* apr_array_header_t */
 #include <apr_xml.h>            /* apr_xml_elem */
 #include <webauth/basic.h>      /* enum webauth_log_level, webauth_log_func */
 
@@ -202,6 +203,52 @@ struct wai_keyring {
     uint32_t version;                   /* encode: v, ascii */
     uint32_t entry_count;               /* encode: n, ascii, repeat */
     struct wai_keyring_entry *entry;
+};
+
+/*
+ * Internal state for the WebKDC login process.  This is used to hold
+ * information from a webauth_webkdc_login_request and information that will
+ * be put into a webauth_webkdc_login_response to reduce the number of
+ * parameters passed around internally.
+ */
+struct wai_webkdc_login_state {
+    struct webauth_token_webkdc_service *service;
+    struct webauth_token_request *request;
+
+    /* Arrays of pointers to webauth_token_* structs from the request. */
+    apr_array_header_t *wkproxies;
+    apr_array_header_t *wkfactors;
+    apr_array_header_t *logins;
+
+    /* Additional request data. */
+    const char *client_ip;       /* Host sending the command */
+    const char *remote_ip;       /* Host connecting to the WebLogin server */
+
+    /* Input and output login state for multifactor validation. */
+    const char *login_state_in;
+    const char *login_state_out;
+
+    /* Input and output requested authorization identity. */
+    const char *authz_subject_in;
+    const char *authz_subject_out;
+
+    /* Session keyring created from the session key in the service token. */
+    struct webauth_keyring *session;
+
+    /* True if there was a login token and a successful authentication. */
+    bool did_login;
+
+    /* Output userinfo data for the response. */
+    const char *user_message;
+    const struct webauth_factors *factors_wanted;
+    const struct webauth_factors *factors_configured;
+    time_t password_expires;
+
+    /* Array of weblogin_login structs from userinfo service. */
+    const apr_array_header_t *login_info;
+
+    /* Permitted authorization identities from the identity ACL. */
+    const apr_array_header_t *permitted_authz;
 };
 
 BEGIN_DECLS
@@ -437,11 +484,10 @@ int wai_token_merge_webkdc_proxy_factor(struct webauth_context *,
  * tokens for analysis to determine what type of login was done.
  */
 void wai_webkdc_log_login(struct webauth_context *,
-                          const struct webauth_webkdc_login_request *,
+                          const struct wai_webkdc_login_state *,
                           const struct webauth_webkdc_login_response *,
-                          int, apr_array_header_t *logins,
-                          const struct webauth_token_request *)
-    __attribute__((__nonnull__(1, 2, 3)));
+                          const struct webauth_token *, int)
+    __attribute__((__nonnull__));
 
 /* Retrieve all of the text inside an XML element and return it. */
 int wai_xml_content(struct webauth_context *, apr_xml_elem *, const char **)

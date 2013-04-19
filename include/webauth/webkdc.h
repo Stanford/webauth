@@ -130,9 +130,6 @@ struct webauth_webkdc_login_response {
     const char *authz_subject;  /* Authorization identity, if different. */
     const char *result;         /* Encrypted id or cred token. */
     const char *result_type;    /* Type of result token as a string. */
-    const char *initial_factors;
-    const char *session_factors;
-    unsigned long loa;
     const char *login_cancel;   /* Encrypted error token. */
     const void *app_state;
     size_t app_state_len;

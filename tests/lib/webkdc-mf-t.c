@@ -96,7 +96,14 @@ static const struct wat_login_test tests_default[] = {
         {
             "<strong>You are restricted!</strong>  &lt;_&lt;;", NULL,
             NO_FACTOR_DATA,
-            NO_TOKENS_WKPROXY,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "x,x1", 3, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
             EMPTY_TOKEN_WKFACTOR,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
@@ -822,7 +829,7 @@ static const struct wat_login_test tests_default[] = {
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
             },
-            EMPTY_TOKEN_WKFACTOR,
+            { "full", "d,u", 0, 1893484802 },
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
             {
@@ -1157,7 +1164,7 @@ static const struct wat_login_test tests_default[] = {
         },
         {
             NULL, NULL,
-            "m", "p,m,o,o2",
+            "m,rm", "p,m,o,o2",
             {
                 {
                     "random", "remuser", "WEBKDC:remuser", "random", 6,
@@ -1204,11 +1211,11 @@ static const struct wat_login_test tests_default[] = {
         },
         {
             NULL, NULL,
-            "m", "p,m,o,o2",
+            "rm,m", "p,m,o,o2",
             {
                 {
                     "random", "remuser", "WEBKDC:remuser", "random", 6,
-                    "p,rm", 1, 10 * 60, 60 * 60, NULL
+                    "p", 1, 10 * 60, 60 * 60, NULL
                 },
                 EMPTY_TOKEN_WKPROXY,
                 EMPTY_TOKEN_WKPROXY
@@ -1271,14 +1278,11 @@ static const struct wat_login_test tests_default[] = {
         }
     },
 
-    /*
-     * Try that with session multifactor.
-     *
-     * FIXME: This should not work!
-     */
+    /* Try that with session multifactor, which should fail. */
     {
         "Multifactor satisfies random session",
-        LOGIN_SUCCESS,
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -1299,7 +1303,7 @@ static const struct wat_login_test tests_default[] = {
         },
         {
             NULL, NULL,
-            NO_FACTOR_DATA,
+            "rm", "p,m,o,o2",
             {
                 {
                     "random", "remuser", "WEBKDC:remuser", "random", 6,
@@ -1309,10 +1313,7 @@ static const struct wat_login_test tests_default[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            {
-                "random", NULL, "webkdc", NULL, 0, "p,o,o3,m,rm", "c,rm",
-                1, 0, 60 * 60
-            },
+            EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
             NO_LOGINS,
             0,
@@ -1354,7 +1355,14 @@ static const struct wat_login_test tests_timeout[] = {
         {
             NULL, NULL,
             NO_FACTOR_DATA,
-            NO_TOKENS_WKPROXY,
+            {
+                {
+                    "delay", "remuser", "WEBKDC:remuser", "delay", 5,
+                    "p", 1, 10 * 60, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
             EMPTY_TOKEN_WKFACTOR,
             EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,

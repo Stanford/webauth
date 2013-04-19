@@ -28,6 +28,446 @@
 #include <webauth/tokens.h>
 #include <webauth/webkdc.h>
 
+/*
+ * Default webkdc-proxy lifetime for OTP authentications when the user
+ * validation service does not provide a lifetime.  (Implementations of the
+ * user information service should provide a lifetime rather than trying to
+ * make this configurable.)
+ */
+static const unsigned long DEFAULT_OTP_LIFETIME = 60 * 60 * 10;
+
+
+/*
+ * Helper function to build an array of webauth_token pointers based on the
+ * size of an input array.  This is used for parsing webkdc-proxy,
+ * webkdc-factor, and login tokens.  We add one to the array size to hold
+ * additional webkdc-proxy or webkdc-factor tokens created by the login
+ * process.
+ */
+static apr_array_header_t *
+build_token_array(struct webauth_context *ctx,
+                  const apr_array_header_t *source)
+{
+    size_t n, size;
+
+    n = (source == NULL) ? 0 : source->nelts;
+    size = sizeof(struct webauth_token *);
+    return apr_array_make(ctx->pool, n + 1, size);
+}
+
+
+/*
+ * Decrypt the login tokens in the given array and store them in the login
+ * state.  This is a wrapper around webauth_token_decode that does some
+ * additional checks and return status mapping.
+ */
+static int
+parse_token_logins(struct webauth_context *ctx,
+                   const apr_array_header_t *logins,
+                   struct wai_webkdc_login_state *state,
+                   const struct webauth_keyring *ring)
+{
+    struct webauth_token *token;
+    const char *encoded;
+    int i, s;
+
+    /* Create the array of decoded tokens.  Do this even if empty. */
+    state->logins = build_token_array(ctx, logins);
+
+    /* Nothing further to do if we have no input tokens. */
+    if (apr_is_empty_array(logins))
+        return WA_ERR_NONE;
+
+    /* Walk the array of input tokens and decrypt them. */
+    for (i = 0; i < logins->nelts; i++) {
+        encoded = APR_ARRAY_IDX(logins, i, const char *);
+        s = webauth_token_decode(ctx, WA_TOKEN_LOGIN, encoded, ring, &token);
+        if (s != WA_ERR_NONE)
+            return wai_error_change(ctx, s, WA_PEC_LOGIN_TOKEN_INVALID);
+        APR_ARRAY_PUSH(state->logins, struct webauth_token *) = token;
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Decrypt the request token and store it in the login state.  This is a
+ * wrapper around webauth_token_decode that does some additional checks, and
+ * return status mapping.
+ */
+static int
+parse_token_request(struct webauth_context *ctx, const char *data,
+                    struct wai_webkdc_login_state *state)
+{
+    struct webauth_keyring *ring;
+    struct webauth_token *token;
+    int s;
+
+    /*
+     * Decrypt the request token.
+     *
+     * FIXME: Move token_max_ttl processing here.
+     */
+    if (data == NULL) {
+        wai_error_set(ctx, WA_ERR_INVALID, "incomplete login request data");
+        return WA_ERR_INVALID;
+    }
+    ring = state->session;
+    s = webauth_token_decode(ctx, WA_TOKEN_REQUEST, data, ring, &token);
+    if (s != WA_ERR_NONE)
+        return wai_error_change(ctx, s, WA_PEC_REQUEST_TOKEN_INVALID);
+    state->request = &token->token.request;
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Decrypt the webkdc-factor tokens in the given array and store them in the
+ * login state.  This is a wrapper around webauth_token_decode that does some
+ * additional checks and return status mapping.  We warn about but ignore any
+ * webkdc-proxy credentials that fail to decrypt or decode.
+ *
+ * Currently, this function can never fail since we ignore all errors, but
+ * return a WebAuth status code in case we change later behavior around
+ * handling invalid webkc-factor tokens.
+ */
+static int
+parse_token_webkdc_factors(struct webauth_context *ctx,
+                           const apr_array_header_t *wkfactors,
+                           struct wai_webkdc_login_state *state,
+                           const struct webauth_keyring *ring)
+{
+    struct webauth_token *token;
+    const char *encoded;
+    int i, s;
+    const enum webauth_token_type type = WA_TOKEN_WEBKDC_FACTOR;
+
+    /* Create the array of decoded tokens.  Do this even if empty. */
+    state->wkfactors = build_token_array(ctx, wkfactors);
+
+    /* Nothing further to do if we have no input tokens. */
+    if (apr_is_empty_array(wkfactors))
+        return WA_ERR_NONE;
+
+    /* Walk the array of input tokens and decrypt them. */
+    for (i = 0; i < wkfactors->nelts; i++) {
+        encoded = APR_ARRAY_IDX(wkfactors, i, const char *);
+        s = webauth_token_decode(ctx, type, encoded, ring, &token);
+        if (s != WA_ERR_NONE) {
+            wai_log_error(ctx, WA_LOG_INFO, s, "ignoring webkdc-factor token");
+            continue;
+        }
+        APR_ARRAY_PUSH(state->wkfactors, struct webauth_token *) = token;
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Decrypt the webkdc-proxy tokens in the given array and store them in the
+ * login state.  This is a wrapper around webauth_token_decode that does some
+ * additional checks, fills in the session factors, and maps status codes.  We
+ * warn about but ignore any webkdc-proxy credentials that fail to decrypt or
+ * decode.
+ *
+ * Currently, this function can never fail since we ignore all errors, but
+ * return a WebAuth status code in case we change later behavior around
+ * handling invalid webkc-proxy tokens.
+ */
+static int
+parse_token_webkdc_proxies(struct webauth_context *ctx,
+                           const apr_array_header_t *wkproxies,
+                           struct wai_webkdc_login_state *state,
+                           const struct webauth_keyring *ring)
+{
+    struct webauth_token *token;
+    const struct webauth_webkdc_proxy_data *pd;
+    int i, s;
+    const enum webauth_token_type type = WA_TOKEN_WEBKDC_PROXY;
+
+    /* Create the array of decoded tokens.  Do this even if empty. */
+    state->wkproxies = build_token_array(ctx, wkproxies);
+
+    /* Nothing further to do if we have no input tokens. */
+    if (apr_is_empty_array(wkproxies))
+        return WA_ERR_NONE;
+
+    /*
+     * Walk the array of input tokens, decrypt them, and add session factors
+     * from the source data in the proxy data wrapper.
+     */
+    for (i = 0; i < wkproxies->nelts; i++) {
+        pd = &APR_ARRAY_IDX(wkproxies, i,
+                            const struct webauth_webkdc_proxy_data);
+        s = webauth_token_decode(ctx, type, pd->token, ring, &token);
+        if (s != WA_ERR_NONE) {
+            wai_log_error(ctx, WA_LOG_INFO, s, "ignoring webkdc-proxy token");
+            continue;
+        }
+        token->token.webkdc_proxy.session_factors = pd->source;
+        APR_ARRAY_PUSH(state->wkproxies, struct webauth_token *) = token;
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Decrypt the webkdc-service token and store it in the login state.  This is
+ * a wrapper around webauth_token_decode that does some additional checks,
+ * keyring management, and return status mapping.
+ */
+static int
+parse_token_webkdc_service(struct webauth_context *ctx, const char *data,
+                           struct wai_webkdc_login_state *state,
+                           const struct webauth_keyring *ring)
+{
+    struct webauth_key *key;
+    struct webauth_token *token;
+    const void *key_data;
+    size_t size;
+    int s;
+
+    /* Decrypt the webkdc-service token. */
+    if (data == NULL) {
+        wai_error_set(ctx, WA_ERR_INVALID, "incomplete login request data");
+        return WA_ERR_INVALID;
+    }
+    s = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, data, ring, &token);
+    if (s == WA_ERR_TOKEN_EXPIRED)
+        return wai_error_change(ctx, s, WA_PEC_SERVICE_TOKEN_EXPIRED);
+    else if (s != WA_ERR_NONE)
+        return wai_error_change(ctx, s, WA_PEC_SERVICE_TOKEN_INVALID);
+    state->service = &token->token.webkdc_service;
+
+    /*
+     * Several tokens, such as the login cancel token and the result token,
+     * have to be encrypted in the session key rather than in the WebKDC
+     * private key, since they're meant to be readable by the WAS.  Create a
+     * keyring containing the session key we can use for those.
+     */
+    size = state->service->session_key_len;
+    key_data = state->service->session_key;
+    s = webauth_key_create(ctx, WA_KEY_AES, size, key_data, &key);
+    if (s != WA_ERR_NONE) {
+        wai_log_error(ctx, s, WA_LOG_WARN,
+                      "invalid session key in webkdc-service token");
+        wai_error_set(ctx, WA_PEC_SERVICE_TOKEN_INVALID, NULL);
+        return WA_PEC_SERVICE_TOKEN_INVALID;
+    }
+    state->session = webauth_keyring_from_key(ctx, key);
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Given a webauth_webkdc_login_request, parse the information that we care
+ * about into a wai_webkdc_login_state record that we'll use to accumulate the
+ * results of the login.  This primarily does token decoding, but also copies
+ * some other information.  Returns a WebAuth status.
+ */
+static int
+parse_request(struct webauth_context *ctx,
+              const struct webauth_webkdc_login_request *request,
+              struct wai_webkdc_login_state *state,
+              const struct webauth_keyring *ring)
+{
+    int s;
+
+    /* Decrypt the webkdc-service token and set up the session keyring. */
+    s = parse_token_webkdc_service(ctx, request->service, state, ring);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* Decrypt the request token. */
+    s = parse_token_request(ctx, request->request, state);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* Decrypt the webkdc-proxy, webkdc-factor, and login tokens. */
+    s = parse_token_logins(ctx, request->logins, state, ring);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = parse_token_webkdc_factors(ctx, request->wkfactors, state, ring);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = parse_token_webkdc_proxies(ctx, request->wkproxies, state, ring);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* Add additional information from the request. */
+    state->authz_subject_in = request->authz_subject;
+    state->login_state_in   = request->login_state;
+    state->client_ip        = request->client_ip;
+    state->remote_ip        = request->remote_ip;
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Attempt an OTP authentication, which is a user authentication validatation
+ * via the user information service.
+ *
+ * On success, generate a new webkdc-proxy token based on that information and
+ * store it in the wkproxies state and note that we had a successful login.
+ * If the validate call returned persistent factors, also create a
+ * webkdc-factor token and store that in the wkfactors state.
+ */
+static int
+do_login_otp(struct webauth_context *ctx,
+             struct wai_webkdc_login_state *state,
+             struct webauth_token_login *login)
+{
+    struct webauth_token *wkfactor, *wkproxy;
+    struct webauth_token_webkdc_factor *wft;
+    struct webauth_token_webkdc_proxy *wpt;
+    struct webauth_user_validate *validate;
+    time_t max_expiration;
+    int s;
+
+    /* Do the remote validation call. */
+    if (ctx->user == NULL) {
+        wai_error_set(ctx, WA_PEC_LOGIN_FAILED, "OTP not configured");
+        return WA_PEC_LOGIN_FAILED;
+    }
+    s = webauth_user_validate(ctx, login->username, state->remote_ip,
+                              login->otp, login->otp_type,
+                              state->login_state_in, &validate);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /*
+     * If validation failed, set the login error code and return.  If we have
+     * a user message or login state, use WA_PEC_LOGIN_REJECTED instead so that
+     * mod_webkdc will pass a <requestTokenResponse> back to the WebLogin
+     * server and including the user message or login state.
+     */
+    if (!validate->success) {
+        if (validate->user_message == NULL && validate->login_state == NULL) {
+            s = WA_PEC_LOGIN_FAILED;
+            wai_error_set(ctx, s, NULL);
+        } else {
+            s = WA_PEC_LOGIN_REJECTED;
+            wai_error_set(ctx, s, "rejected by validation service");
+            state->login_state_out = validate->login_state;
+            state->user_message    = validate->user_message;
+        }
+        return s;
+    }
+
+    /*
+     * Adjust for old versions of the user information service that don't
+     * return an expiration time for factors.
+     */
+    if (validate->factors_expiration == 0)
+        validate->factors_expiration = time(NULL) + DEFAULT_OTP_LIFETIME;
+
+    /* Create the resulting webkdc-proxy token. */
+    wkproxy = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+    wkproxy->type = WA_TOKEN_WEBKDC_PROXY;
+    wpt = &wkproxy->token.webkdc_proxy;
+    wpt->subject         = login->username;
+    wpt->proxy_type      = "otp";
+    wpt->proxy_subject   = "WEBKDC:otp";
+    wpt->data            = login->username;
+    wpt->data_len        = strlen(login->username);
+    wpt->initial_factors = webauth_factors_string(ctx, validate->factors);
+    wpt->session_factors = wpt->initial_factors;
+    wpt->loa             = validate->loa;
+    wpt->expiration      = validate->factors_expiration;
+    wpt->creation        = time(NULL);
+
+    /* Cap the proxy token expiration based on our configuration. */
+    if (ctx->webkdc->proxy_lifetime > 0) {
+        max_expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
+        if (wpt->expiration > max_expiration)
+            wpt->expiration = max_expiration;
+    }
+
+    /* Store this token in the login state and note the successful login. */
+    APR_ARRAY_PUSH(state->wkproxies, struct webauth_token *) = wkproxy;
+    state->did_login = true;
+
+    /*
+     * If there are any persistent-factor tokens, create a webkdc-factor
+     * token and add it to the response.
+     */
+    if (validate->persistent != NULL) {
+        wkfactor = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+        wkfactor->type = WA_TOKEN_WEBKDC_FACTOR;
+        wft = &wkfactor->token.webkdc_factor;
+        wft->subject    = login->username;
+        wft->factors    = webauth_factors_string(ctx, validate->persistent);
+        wft->expiration = validate->persistent_expiration;
+        wft->creation   = time(NULL);
+        APR_ARRAY_PUSH(state->wkfactors, struct webauth_token *) = wkfactor;
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Check that the realm of the authenticated principal is in the list of
+ * permitted realms, or that the list of realms is empty.  Returns a WebAuth
+ * error code on failure to determine the realm.  If the user's realm is not
+ * permitted, sets the login error to WA_PEC_USER_REJECTED and the login
+ * message appropriately.
+ */
+static int
+realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc)
+{
+    int s, i;
+    char *realm;
+    const char *allow;
+    bool okay = false;
+
+    /* If we aren't restricting the realms, always return true. */
+    if (apr_is_empty_array(ctx->webkdc->permitted_realms))
+        return WA_ERR_NONE;
+
+    /* Get the realm. */
+    s = webauth_krb5_get_realm(ctx, kc, &realm);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* Check against the configured permitted realms. */
+    for (i = 0; i < ctx->webkdc->permitted_realms->nelts; i++) {
+        allow = APR_ARRAY_IDX(ctx->webkdc->permitted_realms, i, const char *);
+        if (strcmp(allow, realm) == 0) {
+            okay = true;
+            break;
+        }
+    }
+    if (!okay) {
+        s = WA_PEC_USER_REJECTED;
+        wai_error_set(ctx, s, "realm %s is not permitted", realm);
+    }
+    return s;
+}
+
+
+/*
+ * Helper function to check the realm of a Kerberos context against the list
+ * of realms in ctx->webkdc->local_realms.  Returns either WA_KRB5_CANON_STRIP
+ * if there is a match or WA_KRB5_CANON_NONE if there isn't.
+ */
+static enum webauth_krb5_canon
+is_local_realm(struct webauth_context *ctx, struct webauth_krb5 *kc)
+{
+    const char *local;
+    char *realm;
+    int i, s;
+
+    s = webauth_krb5_get_realm(ctx, kc, &realm);
+    if (s != WA_ERR_NONE)
+        return s;
+    for (i = 0; i < ctx->webkdc->local_realms->nelts; i++) {
+        local = APR_ARRAY_IDX(ctx->webkdc->local_realms, i, const char *);
+        if (strcmp(local, realm) == 0)
+            return WA_KRB5_CANON_STRIP;
+    }
+    return WA_KRB5_CANON_NONE;
+}
+
 
 /*
  * Given a Kerberos principal for an authenticated user, derive the WebAuth
@@ -50,32 +490,29 @@ static int
 canonicalize_user(struct webauth_context *ctx, struct webauth_krb5 *kc,
                   const char **result)
 {
-    int s, i;
+    enum webauth_krb5_canon canonicalize;
+    const char *local;
     char *subject;
-    enum webauth_krb5_canon canonicalize = WA_KRB5_CANON_LOCAL;
+    int s;
 
+    /* Set the default result. */
     *result = NULL;
-    if (ctx->webkdc->local_realms->nelts > 0) {
-        const char *local;
-        char *realm;
 
+    /*
+     * If there is no local_realms configuration, we're going to do local
+     * canonicalization.  If there is only one element, check if it's a
+     * keyword.
+     */
+    if (apr_is_empty_array(ctx->webkdc->local_realms))
+        canonicalize = WA_KRB5_CANON_LOCAL;
+    else {
         local = APR_ARRAY_IDX(ctx->webkdc->local_realms, 0, const char *);
         if (strcmp(local, "none") == 0)
             canonicalize = WA_KRB5_CANON_NONE;
         else if (strcmp(local, "local") == 0)
             canonicalize = WA_KRB5_CANON_LOCAL;
-        else {
-            canonicalize = WA_KRB5_CANON_NONE;
-            s = webauth_krb5_get_realm(ctx, kc, &realm);
-            if (s != WA_ERR_NONE)
-                return s;
-            for (i = 0; i < ctx->webkdc->local_realms->nelts; i++) {
-                local = APR_ARRAY_IDX(ctx->webkdc->local_realms, i,
-                                      const char *);
-                if (strcmp(local, realm) == 0)
-                    canonicalize = WA_KRB5_CANON_STRIP;
-            }
-        }
+        else
+            canonicalize = is_local_realm(ctx, kc);
     }
 
     /*
@@ -92,165 +529,30 @@ canonicalize_user(struct webauth_context *ctx, struct webauth_krb5 *kc,
 
 
 /*
- * Check that the realm of the authenticated principal is in the list of
- * permitted realms, or that the list of realms is empty.  Returns a WebAuth
- * error code on failure to determine the realm.  If the user's realm is not
- * permitted, sets the login error to WA_PEC_USER_REJECTED and the login
- * message appropriately.
+ * Attempt a username and password login via Kerberos.  On success, generate a
+ * new webkdc-proxy token based on that information and store it in the token
+ * argument.
  */
 static int
-realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc)
+do_login_krb(struct webauth_context *ctx,
+             struct wai_webkdc_login_state *state,
+             struct webauth_token_login *login)
 {
-    int s, i;
-    char *realm;
-    const char *allow;
-    bool okay = false;
-
-    /* If we aren't restricting the realms, always return true. */
-    if (ctx->webkdc->permitted_realms->nelts == 0)
-        return WA_ERR_NONE;
-
-    /* Get the realm. */
-    s = webauth_krb5_get_realm(ctx, kc, &realm);
-    if (s != WA_ERR_NONE)
-        return s;
-
-    /* Check against the configured permitted realms. */
-    for (i = 0; i < ctx->webkdc->permitted_realms->nelts; i++) {
-        allow = APR_ARRAY_IDX(ctx->webkdc->permitted_realms, i, const char *);
-        if (strcmp(allow, realm) == 0) {
-            okay = true;
-            break;
-        }
-    }
-    if (okay)
-        s = WA_ERR_NONE;
-    else {
-        s = WA_PEC_USER_REJECTED;
-        wai_error_set(ctx, s, "realm %s is not permitted", realm);
-    }
-    return s;
-}
-
-
-/*
- * Attempt an OTP authentication, which is a user authentication validatation
- * via the user information service.  On success, generate a new webkdc-proxy
- * token based on that information and store it in the token argument.  If the
- * validate call returned persistent factors, also create a webkdc-factor
- * token and store that in the wkfactor argument.  On login failure, store the
- * error code and message in the response.  On a more fundamental failure,
- * return an error code.
- */
-static int
-do_otp(struct webauth_context *ctx,
-       struct webauth_webkdc_login_response *response,
-       struct webauth_token_login *login,
-       const char *ip, const char *login_state,
-       struct webauth_token **wkproxy, struct webauth_token **wkfactor)
-{
-    int s;
-    struct webauth_user_validate *validate;
-    struct webauth_token_webkdc_factor *ft;
-    struct webauth_token_webkdc_proxy *pt;
-    time_t max_expiration;
-
-    /* Do the remote validation call. */
-    if (ctx->user == NULL) {
-        wai_error_set(ctx, WA_ERR_UNIMPLEMENTED, "no OTP configuration");
-        return WA_ERR_UNIMPLEMENTED;
-    }
-    s = webauth_user_validate(ctx, login->username, ip, login->otp,
-                              login->otp_type, login_state, &validate);
-    if (s != WA_ERR_NONE)
-        return s;
-
-    /*
-     * If validation failed, set the login error code and return.  If we have
-     * a user message or login state, use WA_PEC_LOGIN_REJECTED instead so that
-     * mod_webkdc will pass a <requestTokenResponse> back to the WebLogin
-     * server, including the message and/or state.
-     */
-    if (!validate->success) {
-        if (validate->user_message == NULL && validate->login_state == NULL) {
-            s = WA_PEC_LOGIN_FAILED;
-            wai_error_set(ctx, s, NULL);
-        } else {
-            s = WA_PEC_LOGIN_REJECTED;
-            wai_error_set(ctx, s, "rejected by validation service");
-            response->user_message = validate->user_message;
-            response->login_state  = validate->login_state;
-        }
-        return s;
-    }
-
-    /*
-     * Adjust for old versions of the user information service that don't
-     * return an expiration time for factors.
-     *
-     * FIXME: Arbitrary magic 10 hour expiration time.
-     */
-    if (validate->factors_expiration == 0)
-        validate->factors_expiration = time(NULL) + 60 * 60 * 10;
-
-    /* Create the resulting webkdc-proxy token. */
-    *wkproxy = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
-    (*wkproxy)->type = WA_TOKEN_WEBKDC_PROXY;
-    pt = &(*wkproxy)->token.webkdc_proxy;
-    pt->subject         = login->username;
-    pt->proxy_type      = "otp";
-    pt->proxy_subject   = "WEBKDC:otp";
-    pt->data            = login->username;
-    pt->data_len        = strlen(login->username);
-    pt->initial_factors = webauth_factors_string(ctx, validate->factors);
-    pt->session_factors = pt->initial_factors;
-    pt->loa             = validate->loa;
-    pt->expiration      = validate->factors_expiration;
-    pt->creation        = time(NULL);
-
-    /* Cap the proxy token expiration based on our configuration. */
-    if (ctx->webkdc->proxy_lifetime > 0) {
-        max_expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
-        if (pt->expiration > max_expiration)
-            pt->expiration = max_expiration;
-    }
-
-    /*
-     * If there are any persistent-factor tokens, create a webkdc-factor
-     * token and add it to the response.
-     */
-    if (validate->persistent != NULL) {
-        *wkfactor = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
-        (*wkfactor)->type = WA_TOKEN_WEBKDC_FACTOR;
-        ft = &(*wkfactor)->token.webkdc_factor;
-        ft->subject    = login->username;
-        ft->factors    = webauth_factors_string(ctx, validate->persistent);
-        ft->expiration = validate->persistent_expiration;
-        ft->creation   = time(NULL);
-    }
-    return WA_ERR_NONE;
-}
-
-
-/*
- * Attempt a username and password login.  On success, generate a new
- * webkdc-proxy token based on that information and store it in the token
- * argument.  On login failure, store the error code and message in the
- * response.  On a more fundamental failure, return an error code.
- */
-static int
-do_login(struct webauth_context *ctx, struct webauth_token_login *login,
-         struct webauth_token **wkproxy)
-{
-    int s;
     struct webauth_krb5 *kc;
-    char *webkdc;
+    struct webauth_token *wkproxy;
+    struct webauth_token_webkdc_proxy *wpt;
     const char *subject;
+    char *webkdc;
     void *tgt;
     size_t tgt_len;
     time_t expires, max_expiration;
-    struct webauth_token_webkdc_proxy *pt;
+    int s;
 
+    /*
+     * Attempt the Kerberos authentication.  webauth_krb5_init_via_password
+     * returns protocol error codes except for internal Kerberos errors, so we
+     * don't need to do any mapping.
+     */
     s = webauth_krb5_new(ctx, &kc);
     if (s != WA_ERR_NONE)
         return s;
@@ -259,14 +561,7 @@ do_login(struct webauth_context *ctx, struct webauth_token_login *login,
                                        ctx->webkdc->keytab_path,
                                        ctx->webkdc->principal, NULL, &webkdc);
     if (s != WA_ERR_NONE)
-        goto cleanup;
-
-    /*
-     * webauth_krb5_init_via_password determined the principal of the WebKDC
-     * service to which we just authenticated and stored that information in
-     * webkdc, but we need to add the krb5 prefix.
-     */
-    webkdc = apr_pstrcat(ctx->pool, "krb5:", webkdc, NULL);
+        goto done;
 
     /*
      * Check if the realm of the authenticated principal is permitted and
@@ -274,10 +569,10 @@ do_login(struct webauth_context *ctx, struct webauth_token_login *login,
      */
     s = realm_permitted(ctx, kc);
     if (s != WA_ERR_NONE)
-        goto cleanup;
+        goto done;
     s = canonicalize_user(ctx, kc, &subject);
     if (s != WA_ERR_NONE)
-        goto cleanup;
+        goto done;
 
     /*
      * Export the ticket-granting ticket for the webkdc-proxy token and move
@@ -285,7 +580,7 @@ do_login(struct webauth_context *ctx, struct webauth_token_login *login,
      */
     s = webauth_krb5_export_cred(ctx, kc, NULL, &tgt, &tgt_len, &expires);
     if (s != WA_ERR_NONE)
-        goto cleanup;
+        goto done;
     tgt = apr_pmemdup(ctx->pool, tgt, tgt_len);
 
     /*
@@ -293,29 +588,111 @@ do_login(struct webauth_context *ctx, struct webauth_token_login *login,
      * already copied all this stuff into a pool, so there is no need to copy
      * again.
      */
-    *wkproxy = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
-    (*wkproxy)->type = WA_TOKEN_WEBKDC_PROXY;
-    pt = &(*wkproxy)->token.webkdc_proxy;
-    pt->subject         = subject;
-    pt->proxy_type      = "krb5";
-    pt->proxy_subject   = apr_pstrcat(ctx->pool, "WEBKDC:", webkdc, NULL);
-    pt->data            = tgt;
-    pt->data_len        = tgt_len;
-    pt->initial_factors = WA_FA_PASSWORD;
-    pt->session_factors = pt->initial_factors;
-    pt->creation        = time(NULL);
-    pt->expiration      = expires;
+    wkproxy = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
+    wkproxy->type = WA_TOKEN_WEBKDC_PROXY;
+    wpt = &wkproxy->token.webkdc_proxy;
+    wpt->subject         = subject;
+    wpt->proxy_type      = "krb5";
+    wpt->proxy_subject   = apr_psprintf(ctx->pool, "WEBKDC:krb5:%s", webkdc);
+    wpt->data            = tgt;
+    wpt->data_len        = tgt_len;
+    wpt->initial_factors = WA_FA_PASSWORD;
+    wpt->session_factors = WA_FA_PASSWORD;
+    wpt->creation        = time(NULL);
+    wpt->expiration      = expires;
 
     /* Cap the proxy token expiration based on our configuration. */
     if (ctx->webkdc->proxy_lifetime > 0) {
         max_expiration = time(NULL) + ctx->webkdc->proxy_lifetime;
-        if (pt->expiration > max_expiration)
-            pt->expiration = max_expiration;
+        if (wpt->expiration > max_expiration)
+            wpt->expiration = max_expiration;
     }
 
-cleanup:
+    /* Store this token in the login state and note the successful login. */
+    APR_ARRAY_PUSH(state->wkproxies, struct webauth_token *) = wkproxy;
+    state->did_login = true;
+
+done:
     webauth_krb5_free(ctx, kc);
     return s;
+}
+
+
+/*
+ * Process the login credentials.  We either process a password login or an
+ * OTP login depending on the contents of the login tokens.  If any logins are
+ * unsuccessful, we abort further processing with an error.  The resulting
+ * webkdc-proxy or webkdc-factor tokens are added to the login state.  If
+ * there are any successful logins, we also set the did_login state.
+ */
+static int
+do_logins(struct webauth_context *ctx, struct wai_webkdc_login_state *state)
+{
+    struct webauth_token *token;
+    int i, s;
+
+    for (i = 0; i < state->logins->nelts; i++) {
+        token = APR_ARRAY_IDX(state->logins, i, struct webauth_token *);
+        if (token->token.login.otp != NULL)
+            s = do_login_otp(ctx, state, &token->token.login);
+        else
+            s = do_login_krb(ctx, state, &token->token.login);
+        if (s != WA_ERR_NONE)
+            return s;
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Merge a set of accumulated webkdc-proxy tokens and perform any needed
+ * additional validation checks.
+ */
+static int
+merge_webkdc_proxies(struct webauth_context *ctx,
+                     apr_array_header_t *wkproxies,
+                     struct webauth_token **wkproxy)
+{
+    struct webauth_token_webkdc_proxy *wpt;
+    time_t limit;
+    int s;
+
+    /*
+     * Merge the webkdc-proxy tokens.  If we get WA_ERR_TOKEN_REJECTED back,
+     * the client tried to use webkdc-proxy tokens with inconsistent subjects
+     * or proxy subjects.  Rejected this as unauthorized.
+     */
+    limit = ctx->webkdc->login_time_limit;
+    s = wai_token_merge_webkdc_proxy(ctx, wkproxies, limit, wkproxy);
+    if (s == WA_ERR_TOKEN_REJECTED) {
+        wai_log_error(ctx, WA_LOG_WARN, s, "rejecting webkdc-proxy tokens");
+        s = WA_PEC_UNAUTHORIZED;
+        wai_error_set(ctx, s, "may not use webkdc-proxy token");
+        return s;
+    } else if (s != WA_ERR_NONE) {
+        wai_error_context(ctx, "merging webkdc-proxy tokens");
+        return s;
+    }
+
+    /*
+     * If there is no result (if, for example, all the tokens are expired or
+     * there were no input tokens), we're done.
+     */
+    if (*wkproxy == NULL)
+        return WA_ERR_NONE;
+
+    /*
+     * For login purposes, the webkdc-proxy token must have a proxy subject
+     * starting with "WEBKDC:" to indicate that it is an SSO token.
+     */
+    wpt = &(*wkproxy)->token.webkdc_proxy;
+    if (strncmp(wpt->proxy_subject, "WEBKDC:", 7) != 0) {
+        s = WA_PEC_PROXY_TOKEN_INVALID;
+        wai_error_set(ctx, s, "proxy subject %s not allowed",
+                      wpt->proxy_subject);
+        return s;
+    }
+    return WA_ERR_NONE;
 }
 
 
@@ -330,8 +707,8 @@ combine_webkdc_factors(struct webauth_context *ctx,
                        const apr_array_header_t *wkfactors,
                        const char *subject)
 {
-    time_t now;
     struct webauth_factors *factors;
+    time_t now;
     int i;
 
     /* Create an empty factors set to start with. */
@@ -350,22 +727,22 @@ combine_webkdc_factors(struct webauth_context *ctx,
     for (i = 0; i < wkfactors->nelts; i++) {
         struct webauth_token *token;
         struct webauth_factors *extra;
-        struct webauth_token_webkdc_factor *wkf;
+        struct webauth_token_webkdc_factor *wft;
 
         /* Extract and set a pointer to the next webkdc-factor token. */
         token = APR_ARRAY_IDX(wkfactors, i, struct webauth_token *);
         if (token->type != WA_TOKEN_WEBKDC_FACTOR)
             continue;
-        wkf = &token->token.webkdc_factor;
+        wft = &token->token.webkdc_factor;
 
         /* Discard all expired and non-matching tokens. */
-        if (wkf->expiration <= now)
+        if (wft->expiration <= now)
             continue;
-        if (strcmp(wkf->subject, subject) != 0)
+        if (strcmp(wft->subject, subject) != 0)
             continue;
 
         /* Merge in the factor information. */
-        extra = webauth_factors_parse(ctx, wkf->factors);
+        extra = webauth_factors_parse(ctx, wft->factors);
         factors = webauth_factors_union(ctx, factors, extra);
     }
     return factors;
@@ -379,9 +756,9 @@ combine_webkdc_factors(struct webauth_context *ctx,
  * Returns true if any were invalidated, false otherwise.
  */
 static bool
-maybe_invalidate_webkdc_factors(struct webauth_context *ctx,
-                                apr_array_header_t *wkfactors,
-                                time_t valid_threshold)
+invalidate_webkdc_factors(struct webauth_context *ctx,
+                          apr_array_header_t *wkfactors,
+                          time_t valid_threshold)
 {
     bool invalidated = false;
     time_t now;
@@ -402,21 +779,21 @@ maybe_invalidate_webkdc_factors(struct webauth_context *ctx,
     now = time(NULL);
     for (i = 0; i < wkfactors->nelts; i++) {
         struct webauth_token *token;
-        struct webauth_token_webkdc_factor *wkf;
+        struct webauth_token_webkdc_factor *wft;
 
         /* Extract and set a pointer to the next webkdc-factor token. */
         token = APR_ARRAY_IDX(wkfactors, i, struct webauth_token *);
         if (token->type != WA_TOKEN_WEBKDC_FACTOR)
             continue;
-        wkf = &token->token.webkdc_factor;
+        wft = &token->token.webkdc_factor;
 
         /* Expire the token if the creation time is too early. */
-        if (wkf->creation < valid_threshold) {
+        if (wft->creation < valid_threshold) {
             wai_log_notice(ctx, "invalidating webkdc-factor token for %s"
-                           " (creation %lu < %lu)", wkf->subject,
-                           (unsigned long) wkf->creation,
+                           " (creation %lu < %lu)", wft->subject,
+                           (unsigned long) wft->creation,
                            (unsigned long) valid_threshold);
-            wkf->expiration = now - 1;
+            wft->expiration = now - 1;
             invalidated = true;
         }
     }
@@ -438,9 +815,8 @@ maybe_invalidate_webkdc_factors(struct webauth_context *ctx,
  */
 static int
 get_user_info(struct webauth_context *ctx,
-              const struct webauth_token_request *request,
-              const char *remote_ip, const struct webauth_token *wkproxy,
-              const apr_array_header_t *wkfactors,
+              struct wai_webkdc_login_state *state,
+              const struct webauth_token *wkproxy,
               struct webauth_user_info **info)
 {
     const struct webauth_token_webkdc_proxy *wkp;
@@ -448,10 +824,11 @@ get_user_info(struct webauth_context *ctx,
     struct webauth_factors *random, *extra;
     bool randmf = false;
     const char *factors;
+    int s;
 
     /* Parse the request factors. */
-    ifactors = webauth_factors_parse(ctx, request->initial_factors);
-    sfactors = webauth_factors_parse(ctx, request->session_factors);
+    ifactors = webauth_factors_parse(ctx, state->request->initial_factors);
+    sfactors = webauth_factors_parse(ctx, state->request->session_factors);
 
     /* Create a webauth_factors struct representing random multifactor. */
     random = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR);
@@ -462,7 +839,7 @@ get_user_info(struct webauth_context *ctx,
     swkfactors = webauth_factors_parse(ctx, wkp->session_factors);
 
     /* Add the factors from the webkdc-factor tokens. */
-    extra = combine_webkdc_factors(ctx, wkfactors, wkp->subject);
+    extra = combine_webkdc_factors(ctx, state->wkfactors, wkp->subject);
     iwkfactors = webauth_factors_union(ctx, iwkfactors, extra);
     swkfactors = webauth_factors_union(ctx, swkfactors, extra);
 
@@ -483,8 +860,19 @@ get_user_info(struct webauth_context *ctx,
 
     /* Call the user information service. */
     factors = webauth_factors_string(ctx, iwkfactors);
-    return webauth_user_info(ctx, wkp->subject, remote_ip, randmf,
-                             request->return_url, factors, info);
+    s = webauth_user_info(ctx, wkp->subject, state->remote_ip, randmf,
+                          state->request->return_url, factors, info);
+
+    /*
+     * If the user information service succeeded but returned an error, treat
+     * that as a failure and store the error as the user message.
+     */
+    if (s == WA_ERR_NONE && (*info)->error != NULL) {
+        state->user_message = (*info)->error;
+        s = WA_PEC_AUTH_REJECTED;
+        wai_error_set(ctx, s, "rejected by user information service");
+    }
+    return s;
 }
 
 
@@ -498,44 +886,41 @@ get_user_info(struct webauth_context *ctx,
  */
 static int
 add_user_info(struct webauth_context *ctx,
-              const struct webauth_token_request *request,
-              const char *remote_ip,
-              struct webauth_webkdc_login_response **response,
-              struct webauth_token *wkproxy,
-              apr_array_header_t *wkfactors,
-              bool did_login, struct webauth_user_info **info)
+              struct wai_webkdc_login_state *state,
+              struct webauth_token *wkproxy, struct webauth_user_info **info)
 {
     struct webauth_factors *iwkfactors, *swkfactors, *extra;
+    struct webauth_token_webkdc_proxy *wkp;
     time_t valid_threshold;
     int s;
-    struct webauth_token_webkdc_proxy *wkp = &wkproxy->token.webkdc_proxy;
 
     /* Call the user information service. */
-    s = get_user_info(ctx, request, remote_ip, wkproxy, wkfactors, info);
+    s = get_user_info(ctx, state, wkproxy, info);
     if (s != WA_ERR_NONE)
         return s;
 
     /*
      * If the user information service provides an invalid_before time, expire
-     * any webkdc-factor tokens that were created before that time and then
-     * redo the user information service call, since we may now have different
-     * authentication factors.
+     * any webkdc-factor tokens that were created before that time.  Then,
+     * redo the user information service call if any webkdc-factor tokens were
+     * invalidated, since we may now have different authentication factors.
      */
     valid_threshold = (*info)->valid_threshold;
-    if (maybe_invalidate_webkdc_factors(ctx, wkfactors, valid_threshold)) {
-        s = get_user_info(ctx, request, remote_ip, wkproxy, wkfactors, info);
+    if (invalidate_webkdc_factors(ctx, state->wkfactors, valid_threshold)) {
+        s = get_user_info(ctx, state, wkproxy, info);
         if (s != WA_ERR_NONE)
             return s;
     }
 
-    /* Add results from the user information service to the response. */
-    if (did_login)
-        (*response)->logins = (*info)->logins;
-    (*response)->password_expires = (*info)->password_expires;
-    (*response)->user_message = (*info)->user_message;
-    (*response)->login_state = (*info)->login_state;
+    /* Add results from the user information service to our state. */
+    if (state->did_login)
+        state->login_info = (*info)->logins;
+    state->user_message     = (*info)->user_message;
+    state->login_state_out  = (*info)->login_state;
+    state->password_expires = (*info)->password_expires;
 
     /* Cap the user's LoA at the maximum allowed by the service. */
+    wkp = &wkproxy->token.webkdc_proxy;
     if (wkp->loa > (*info)->max_loa)
         wkp->loa = (*info)->max_loa;
 
@@ -544,25 +929,27 @@ add_user_info(struct webauth_context *ctx,
     swkfactors = webauth_factors_parse(ctx, wkp->session_factors);
 
     /* Add the factors from the webkdc-factor tokens. */
-    extra = combine_webkdc_factors(ctx, wkfactors, wkp->subject);
+    extra = combine_webkdc_factors(ctx, state->wkfactors, wkp->subject);
     iwkfactors = webauth_factors_union(ctx, iwkfactors, extra);
     swkfactors = webauth_factors_union(ctx, swkfactors, extra);
 
     /*
      * Add the random multifactor factor to the factors of our webkdc-proxy
-     * token if we did random multifactor and random multifactor was not
-     * already satisfied by existing factors.
+     * token if we did random multifactor and our existing factors satisfy all
+     * factors required by the user information service.
      */
     if ((*info)->random_multifactor) {
         struct webauth_factors *random;
 
         random = webauth_factors_parse(ctx, WA_FA_RANDOM_MULTIFACTOR);
-        iwkfactors = webauth_factors_union(ctx, iwkfactors, random);
-        swkfactors = webauth_factors_union(ctx, swkfactors, random);
+        if (webauth_factors_satisfies(ctx, iwkfactors, (*info)->required))
+            iwkfactors = webauth_factors_union(ctx, iwkfactors, random);
+        if (webauth_factors_satisfies(ctx, swkfactors, (*info)->required))
+            swkfactors = webauth_factors_union(ctx, swkfactors, random);
     }
 
     /* Add additional factors if we have any and we did a login. */
-    if (did_login && (*info)->additional != NULL) {
+    if (state->did_login && (*info)->additional != NULL) {
         const struct webauth_factors *add;
 
         add = (*info)->additional;
@@ -590,20 +977,21 @@ add_user_info(struct webauth_context *ctx,
  */
 static int
 check_multifactor(struct webauth_context *ctx,
-                  const struct webauth_token_request *req,
-                  struct webauth_webkdc_login_response *response,
-                  struct webauth_token_webkdc_proxy *wkproxy,
+                  struct wai_webkdc_login_state *state,
+                  struct webauth_token *wkproxy,
                   struct webauth_user_info *info)
 {
     struct webauth_factors *wanted, *swanted, *have, *shave;
     const struct webauth_factors *configured;
+    struct webauth_token_webkdc_proxy *wpt;
     int s = WA_ERR_NONE;
 
     /* Figure out what factors we want and have. */
-    wanted  = webauth_factors_parse(ctx, req->initial_factors);
-    swanted = webauth_factors_parse(ctx, req->session_factors);
-    have    = webauth_factors_parse(ctx, wkproxy->initial_factors);
-    shave   = webauth_factors_parse(ctx, wkproxy->session_factors);
+    wpt = &wkproxy->token.webkdc_proxy;
+    wanted  = webauth_factors_parse(ctx, state->request->initial_factors);
+    swanted = webauth_factors_parse(ctx, state->request->session_factors);
+    have    = webauth_factors_parse(ctx, wpt->initial_factors);
+    shave   = webauth_factors_parse(ctx, wpt->session_factors);
 
     /*
      * Check if there are factors required by user configuration.  If so, add
@@ -617,8 +1005,8 @@ check_multifactor(struct webauth_context *ctx,
      * establish a sufficient level of assurance, punt immediately; we don't
      * care about the available factors in that case.
      */
-    if (req->loa > wkproxy->loa) {
-        if (info != NULL && req->loa > info->max_loa) {
+    if (state->request->loa > wpt->loa) {
+        if (info != NULL && state->request->loa > info->max_loa) {
             wai_error_set(ctx, WA_PEC_LOA_UNAVAILABLE, NULL);
             return WA_PEC_LOA_UNAVAILABLE;
         }
@@ -668,8 +1056,8 @@ check_multifactor(struct webauth_context *ctx,
         configured = webauth_factors_parse(ctx, WA_FA_PASSWORD);
     else
         configured = info->factors;
-    response->factors_wanted = webauth_factors_union(ctx, wanted, swanted);
-    response->factors_configured = configured;
+    state->factors_wanted = webauth_factors_union(ctx, wanted, swanted);
+    state->factors_configured = configured;
     if (!webauth_factors_satisfies(ctx, configured, wanted))
         s = WA_PEC_MULTIFACTOR_UNAVAILABLE;
     else if (!webauth_factors_satisfies(ctx, configured, swanted))
@@ -699,22 +1087,22 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
     apr_int32_t flags;
     apr_status_t code;
     char buf[BUFSIZ];
+    const char *path;
     char *p, *authn, *was, *authz, *last;
     apr_array_header_t *identities = NULL;
 
     /* If there is no identity ACL file, there is a NULL array. */
     *result = NULL;
-    if (ctx->webkdc->id_acl_path == NULL)
+    path = ctx->webkdc->id_acl_path;
+    if (path == NULL)
         return WA_ERR_NONE;
 
     /* Open the identity ACL file. */
     flags = APR_FOPEN_READ | APR_FOPEN_BUFFERED | APR_FOPEN_NOCLEANUP;
-    code = apr_file_open(&acl, ctx->webkdc->id_acl_path, flags,
-                         APR_FPROT_OS_DEFAULT, ctx->pool);
+    code = apr_file_open(&acl, path, flags, APR_FPROT_OS_DEFAULT, ctx->pool);
     if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_OPENREAD;
-        wai_error_set_apr(ctx, s, code, "identity ACL %s",
-                          ctx->webkdc->id_acl_path);
+        wai_error_set_apr(ctx, s, code, "identity ACL %s", path);
         return s;
     }
 
@@ -734,8 +1122,8 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
         line++;
         if (buf[strlen(buf) - 1] != '\n') {
             s = WA_ERR_FILE_READ;
-            wai_error_set(ctx, s, "identity ACL %s line %lu too long",
-                          ctx->webkdc->id_acl_path, line);
+            wai_error_set(ctx, s, "identity ACL %s line %lu too long", path,
+                          line);
             goto done;
         }
         p = buf;
@@ -752,7 +1140,7 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
         if (was == NULL) {
             s = WA_ERR_FILE_READ;
             wai_error_set(ctx, s, "missing target on identity ACL %s line %lu",
-                          ctx->webkdc->id_acl_path, line);
+                          path, line);
             goto done;
         }
         if (strcmp(target, was) != 0)
@@ -761,7 +1149,7 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
         if (authz == NULL) {
             s = WA_ERR_FILE_READ;
             wai_error_set(ctx, s, "missing identity on identity ACL %s"
-                          " line %lu", ctx->webkdc->id_acl_path, line);
+                          " line %lu", path, line);
             goto done;
         }
         if (identities == NULL)
@@ -770,8 +1158,7 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
     }
     if (code != APR_SUCCESS && code != APR_EOF) {
         s = WA_ERR_FILE_READ;
-        wai_error_set_apr(ctx, s, code, "identity ACL %s",
-                          ctx->webkdc->id_acl_path);
+        wai_error_set_apr(ctx, s, code, "identity ACL %s", path);
         goto done;
     }
     *result = identities;
@@ -784,6 +1171,57 @@ done:
 
 
 /*
+ * If the user attempts to assert an alternate identity, see if that's
+ * allowed.  If the requested authorization subject matches the actual
+ * subject, just ignore and clear the field in the login state.  Takes the
+ * established identity of the subject.
+ */
+static int
+check_authz_identity(struct webauth_context *ctx,
+                     struct wai_webkdc_login_state *state,
+                     const char *subject)
+{
+    const apr_array_header_t *permitted;
+    const char *authz_subject, *allowed;
+    bool okay;
+    int i, s;
+
+    /* Obtain the list of identities the user is allowed to assert. */
+    s = build_identity_list(ctx, subject, state->service->subject, &permitted);
+    if (s != WA_ERR_NONE)
+        return s;
+    state->permitted_authz = permitted;
+
+    /* Check whether the user tried to assert a different identity. */
+    authz_subject = state->authz_subject_in;
+    if (authz_subject == NULL)
+        return WA_ERR_NONE;
+    if (strcmp(authz_subject, subject) == 0)
+        return WA_ERR_NONE;
+
+    /* Check whether the requested identity is permitted. */
+    if (apr_is_empty_array(permitted))
+        goto fail;
+    okay = false;
+    for (i = 0; i < permitted->nelts; i++) {
+        allowed = APR_ARRAY_IDX(permitted, i, const char *);
+        if (strcmp(allowed, authz_subject) == 0) {
+            okay = true;
+            break;
+        }
+    }
+    if (!okay)
+        goto fail;
+    state->authz_subject_out = authz_subject;
+    return WA_ERR_NONE;
+
+fail:
+    wai_error_set(ctx, WA_PEC_UNAUTHORIZED, "may not assert that identity");
+    return WA_PEC_UNAUTHORIZED;
+}
+
+
+/*
  * Given the identity of a WAS and a webkdc-proxy token identifying the user,
  * obtain a Kerberos authenticator identifying that user to that WAS.  Store
  * it in the provided buffer.  Returns either WA_ERR_NONE on success or a
@@ -791,24 +1229,32 @@ done:
  */
 static int
 get_krb5_authenticator(struct webauth_context *ctx, const char *server,
-                       struct webauth_token_webkdc_proxy *wkproxy,
-                       void **auth, size_t *auth_len)
+                       const struct webauth_token *wkproxy, void **auth,
+                       size_t *auth_len)
 {
-    int s;
     struct webauth_krb5 *kc;
+    const struct webauth_token_webkdc_proxy *wpt;
     void *data;
+    int s;
 
+    /* Clear the output authentication data. */
     *auth = NULL;
-    s = webauth_krb5_new(ctx, &kc);
-    if (s != WA_ERR_NONE)
-        return s;
+
+    /* Ensure that we have a Kerberos webkdc-proxy token. */
+    wpt = &wkproxy->token.webkdc_proxy;
+    if (strcmp(wpt->proxy_type, "krb5") != 0) {
+        wai_error_set(ctx, WA_PEC_PROXY_TOKEN_REQUIRED, NULL);
+        return WA_PEC_PROXY_TOKEN_REQUIRED;
+    }
 
     /*
      * FIXME: Probably need to examine errors a little more closely to
      * determine if we should return a proxy-token error or a server-failure.
      */
-    s = webauth_krb5_import_cred(ctx, kc, wkproxy->data, wkproxy->data_len,
-                                 NULL);
+    s = webauth_krb5_new(ctx, &kc);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = webauth_krb5_import_cred(ctx, kc, wpt->data, wpt->data_len, NULL);
     if (s != WA_ERR_NONE)
         goto done;
 
@@ -839,47 +1285,44 @@ done:
  */
 static int
 create_id_token(struct webauth_context *ctx,
-                const struct webauth_token_request *request,
-                const struct webauth_token_webkdc_service *service,
-                struct webauth_token_webkdc_proxy *wkproxy,
-                struct webauth_webkdc_login_response *response,
-                const struct webauth_keyring *ring)
+                const struct wai_webkdc_login_state *state,
+                const struct webauth_token *wkproxy, const char **result)
 {
-    int s;
-    void *krb5_auth;
-    size_t krb5_auth_len;
     struct webauth_token token;
     struct webauth_token_id *id;
+    const struct webauth_token_webkdc_proxy *wpt;
+    const char *requester;
+    void *auth;
+    size_t auth_len;
+    int s;
 
     /* Set the basic token data. */
+    wpt = &wkproxy->token.webkdc_proxy;
     memset(&token, 0, sizeof(token));
     token.type = WA_TOKEN_ID;
     id = &token.token.id;
-    id->subject         = wkproxy->subject;
-    id->authz_subject   = response->authz_subject;
-    id->auth            = request->auth;
-    id->expiration      = wkproxy->expiration;
-    id->initial_factors = wkproxy->initial_factors;
-    id->session_factors = wkproxy->session_factors;
-    id->loa             = wkproxy->loa;
+    id->subject         = wpt->subject;
+    id->authz_subject   = state->authz_subject_out;
+    id->auth            = state->request->auth;
+    id->expiration      = wpt->expiration;
+    id->initial_factors = wpt->initial_factors;
+    id->session_factors = wpt->session_factors;
+    id->loa             = wpt->loa;
 
     /* If a Kerberos authenticator was requested, obtain one. */
-    if (strcmp(request->auth, "krb5") == 0) {
-        s = get_krb5_authenticator(ctx, service->subject, wkproxy, &krb5_auth,
-                                   &krb5_auth_len);
-        if (s == WA_ERR_KRB5) {
-            wai_error_change(ctx, s, WA_PEC_PROXY_TOKEN_INVALID);
-            s = WA_PEC_PROXY_TOKEN_INVALID;
-        }
+    if (strcmp(state->request->auth, "krb5") == 0) {
+        requester = state->service->subject;
+        s = get_krb5_authenticator(ctx, requester, wkproxy, &auth, &auth_len);
+        if (s == WA_ERR_KRB5)
+            s = wai_error_change(ctx, s, WA_PEC_PROXY_TOKEN_INVALID);
         if (s != WA_ERR_NONE)
             return s;
-        id->auth_data     = krb5_auth;
-        id->auth_data_len = krb5_auth_len;
+        id->auth_data     = auth;
+        id->auth_data_len = auth_len;
     }
 
     /* Encode the token and store the resulting string. */
-    response->result_type = "id";
-    return webauth_token_encode(ctx, &token, ring, &response->result);
+    return webauth_token_encode(ctx, &token, state->session, result);
 }
 
 
@@ -891,63 +1334,238 @@ create_id_token(struct webauth_context *ctx,
  * any sort of internal WebAuth error.
  *
  * This function needs the WebKDC keyring, since it has to encode the
- * embedded webkdc-proxy token in the WebKDC's private key.  The first keyring
- * is the session keyring for the enclosing proxy token, and the second is the
- * WebKDC's private keyring.
+ * embedded webkdc-proxy token in the WebKDC's private key.
  */
 static int
 create_proxy_token(struct webauth_context *ctx,
-                   const struct webauth_token_request *request,
-                   const struct webauth_token_webkdc_service *service,
-                   struct webauth_token_webkdc_proxy *wkproxy,
-                   struct webauth_webkdc_login_response *response,
-                   const struct webauth_keyring *session,
+                   const struct wai_webkdc_login_state *state,
+                   const struct webauth_token *wkproxy, const char **result,
                    const struct webauth_keyring *ring)
 {
-    int s;
     struct webauth_token token, subtoken;
     struct webauth_token_proxy *proxy;
+    const struct webauth_token_webkdc_proxy *wpt;
+    const void *data;
+    size_t data_len;
+    int s;
+
+    /* If the requested proxy type is krb5, check the webkdc-proxy token. */
+    wpt = &wkproxy->token.webkdc_proxy;
+    if (strcmp(state->request->proxy_type, "krb5") == 0)
+        if (strcmp(wpt->proxy_type, "krb5") != 0) {
+            wai_error_set(ctx, WA_PEC_PROXY_TOKEN_REQUIRED, NULL);
+            return WA_PEC_PROXY_TOKEN_REQUIRED;
+        }
 
     /* Create the easy portions of the proxy token. */
     memset(&token, 0, sizeof(token));
     token.type = WA_TOKEN_PROXY;
     proxy = &token.token.proxy;
-    proxy->subject         = wkproxy->subject;
-    proxy->authz_subject   = response->authz_subject;
-    proxy->type            = request->proxy_type;
-    proxy->initial_factors = wkproxy->initial_factors;
-    proxy->session_factors = wkproxy->session_factors;
-    proxy->loa             = wkproxy->loa;
-    proxy->expiration      = wkproxy->expiration;
+    proxy->subject         = wpt->subject;
+    proxy->authz_subject   = state->authz_subject_out;
+    proxy->type            = state->request->proxy_type;
+    proxy->initial_factors = wpt->initial_factors;
+    proxy->session_factors = wpt->session_factors;
+    proxy->loa             = wpt->loa;
+    proxy->expiration      = wpt->expiration;
 
     /* Create the embedded webkdc-proxy token and limit its scope. */
     memset(&subtoken, 0, sizeof(subtoken));
     subtoken.type = WA_TOKEN_WEBKDC_PROXY;
-    subtoken.token.webkdc_proxy = *wkproxy;
-    subtoken.token.webkdc_proxy.proxy_subject = service->subject;
+    subtoken.token.webkdc_proxy = *wpt;
+    subtoken.token.webkdc_proxy.proxy_subject = state->service->subject;
     subtoken.token.webkdc_proxy.creation = 0;
-    s = webauth_token_encode_raw(ctx, &subtoken, ring, &proxy->webkdc_proxy,
-                                 &proxy->webkdc_proxy_len);
+    s = webauth_token_encode_raw(ctx, &subtoken, ring, &data, &data_len);
     if (s != WA_ERR_NONE)
         return s;
 
+    /* Store the embedded webkdc-proxy token. */
+    proxy->webkdc_proxy     = data;
+    proxy->webkdc_proxy_len = data_len;
+
     /* Encode the token and store the resulting string. */
-    response->result_type = "proxy";
-    return webauth_token_encode(ctx, &token, session, &response->result);
+    return webauth_token_encode(ctx, &token, state->session, result);
+}
+
+
+/*
+ * If the WAS requested login cancel support, generate an error token
+ * representing a canceled login and store it in the response.  We will
+ * return that token to WebLogin, which in turn will pass it (in the URL)
+ * back to the WAS if the user clicks on the cancel login link.
+ */
+static int
+encode_login_cancel(struct webauth_context *ctx,
+                    const struct wai_webkdc_login_state *state,
+                    const char **token)
+{
+    struct webauth_token cancel;
+    const char *options;
+
+    /* FIXME: Use something better than strstr to see if the option is set. */
+    options = state->request->options;
+    if (options == NULL || strstr(options, "lc") == NULL)
+        return WA_ERR_NONE;
+    cancel.type = WA_TOKEN_ERROR;
+    cancel.token.error.code     = WA_PEC_LOGIN_CANCELED;
+    cancel.token.error.message  = "user canceled login";
+    cancel.token.error.creation = 0;
+    return webauth_token_encode(ctx, &cancel, state->session, token);
+}
+
+
+/*
+ * Encode a webkdc-factor token and add it to the response.  We wrap this in a
+ * webauth_webkdc_factor_data struct that includes the expiration information.
+ */
+static int
+encode_webkdc_factor(struct webauth_context *ctx,
+                     const struct webauth_token *wkfactor,
+                     struct webauth_webkdc_login_response *response,
+                     const struct webauth_keyring *ring)
+{
+    apr_array_header_t *factor_tokens;
+    struct webauth_webkdc_factor_data *data;
+    size_t size;
+    int s;
+
+    /* If there is no webkdc-factor token, there's nothing to do. */
+    if (wkfactor == NULL)
+        return WA_ERR_NONE;
+
+    /* Create a single-element array of webauth_webkdc_factor_data. */
+    size = sizeof(struct webauth_webkdc_factor_data);
+    factor_tokens = apr_array_make(ctx->pool, 1, size);
+    data = apr_array_push(factor_tokens);
+    data->expiration = wkfactor->token.webkdc_factor.expiration;
+    s = webauth_token_encode(ctx, wkfactor, ring, &data->token);
+    if (s != WA_ERR_NONE)
+        return s;
+    response->factor_tokens = factor_tokens;
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Encode a webkdc-proxy token and add it to the response.  We wrap this in a
+ * webauth_webkdc_proxy_data struct that includes the type information.
+ */
+static int
+encode_webkdc_proxy(struct webauth_context *ctx,
+                    const struct webauth_token *wkproxy,
+                    struct webauth_webkdc_login_response *response,
+                    const struct webauth_keyring *ring)
+{
+    apr_array_header_t *wkproxies;
+    const struct webauth_token_webkdc_proxy *wpt;
+    struct webauth_webkdc_proxy_data *data;
+    size_t size;
+    int s;
+
+    /* If there is no webkdc-proxy token, there's nothing to do. */
+    if (wkproxy == NULL)
+        return WA_ERR_NONE;
+
+    /* Create a single-element array of webauth_webkdc_proxy_data. */
+    wpt = &wkproxy->token.webkdc_proxy;
+    size = sizeof(struct webauth_webkdc_proxy_data);
+    wkproxies = apr_array_make(ctx->pool, 1, size);
+    data = apr_array_push(wkproxies);
+    data->type = wpt->proxy_type;
+    s = webauth_token_encode(ctx, wkproxy, ring, &data->token);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* Encode that array and other information in the response. */
+    response->proxies = wkproxies;
+    response->subject = wpt->subject;
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Encode the result token and store it in the response.
+ */
+static int
+encode_result_token(struct webauth_context *ctx,
+                    const struct wai_webkdc_login_state *state,
+                    const struct webauth_token *wkproxy,
+                    struct webauth_webkdc_login_response *response,
+                    const struct webauth_keyring *ring)
+{
+    const char *type;
+    int s;
+
+    type = state->request->type;
+    if (strcmp(type, "id") == 0)
+        s = create_id_token(ctx, state, wkproxy, &response->result);
+    else if (strcmp(type, "proxy") == 0)
+        s = create_proxy_token(ctx, state, wkproxy, &response->result, ring);
+    else {
+        s = WA_PEC_REQUEST_TOKEN_INVALID;
+        wai_error_set(ctx, s, "unsupported requested token type %s", type);
+    }
+    if (s == WA_ERR_NONE)
+        response->result_type = type;
+    return s;
+}
+
+
+/*
+ * Take all the accumulated data from the login state and any merged
+ * webkdc-proxy or webkdc-factor token and store it in the response.  Also
+ * takes the WebKDC keyring to use for encrypting some of the tokens.
+ */
+static int
+encode_response(struct webauth_context *ctx,
+                const struct wai_webkdc_login_state *state,
+                const struct webauth_token *wkproxy,
+                const struct webauth_token *wkfactor,
+                struct webauth_webkdc_login_response *response,
+                const struct webauth_keyring *ring)
+{
+    int s;
+
+    /* Add simple information to the response. */
+    response->login_state        = state->login_state_out;
+    response->user_message       = state->user_message;
+    response->factors_wanted     = state->factors_wanted;
+    response->factors_configured = state->factors_configured;
+    response->authz_subject      = state->authz_subject_out;
+    response->logins             = state->login_info;
+    response->password_expires   = state->password_expires;
+    response->permitted_authz    = state->permitted_authz;
+
+    /* Add information from the webkdc-service token to the response. */
+    if (state->service != NULL)
+        response->requester = state->service->subject;
+
+    /* Add information from the request to the response. */
+    if (state->request != NULL) {
+        response->return_url    = state->request->return_url;
+        response->app_state     = state->request->state;
+        response->app_state_len = state->request->state_len;
+        s = encode_login_cancel(ctx, state, &response->login_cancel);
+        if (s != WA_ERR_NONE)
+            return s;
+    }
+
+    /* Encode the result tokens into the response. */
+    s = encode_webkdc_factor(ctx, wkfactor, response, ring);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = encode_webkdc_proxy(ctx, wkproxy, response, ring);
+    if (s != WA_ERR_NONE)
+        return s;
+    return WA_ERR_NONE;
 }
 
 
 /*
  * Given the data from a <requestTokenRequest> login attempt, process that
  * attempted login and return the information for a <requestTokenResponse> in
- * a newly-allocated struct from pool memory.  All of the tokens included in
- * the input and output are the unencrypted struct representations; the caller
- * does the encryption or decryption and base64 conversion.
- *
- * Returns WA_ERR_NONE if the request was successfully processed, which
- * doesn't mean it succeeded; see the login_code attribute of the struct for
- * that.  Returns an error code if we were unable to process the struct even
- * to generate an error response.
+ * a newly-allocated struct from pool memory.  Returns a protocol-compatible
+ * WebAuth status code.
  */
 int
 webauth_webkdc_login(struct webauth_context *ctx,
@@ -955,297 +1573,47 @@ webauth_webkdc_login(struct webauth_context *ctx,
                      struct webauth_webkdc_login_response **response,
                      const struct webauth_keyring *ring)
 {
-    apr_array_header_t *wkproxies, *wkfactors;
-    apr_array_header_t *logins = NULL;
-    struct webauth_token *newproxy, *token;
-    struct webauth_token cancel;
+    struct wai_webkdc_login_state state;
+    struct webauth_token *old;
+    struct webauth_token *wkproxy = NULL;
     struct webauth_token *wkfactor = NULL;
-    struct webauth_token_request *req = NULL;
-    struct webauth_token_webkdc_service *service;
-    struct webauth_token_webkdc_proxy *wkproxy = NULL;
-    int i, s, protocol;
     struct webauth_user_info *info = NULL;
-    const char *etoken;
-    bool did_login = false;
-    size_t size;
-    const void *key_data;
-    struct webauth_key *key;
-    struct webauth_keyring *session;
-    const char *allowed, *authz_subject;
+    const char *options, *subject;
+    int s, result;
 
-    /* Basic sanity checking. */
-    if (request->service == NULL
-        || request->wkproxies == NULL
-        || request->wkfactors == NULL
-        || request->logins == NULL
-        || request->request == NULL) {
-        s = WA_ERR_CORRUPT;
-        wai_error_set(ctx, s, "incomplete login request data");
-        goto fail;
-    }
-
-    /* Decrypt the webkdc-service token. */
-    s = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, request->service,
-                             ring, &token);
-    if (s == WA_ERR_TOKEN_EXPIRED) {
-        s = wai_error_change(ctx, s, WA_PEC_SERVICE_TOKEN_EXPIRED);
-        goto fail;
-    } else if (s != WA_ERR_NONE) {
-        s = wai_error_change(ctx, s, WA_PEC_SERVICE_TOKEN_INVALID);
-        goto fail;
-    }
-    service = &token->token.webkdc_service;
-
-    /*
-     * Decrypt the request token.
-     *
-     * FIXME: Move token_max_ttl processing here.
-     */
-    s = webauth_token_decode(ctx, WA_TOKEN_REQUEST, request->request, ring,
-                             &token);
-    if (s != WA_ERR_NONE) {
-        s = wai_error_change(ctx, s, WA_PEC_REQUEST_TOKEN_INVALID);
-        goto fail;
-    }
-    req = &token->token.request;
-
-    /* Fill in the basics of our response. */
+    /* Set up our data structures. */
     *response = apr_pcalloc(ctx->pool, sizeof(**response));
-    (*response)->return_url = req->return_url;
-    (*response)->requester = service->subject;
-    (*response)->app_state = req->state;
-    (*response)->app_state_len = req->state_len;
+    memset(&state, 0, sizeof(state));
+
+    /* Parse the request into our login state.  This does token decryption. */
+    s = parse_request(ctx, request, &state, ring);
+    if (s != WA_ERR_NONE)
+        goto done;
 
     /*
-     * Several tokens, such as the login cancel token and the result token,
-     * have to be encrypted in the session key rather than in the WebKDC
-     * private key, since they're meant to be readable by the WAS.  Create a
-     * keyring containing the session key we can use for those.
+     * Process any login tokens.  This may result in more webkdc-proxy or
+     * webkdc-factor tokens.  If there are any valid login tokens, this will
+     * also set the did_login state.
      */
-    size = service->session_key_len;
-    key_data = service->session_key;
-    s = webauth_key_create(ctx, WA_KEY_AES, size, key_data, &key);
-    if (s != WA_ERR_NONE) {
-        wai_log_error(ctx, s, WA_LOG_WARN,
-                      "invalid session key in webkdc-service token");
-        s = WA_PEC_SERVICE_TOKEN_INVALID;
-        wai_error_set(ctx, s, NULL);
-        goto fail;
-    }
-    session = webauth_keyring_from_key(ctx, key);
+    s = do_logins(ctx, &state);
+    if (s != WA_ERR_NONE)
+        goto done;
 
     /*
-     * If the WAS requested login cancel support, generate an error token
-     * representing a canceled login and store it in the response.  We will
-     * return that token to WebLogin, which in turn will pass it (in the URL)
-     * back to the WAS if the user clicks on the cancel login link.
+     * We have collected all the user authentication information at this point
+     * in a set of webkdc-proxy tokens and webkdc-factor tokens.  We want one
+     * and only one webkdc-proxy token that has our combined factor
+     * information and one webkdc-factor token that will be set as a
+     * long-lived cookie in the client.
      *
-     * FIXME: Use something less lame than strstr to see if the option is set.
+     * First, merge all the webkdc-proxy tokens into a single new webkdc-proxy
+     * token.  We keep this proxy token outside of the state since we don't
+     * yet know whether we're going to add the random multifactor factor.  We
+     * determine that when we make the user information service call.
      */
-    if (req->options != NULL && strstr(req->options, "lc") != NULL) {
-        cancel.type = WA_TOKEN_ERROR;
-        cancel.token.error.code     = WA_PEC_LOGIN_CANCELED;
-        cancel.token.error.message  = "user canceled login";
-        cancel.token.error.creation = 0;
-        s = webauth_token_encode(ctx, &cancel, session, &etoken);
-        if (s != WA_ERR_NONE)
-            goto fail;
-        (*response)->login_cancel = etoken;
-    }
-
-    /*
-     * Process the incoming webkdc-proxy credentials.  We warn about but
-     * ignore any webkdc-proxy credentials that fail to decrypt or decode.
-     */
-    wkproxies = apr_array_make(ctx->pool, 2, sizeof(struct webauth_token *));
-    for (i = 0; i < request->wkproxies->nelts; i++) {
-        const struct webauth_webkdc_proxy_data *pd;
-
-        pd = &APR_ARRAY_IDX(request->wkproxies, i,
-                            const struct webauth_webkdc_proxy_data);
-        s = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token, ring,
-                                 &token);
-        if (s != WA_ERR_NONE) {
-            wai_log_error(ctx, WA_LOG_INFO, s, "ignoring webkdc-proxy token");
-            continue;
-        }
-        token->token.webkdc_proxy.session_factors = pd->source;
-        APR_ARRAY_PUSH(wkproxies, struct webauth_token *) = token;
-    }
-
-    /* Likewise for the webkdc-factor credentials. */
-    wkfactors = apr_array_make(ctx->pool, 2, sizeof(struct webauth_token *));
-    for (i = 0; i < request->wkproxies->nelts; i++) {
-        const char *encoded;
-
-        encoded = APR_ARRAY_IDX(request->wkfactors, i, const char *);
-        s = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, encoded, ring,
-                                 &token);
-        if (s != WA_ERR_NONE) {
-            wai_log_error(ctx, WA_LOG_INFO, s, "ignoring webkdc-factor token");
-            continue;
-        }
-        APR_ARRAY_PUSH(wkfactors, struct webauth_token *) = token;
-    }
-
-    /*
-     * Process the login credentials.  Report a fatal error if we can't decode
-     * these.  We either process a password login or an OTP login depending on
-     * the contents, and then add the resulting tokens to the wkproxies and
-     * wkfactors structs.
-     *
-     * Keep the login tokens around since we need them for logging later.
-     */
-    logins = apr_array_make(ctx->pool, 1, sizeof(struct webauth_token *));
-    for (i = 0; i < request->logins->nelts; i++) {
-        const char *encoded;
-
-        /* Decode the login token. */
-        encoded = APR_ARRAY_IDX(request->logins, i, const char *);
-        s = webauth_token_decode(ctx, WA_TOKEN_LOGIN, encoded, ring, &token);
-        if (s != WA_ERR_NONE)
-            return s;
-        APR_ARRAY_PUSH(logins, struct webauth_token *) = token;
-
-        /* Process the login token appropriately. */
-        newproxy = NULL;
-        wkfactor = NULL;
-        if (token->token.login.otp != NULL)
-            s = do_otp(ctx, *response, &token->token.login,
-                       request->remote_ip, request->login_state, &newproxy,
-                       &wkfactor);
-        else
-            s = do_login(ctx, &token->token.login, &newproxy);
-
-        /* If the login failed, abort. */
-        if (s != WA_ERR_NONE)
-            goto fail;
-
-        /* If we got new tokens, add them to the appropriate arrays. */
-        if (newproxy != NULL) {
-            APR_ARRAY_PUSH(wkproxies, struct webauth_token *) = newproxy;
-            did_login = true;
-        }
-        if (wkfactor != NULL)
-            APR_ARRAY_PUSH(wkfactors, struct webauth_token *) = wkfactor;
-    }
-
-    /*
-     * We have condensed all the user authentication information at this point
-     * to a set of webkdc-proxy tokens and webkdc-factor tokens (plus possibly
-     * some login tokens that we can now ignore since we've processed them).
-     * However, we want one and only one webkdc-proxy token that has our
-     * combined factor information and one webkdc-factor token that will be
-     * set as a long-lived cookie in the client.
-     *
-     * First, merge all the webkdc-factor tokens into a single token that
-     * we'll return to the user, or leave it as NULL if there are no
-     * webkdc-factor tokens.
-     */
-    /*
-     * Now, merge all the webkdc-proxy tokens into a single new webkdc-proxy
-     * token.  If we get the error code WA_ERR_TOKEN_REJECTED back, that means
-     * someone tried to use an inconsistent mix of tokens, which should be
-     * rejected as unauthorized rather than generating an internal WebAuth
-     * error.
-     */
-    wkproxy = NULL;
-    s = wai_token_merge_webkdc_proxy(ctx, wkproxies,
-                                     ctx->webkdc->login_time_limit, &newproxy);
-    if (s == WA_ERR_TOKEN_REJECTED) {
-        wai_log_error(ctx, WA_LOG_WARN, s, "rejecting webkdc-proxy tokens");
-        s = WA_PEC_UNAUTHORIZED;
-        wai_error_set(ctx, s, "may not use webkdc-proxy token");
-        goto fail;
-    } else if (s != WA_ERR_NONE) {
-        wai_error_context(ctx, "merging webkdc-proxy tokens");
-        goto fail;
-    }
-
-    /*
-     * If we have a new webkdc-proxy token, encode it in the response in case
-     * we changed or merged anything.
-     *
-     * For login purposes, the webkdc-proxy token must have a proxy subject
-     * starting with "WEBKDC:" to indicate that it is an SSO token.
-     */
-    if (newproxy != NULL) {
-        wkproxy = &newproxy->token.webkdc_proxy;
-        if (strncmp(wkproxy->proxy_subject, "WEBKDC:", 7) != 0) {
-            s = WA_PEC_PROXY_TOKEN_INVALID;
-            wai_error_set(ctx, s, "proxy subject %s not allowed",
-                          wkproxy->proxy_subject);
-            goto fail;
-        }
-    }
-
-    /*
-     * Determine the authenticated user.
-     *
-     * If we have configuration for a user information service, we now know as
-     * much as we're going to know about who the user is and should retrieve
-     * that information if possible.  If we did a login, we should return
-     * login history if we have any.  Here is also where we tell the user
-     * information service to do random multifactor if needed.
-     *
-     * If we don't have configuration about a user information service, we
-     * trust all the webkdc-factor tokens unconditionally.
-     */
-    if (ctx->user != NULL && wkproxy != NULL) {
-        s = add_user_info(ctx, req, request->remote_ip, response, newproxy,
-                          wkfactors, did_login, &info);
-        if (s != WA_ERR_NONE)
-            goto fail;
-        if (info->error != NULL) {
-            (*response)->user_message = info->error;
-            s = WA_PEC_AUTH_REJECTED;
-            wai_error_set(ctx, s, "rejected by user information service");
-            goto fail;
-        }
-
-        /*
-         * Merge the webkdc-factor tokens into a single token.  We do this
-         * after the user information service call, which may have invalidated
-         * some of the tokens.
-         */
-        s = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
-        if (s != WA_ERR_NONE) {
-            wai_error_context(ctx, "merging webkdc-factor tokens");
-            goto fail;
-        }
-    } else if (ctx->user == NULL && wkproxy != NULL) {
-        struct webauth_token *oldproxy = newproxy;
-
-        s = wai_token_merge_webkdc_factor(ctx, wkfactors, &wkfactor);
-        if (s != WA_ERR_NONE) {
-            wai_error_context(ctx, "merging webkdc-factor tokens");
-            goto fail;
-        }
-        s = wai_token_merge_webkdc_proxy_factor(ctx, oldproxy, wkfactor,
-                                                &newproxy);
-        wkproxy = &newproxy->token.webkdc_proxy;
-        if (s != WA_ERR_NONE) {
-            wai_error_context(ctx, "merging webkdc-proxy and webkdc-factor"
-                              " tokens");
-            goto fail;
-        }
-    }
-
-    /* Encode the webkdc-proxy token in the response and set the subject. */
-    if (newproxy != NULL) {
-        apr_array_header_t *proxies;
-        struct webauth_webkdc_proxy_data *data;
-
-        size = sizeof(struct webauth_webkdc_proxy_data);
-        proxies = apr_array_make(ctx->pool, 1, size);
-        data = apr_array_push(proxies);
-        data->type = wkproxy->proxy_type;
-        s = webauth_token_encode(ctx, newproxy, ring, &data->token);
-        if (s != WA_ERR_NONE)
-            goto fail;
-        (*response)->proxies = proxies;
-        (*response)->subject = wkproxy->subject;
-    }
+    s = merge_webkdc_proxies(ctx, state.wkproxies, &wkproxy);
+    if (s != WA_ERR_NONE)
+        goto done;
 
     /*
      * If we have no webkdc-proxy token, we're done; we can't authenticate the
@@ -1255,24 +1623,71 @@ webauth_webkdc_login(struct webauth_context *ctx,
     if (wkproxy == NULL) {
         s = WA_PEC_PROXY_TOKEN_REQUIRED;
         wai_error_set(ctx, s, NULL);
-        goto fail;
+        goto done;
     }
+
+    /*
+     * Determine the authenticated user.
+     *
+     * If we don't have configuration about a user information service, we
+     * trust all the webkdc-factor tokens unconditionally.
+     *
+     * If we have configuration for a user information service, we now know as
+     * much as we're going to know about who the user is and should retrieve
+     * that information if possible and flesh out the response.  Here is also
+     * where we tell the user information service to do random multifactor if
+     * needed.  The user information service call may update the factors in
+     * the webkdc-proxy token and will merge the factor information from the
+     * webkdc-factor tokens.
+     *
+     * The user information service may invalidate some of our webkdc-factor
+     * tokens, so if we have configuration for it, wait until that call
+     * completes before merging the tokens.
+     */
+    if (ctx->user == NULL) {
+        s = wai_token_merge_webkdc_factor(ctx, state.wkfactors, &wkfactor);
+        if (s != WA_ERR_NONE) {
+            wai_error_context(ctx, "merging webkdc-factor tokens");
+            goto done;
+        }
+        old = wkproxy;
+        s = wai_token_merge_webkdc_proxy_factor(ctx, old, wkfactor, &wkproxy);
+        if (s != WA_ERR_NONE)
+            goto done;
+    } else {
+        s = add_user_info(ctx, &state, wkproxy, &info);
+        if (s != WA_ERR_NONE)
+            goto done;
+        s = wai_token_merge_webkdc_factor(ctx, state.wkfactors, &wkfactor);
+        if (s != WA_ERR_NONE) {
+            wai_error_context(ctx, "merging webkdc-factor tokens");
+            goto done;
+        }
+    }
+
+    /* Encode the webkdc-proxy token in the response and set the subject. */
+    s = encode_webkdc_proxy(ctx, wkproxy, *response, ring);
+    if (s != WA_ERR_NONE)
+        goto done;
 
     /*
      * If forced login is set, we require an interactive login.  Otherwise,
      * error out with the error code for forced login, instructing WebLogin to
      * put up the login screen.
      *
-     * FIXME: strstr is still lame.
+     * FIXME: strstr is lame.
      */
-    if (req->options != NULL && strstr(req->options, "fa") != NULL) {
+    options = state.request->options;
+    if (options != NULL && strstr(options, "fa") != NULL) {
         struct webauth_factors *factors;
+        struct webauth_token_webkdc_proxy *wpt;
 
-        factors = webauth_factors_parse(ctx, wkproxy->session_factors);
+        wpt = &wkproxy->token.webkdc_proxy;
+        factors = webauth_factors_parse(ctx, wpt->session_factors);
         if (!webauth_factors_interactive(ctx, factors)) {
             s = WA_PEC_LOGIN_FORCED;
             wai_error_set(ctx, s, NULL);
-            goto fail;
+            goto done;
         }
     }
 
@@ -1282,112 +1697,50 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * either multifactor required or with multifactor unavailable, depending
      * on whether the user has multifactor configured.
      */
-    s = check_multifactor(ctx, req, *response, wkproxy, info);
+    s = check_multifactor(ctx, &state, wkproxy, info);
     if (s != WA_ERR_NONE)
-        goto fail;
+        goto done;
 
     /*
-     * We have to ensure that the webkdc-proxy token we have available is
-     * capable of satisfying the request from the WAS.  This is always the
-     * case if the WAS just wants an id token of type webkdc (a simple
-     * identity assertion), but if the WAS asked for a krb5 id or proxy token,
-     * we have to have a krb5 webkdc-proxy token.
+     * Check the requested alternate identity, if any.  This always fills out
+     * the permitted_authz member of our state even if the user didn't
+     * attempt to assert a different identity.
      */
-    if ((strcmp(req->type, "id") == 0 && strcmp(req->auth, "krb5") == 0)
-        || (strcmp(req->type, "proxy") == 0
-            && strcmp(req->proxy_type, "krb5") == 0))
-        if (strcmp(wkproxy->proxy_type, "krb5") != 0) {
-            s = WA_PEC_PROXY_TOKEN_REQUIRED;
-            wai_error_set(ctx, s, NULL);
-            goto fail;
-        }
-
-    /* Determine if the user is allowed to assert alternate identities. */
-    s = build_identity_list(ctx, (*response)->subject, service->subject,
-                            &(*response)->permitted_authz);
+    subject = wkproxy->token.webkdc_proxy.subject;
+    s = check_authz_identity(ctx, &state, subject);
     if (s != WA_ERR_NONE)
-        goto fail;
-
-    /*
-     * If the user attempts to assert an alternate identity, see if that's
-     * allowed.  If so, copy that into the response.  If the requested
-     * authorization subject matches the actual subject, just ignore the
-     * field.
-     */
-    authz_subject = request->authz_subject;
-    if (authz_subject != NULL)
-        if (strcmp(authz_subject, (*response)->subject) == 0)
-            authz_subject = NULL;
-    if (authz_subject != NULL && (*response)->permitted_authz != NULL)
-        for (i = 0; i < (*response)->permitted_authz->nelts; i++) {
-            allowed = APR_ARRAY_IDX((*response)->permitted_authz, i, char *);
-            if (strcmp(allowed, authz_subject) == 0) {
-                (*response)->authz_subject = apr_pstrdup(ctx->pool, allowed);
-                break;
-            }
-        }
-    if (authz_subject != NULL && (*response)->authz_subject == NULL) {
-        s = WA_PEC_UNAUTHORIZED;
-        wai_error_set(ctx, s, "may not assert that identity");
-        goto fail;
-    }
+        goto done;
 
     /*
      * We have a single (or no) webkdc-proxy token that contains everything we
      * know about the user.  Attempt to satisfy their request.
      */
-    if (wkproxy != NULL) {
-        (*response)->initial_factors = wkproxy->initial_factors;
-        (*response)->session_factors = wkproxy->session_factors;
-        (*response)->loa = wkproxy->loa;
-    }
-    if (strcmp(req->type, "id") == 0)
-        s = create_id_token(ctx, req, service, wkproxy, *response, session);
-    else if (strcmp(req->type, "proxy") == 0)
-        s = create_proxy_token(ctx, req, service, wkproxy, *response, session,
-                               ring);
-    else {
-        s = WA_PEC_REQUEST_TOKEN_INVALID;
-        wai_error_set(ctx, s, "unsupported requested token type %s",
-                      req->type);
-    }
+    s = encode_result_token(ctx, &state, wkproxy, *response, ring);
     if (s != WA_ERR_NONE)
-        goto fail;
+        goto done;
 
-    /*
-     * Set the factor tokens in the response if we have a webkdc-factor token
-     * to return.
-     */
-    if (wkfactor != NULL) {
-        apr_array_header_t *factor_tokens;
-        struct webauth_webkdc_factor_data *factor;
-        const size_t data_size = sizeof(struct webauth_webkdc_factor_data);
+done:
+    /* Always encode the response, but save any earlier error. */
+    result = s;
+    s = encode_response(ctx, &state, wkproxy, wkfactor, *response, ring);
+    if (s != WA_ERR_NONE)
+        result = s;
 
-        factor_tokens = apr_array_make(ctx->pool, 1, data_size);
-        factor = apr_array_push(factor_tokens);
-        factor->expiration = wkfactor->token.webkdc_factor.expiration;
-        s = webauth_token_encode(ctx, wkfactor, ring, &factor->token);
-        if (s != WA_ERR_NONE)
-            goto fail;
-        (*response)->factor_tokens = factor_tokens;
-    }
-
-    /* Successful authentication. */
-    wai_webkdc_log_login(ctx, request, *response, WA_ERR_NONE, logins, req);
-    return WA_ERR_NONE;
-
-fail:
     /*
      * On failure, map the status to a protocol status.  If we mapped the
      * status to a new one, log the original error message first so that we
      * don't lose the full context.
      */
-    protocol = wai_error_protocol(ctx, s);
-    if (protocol != s) {
-        wai_log_error(ctx, s, WA_LOG_WARN, "cannot handle login request");
-        wai_error_set(ctx, protocol, NULL);
-        s = protocol;
+    if (result != WA_ERR_NONE) {
+        s = result;
+        result = wai_error_protocol(ctx, s);
+        if (result != s) {
+            wai_log_error(ctx, s, WA_LOG_WARN, "cannot handle login request");
+            wai_error_set(ctx, result, NULL);
+        }
     }
-    wai_webkdc_log_login(ctx, request, *response, s, logins, req);
-    return s;
+
+    /* Log the result and return. */
+    wai_webkdc_log_login(ctx, &state, *response, wkproxy, result);
+    return result;
 }
