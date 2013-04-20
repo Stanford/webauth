@@ -236,7 +236,7 @@ also be used multiple times.</p>
 of the enviornment variable is formed by prepending WEBAUTH_LDAP_ to the
 uppercased name. Multivalued attributes work exactly the same as well.</p>
 
-<example><title>Example</title></example>
+<example><title>Example</title>
 &lt;Location /private/&gt;<br />
 AuthType WebAuth<br />
 Require privgroup stanford:staff<br />
