@@ -106,10 +106,8 @@ log_attribute(struct wai_buffer *message, const char *key, const char *value)
  */
 void
 wai_webkdc_log_login(struct webauth_context *ctx,
-                     const struct wai_webkdc_login_state *state,
-                     const struct webauth_webkdc_login_response *response,
-                     const struct webauth_token *wkproxy,
-                     int result)
+                     const struct wai_webkdc_login_state *state, int result,
+                     const struct webauth_webkdc_login_response *response)
 {
     struct wai_buffer *message;
     struct webauth_token_request *req;
@@ -187,8 +185,8 @@ wai_webkdc_log_login(struct webauth_context *ctx,
     /* Log information about the authentication. */
     if (response->authz_subject != NULL)
         log_attribute(message, "authz", response->authz_subject);
-    if (wkproxy != NULL) {
-        wpt = &wkproxy->token.webkdc_proxy;
+    if (state->wkproxy != NULL) {
+        wpt = &state->wkproxy->token.webkdc_proxy;
         if (wpt->initial_factors != NULL)
             log_attribute(message, "ifactors", wpt->initial_factors);
         if (wpt->session_factors != NULL)

@@ -238,6 +238,10 @@ struct wai_webkdc_login_state {
     /* True if there was a login token and a successful authentication. */
     bool did_login;
 
+    /* Merged webkdc-proxy and webkdc-factor tokens created by the login. */
+    struct webauth_token *wkproxy;
+    struct webauth_token *wkfactor;
+
     /* Output userinfo data for the response. */
     const char *user_message;
     const struct webauth_factors *factors_wanted;
@@ -480,13 +484,11 @@ int wai_token_merge_webkdc_proxy_factor(struct webauth_context *,
 
 /*
  * Log the results of a <requestTokenRequest>.  The int argument is the
- * WebAuth status of the login.  The array argument is an array of login
- * tokens for analysis to determine what type of login was done.
+ * WebAuth status of the login.
  */
 void wai_webkdc_log_login(struct webauth_context *,
-                          const struct wai_webkdc_login_state *,
-                          const struct webauth_webkdc_login_response *,
-                          const struct webauth_token *, int)
+                          const struct wai_webkdc_login_state *, int,
+                          const struct webauth_webkdc_login_response *)
     __attribute__((__nonnull__));
 
 /* Retrieve all of the text inside an XML element and return it. */
