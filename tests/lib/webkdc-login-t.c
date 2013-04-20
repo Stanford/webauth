@@ -267,10 +267,11 @@ static const struct wat_login_test tests_login[] = {
 /* Test cases to run with a login timeout of 15 minutes. */
 static const struct wat_login_test tests_time_limit[] = {
 
-    /* Forced login should succeed with a fresh webkdc-proxy token. */
+    /* Forced login should still fail with a fresh webkdc-proxy token. */
     {
         "Forced login within login timeout",
-        LOGIN_SUCCESS,
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             NO_TOKENS_LOGIN,
@@ -301,10 +302,7 @@ static const struct wat_login_test tests_time_limit[] = {
                 EMPTY_TOKEN_WKPROXY
             },
             EMPTY_TOKEN_WKFACTOR,
-            {
-                "testuser", NULL, "webkdc", NULL, 0, "x,x1", "x,x1", 3,
-                0, 60
-            },
+            EMPTY_TOKEN_ID,
             EMPTY_TOKEN_PROXY,
             NO_LOGINS,
             0,

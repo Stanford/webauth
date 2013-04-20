@@ -1104,6 +1104,33 @@ check_multifactor(struct webauth_context *ctx,
 }
 
 
+
+/*
+ * Check forced authentication.  If this option is requested, we require an
+ * interactive login.  This is based on the did_login state, which is present
+ * if we successfully processed a login token.
+ *
+ * Note that this means that forced authentication cannot be used in
+ * conjunction with changing authorization identities from the confirmation
+ * screen, since the user will be required to reauthenticate.
+ */
+static int
+check_forced_auth(struct webauth_context *ctx,
+                  struct wai_webkdc_login_state *state)
+{
+    const char *options;
+
+    /* FIXME: strstr is lame. */
+    options = state->request->options;
+    if (options != NULL && strstr(options, "fa") != NULL)
+        if (!state->did_login) {
+            wai_error_set(ctx, WA_PEC_LOGIN_FORCED, NULL);
+            return WA_PEC_LOGIN_FORCED;
+        }
+    return WA_ERR_NONE;
+}
+
+
 /*
  * Given the authenticated user and the destination site, determine the
  * permissible authentication identities for that destination site.  Stores
@@ -1603,7 +1630,7 @@ webauth_webkdc_login(struct webauth_context *ctx,
 {
     struct wai_webkdc_login_state state;
     struct webauth_user_info *info = NULL;
-    const char *options, *subject;
+    const char *subject;
     int s, result;
 
     /* Set up our data structures. */
@@ -1683,33 +1710,17 @@ webauth_webkdc_login(struct webauth_context *ctx,
         goto done;
 
     /*
-     * If forced login is set, we require an interactive login.  Otherwise,
-     * error out with the error code for forced login, instructing WebLogin to
-     * put up the login screen.
-     *
-     * FIXME: strstr is lame.
-     */
-    options = state.request->options;
-    if (options != NULL && strstr(options, "fa") != NULL) {
-        struct webauth_factors *factors;
-        struct webauth_token_webkdc_proxy *wpt;
-
-        wpt = &state.wkproxy->token.webkdc_proxy;
-        factors = webauth_factors_parse(ctx, wpt->session_factors);
-        if (!webauth_factors_interactive(ctx, factors)) {
-            s = WA_PEC_LOGIN_FORCED;
-            wai_error_set(ctx, s, NULL);
-            goto done;
-        }
-    }
-
-    /*
      * If the user information service or the request says that multifactor or
      * some other factor we don't have is required, reject the login with
      * either multifactor required or with multifactor unavailable, depending
      * on whether the user has multifactor configured.
      */
     s = check_multifactor(ctx, &state, info);
+    if (s != WA_ERR_NONE)
+        goto done;
+
+    /* Check for forced authentication. */
+    s = check_forced_auth(ctx, &state);
     if (s != WA_ERR_NONE)
         goto done;
 
