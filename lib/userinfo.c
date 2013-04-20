@@ -473,10 +473,15 @@ remctl_generic(struct webauth_context *ctx, const char **command,
             break;
         case REMCTL_OUT_ERROR:
             s = WA_ERR_REMOTE_FAILURE;
+            wai_buffer_set(errors, out->data, out->length);
             wai_error_set(ctx, s, "%s", errors->data);
             goto fail;
         case REMCTL_OUT_STATUS:
             if (out->status != 0) {
+                if (errors->data == NULL)
+                    wai_buffer_append_sprintf(errors,
+                                              "program exited with status %d",
+                                              out->status);
                 if (wai_buffer_find_string(errors, "\n", 0, &offset))
                     errors->data[offset] = '\0';
                 s = WA_ERR_REMOTE_FAILURE;
@@ -502,6 +507,7 @@ remctl_generic(struct webauth_context *ctx, const char **command,
         wai_error_set(ctx, WA_ERR_REMOTE_FAILURE, "XML error: %s", errbuf);
         return WA_ERR_REMOTE_FAILURE;
     }
+    return WA_ERR_NONE;
 
 fail:
     if (parser != NULL)
