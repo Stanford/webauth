@@ -202,7 +202,11 @@ WebKdcTokenAcl conf/webkdc/token.acl
     </p>
     <p>
       Following the event will be additional key/value pairs in the form
-      key=value.  The possible keys are:
+      key=value.  Values containing whitespace or double quotes will be
+      enclosed in double quotes.  Any double quotes in the value will be
+      doubled; in other words, the character " in the value will be
+      represented as "" inside a double-quoted string.  The possible keys
+      are:
     </p>
     <dl>
       <dt>authz</dt>
