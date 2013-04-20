@@ -73,14 +73,6 @@ int webauth_factors_contains(struct webauth_context *,
     __attribute__((__nonnull__(1, 3)));
 
 /*
- * Returns true if the provided factors represent an interactive login and
- * false otherwise.
- */
-int webauth_factors_interactive(struct webauth_context *,
-                                const struct webauth_factors *)
-    __attribute__((__nonnull__(1)));
-
-/*
  * Given an array of factor strings (possibly NULL), create a new
  * pool-allocated webauth_factors struct and return it.  If the array is NULL,
  * the resulting factors struct will be empty.  This function does not

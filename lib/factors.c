@@ -159,36 +159,6 @@ webauth_factors_contains(struct webauth_context *ctx UNUSED,
 
 
 /*
- * Given a set of factors, determine whether they represent an interactive
- * login.  Returns true if so, false if not.
- */
-int
-webauth_factors_interactive(struct webauth_context *ctx UNUSED,
-                            const struct webauth_factors *factors)
-{
-    const char *factor;
-    int i;
-
-    /*
-     * The login is considered interactive if the session factors include
-     * password, OTP, or X.509.
-     */
-    if (factors == NULL || factors->factors == NULL)
-        return false;
-    for (i = 0; i < factors->factors->nelts; i++) {
-        factor = APR_ARRAY_IDX(factors->factors, i, const char *);
-        switch (factor[0]) {
-            case 'p': return true;
-            case 'o': return true;
-            case 'x': return true;
-            default:  break;
-        }
-    }
-    return false;
-}
-
-
-/*
  * Given an array of factor strings (possibly NULL), create a new
  * pool-allocated webauth_factors struct and return it.  This function does
  * not synthesize multifactor.

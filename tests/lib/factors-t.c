@@ -25,7 +25,7 @@ main(void)
     struct webauth_factors *one, *two, *result;
     apr_array_header_t *factors;
 
-    plan(52);
+    plan(45);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -34,27 +34,19 @@ main(void)
     if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    /* Check basic parsing into a new struct and interactive tests. */
+    /* Check basic parsing into a new struct. */
     one = webauth_factors_parse(ctx, "u");
     is_string("u", webauth_factors_string(ctx, one), "Parsed u correctly");
-    is_int(0, webauth_factors_interactive(ctx, one),
-           "...and is not interactive");
     is_int(1, webauth_factors_contains(ctx, one, "u"), "...and contains u");
     one = webauth_factors_parse(ctx, "o,o1");
     is_string("o,o1", webauth_factors_string(ctx, one),
               "Parsed o,o1 correctly");
-    is_int(1, webauth_factors_interactive(ctx, one), "...and is interactive");
     is_int(1, webauth_factors_contains(ctx, one, "o1"), "...and contains o1");
     is_int(0, webauth_factors_contains(ctx, one, "o2"),
            "...and does not contain o2");
     one = webauth_factors_parse(ctx, "p,m,o,o1");
     is_string("p,m,o,o1", webauth_factors_string(ctx, one),
               "Parsed p,m,o,o1 correctly");
-    is_int(1, webauth_factors_interactive(ctx, one), "...and is interactive");
-
-    /* Check that X.509 factors are interactive. */
-    one = webauth_factors_parse(ctx, "x1");
-    is_int(1, webauth_factors_interactive(ctx, one), "x1 is interactive");
 
     /* Check synthesizing the multifactor factor. */
     one = webauth_factors_parse(ctx, "p,o,o1");
@@ -69,8 +61,6 @@ main(void)
     one = webauth_factors_parse(ctx, "");
     is_string(NULL, webauth_factors_string(ctx, one),
               "Parsed \"\" to NULL string");
-    is_int(0, webauth_factors_interactive(ctx, one),
-           "...and is not interactive");
     is_int(0, webauth_factors_contains(ctx, one, "p"),
            "...and does not contain the p factor");
 
@@ -92,8 +82,6 @@ main(void)
     one = webauth_factors_parse(ctx, "rm");
     is_string("rm", webauth_factors_string(ctx, one),
               "Parsed rm correctly");
-    is_int(0, webauth_factors_interactive(ctx, one),
-           "...and is not interactive");
 
     /* Check creating a new set of factors from an array. */
     factors = apr_array_make(pool, 3, sizeof(const char *));
@@ -150,7 +138,6 @@ main(void)
     one = webauth_factors_parse(ctx, "h,p");
     is_string("h,p,m", webauth_factors_string(ctx, one),
               "Parsed h,p into factors with multifactor");
-    is_int(1, webauth_factors_interactive(ctx, one), "...and is interactive");
 
     /* Likewise with merging. */
     one = webauth_factors_union(ctx, webauth_factors_parse(ctx, "p"),

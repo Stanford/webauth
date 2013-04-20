@@ -6,7 +6,6 @@ WEBAUTH_4_5 {
         webauth_error_message;
         webauth_factors_array;
         webauth_factors_contains;
-        webauth_factors_interactive;
         webauth_factors_new;
         webauth_factors_parse;
         webauth_factors_satisfies;
