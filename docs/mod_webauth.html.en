@@ -303,25 +303,21 @@ WEBAUTH_USER=schemers
     <p>
       Below are the authentication factors that can be required via
       WebAuth directives or queried from the <a href="#sectionenv">environmental variables</a>
-      WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.  The
-      interactive column indicates whether this factor, as a session
-      factor, satisfies a forced interactive login requirement (as
-      requested via <a href="webauthforcelogin"><code class="directive">WebAuthForceLogin</code></a>).
+      WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.
     </p>
 
     <table class="bordered">
       <tr>
         <th>Code</th>
         <th>Factor Name</th>
-        <th>Interactive?</th>
         <th>Description</th>
       </tr>
       <tr>
-        <td><code>c</code></td><td>cookie</td><td>No</td>
+        <td><code>c</code></td><td>cookie</td>
         <td>Session authentication via cookie</td>
       </tr>
       <tr>
-        <td><code>d</code></td><td>device</td><td>No</td>
+        <td><code>d</code></td><td>device</td>
         <td>
           Device or browser originating the authentication is known to the
           local security infrastructure, has previously been part of a
@@ -330,7 +326,7 @@ WEBAUTH_USER=schemers
         </td>
       </tr>
       <tr>
-        <td><code>h</code></td><td>human</td><td>No</td>
+        <td><code>h</code></td><td>human</td>
         <td>
           Off-line human verification of the user's identity.  This factor
           should not be required directly; rather, it is used by (for
@@ -341,22 +337,22 @@ WEBAUTH_USER=schemers
         </td>
       </tr>
       <tr>
-        <td><code>k</code></td><td>Kerberos</td><td>No</td>
+        <td><code>k</code></td><td>Kerberos</td>
         <td>Session authentication via Kerberos authentication</td>
       </tr>
       <tr>
-        <td><code>m</code></td><td>multifactor</td><td>No</td>
+        <td><code>m</code></td><td>multifactor</td>
         <td>
           Session or initial authentication via multiple independent
           authentication factors (site-defined)
         </td>
       </tr>
       <tr>
-        <td><code>o</code></td><td>OTP</td><td>Yes</td>
+        <td><code>o</code></td><td>OTP</td>
         <td>Session or initial authentication via one-time password</td>
       </tr>
       <tr>
-        <td><code>o#</code></td><td>OTP</td><td>Yes</td>
+        <td><code>o#</code></td><td>OTP</td>
         <td>
           A more specific subset of <code>o</code>. Number indicates a
           specific OTP mechanism as defined by the local site, with higher
@@ -364,7 +360,7 @@ WEBAUTH_USER=schemers
         </td>
       </tr>
       <tr>
-        <td><code>p</code></td><td>password</td><td>Yes</td>
+        <td><code>p</code></td><td>password</td>
         <td>Session or initial authentication via traditional password</td>
       </tr>
       <tr>
@@ -375,18 +371,18 @@ WEBAUTH_USER=schemers
         </td>
       </tr>
       <tr>
-        <td><code>u</code></td><td>unknown</td><td>No</td>
+        <td><code>u</code></td><td>unknown</td>
         <td>Session or initial authentication via an unknown method</td>
       </tr>
       <tr>
-        <td><code>x</code></td><td>X.509</td><td>Yes</td>
+        <td><code>x</code></td><td>X.509</td>
         <td>
           Session or initial authentication via some form of X.509
           authentication
         </td>
       </tr>
       <tr>
-        <td><code>x#</code></td><td>X.509</td><td>Yes</td>
+        <td><code>x#</code></td><td>X.509</td>
         <td>
           A more specific subset of <code>x</code>. Number indicates a
           specific X.509 mechanism as defined by site, with higher numbers
@@ -1284,21 +1280,28 @@ WebAuthFailureURL /app/sorry.html
         WebLogin.
       </p>
       <p>
-        Interactive is defined as involving one of the factors marked
-        interactive in the table in the <a href="#factors">Authentication
-        Factors</a> section of this manual.  Normally, it means that the
-        user will be re-prompted for their password, but some other
-        authentication mechanism may be possible depending on local
-        configuration.
+        Interactive is defined as involving a login token, which in
+        practice means either a password or an OTP authentication via
+        WebLogin.  The normal expected behavior is that that the local
+        WebLogin server will re-prompt the user for their password, but
+        some other authentication mechanism may be possible depending on
+        local WebLogin and WebKDC configuration.
       </p>
       <p>
-        Be aware that, depending on the WebKDC configuration, an
-        interactive login may not be required even if this directive is in
-        force if the user has completed an interactive login very
-        recently.  By default, an interactive login within the past five
-        minutes will satisfy this directive.  This is controlled by
-        configuration on the WebKDC and cannot be controlled by the
-        WebAuth Application Server.
+        Compare this directive to <a href="#webauthrequiresessionfactor"><code class="directive">WebAuthRequireSessionFactor</code></a>
+        to determine which is the most appropriate for your use case.
+        Note that <code class="directive">WebAuthRequireSessionfactor</code> only
+        requires that the authentication be very recent (as controlled by
+        a WebKDC configuration option), not that it be repeated for each
+        separate site.
+      </p>
+      <p>
+        Be aware that setting this directive to true will make asserting
+        an authorization identity (see <a href="#webauthtrustauthzidentity"><code class="directive">WebAuthTrustAuthzIdentity</code></a>)
+        impossible unless the user is prompted for the authorization
+        identity as part of the initial authentication, since this
+        directive will not allow the user to select a different
+        authorization identity without reauthenticating.
       </p>
 
       <div class="example"><h3>Example</h3><pre>
@@ -2230,10 +2233,10 @@ WebAuthTokenMaxTTL 10m
       </p>
 
       <div class="note">
-        <h3>Warning</h3>
+        <h3>Warning for WebAuthSubjectAuthType</h3>
         <p>
           The interaction between this directive and either <a href="#webauthsubjectauthtype"><code class="directive">WebAuthSubjectAuthType</code></a>
-          or <a href="webauthcred"><code class="directive">WebAuthCred</code></a>
+          or <a href="#webauthcred"><code class="directive">WebAuthCred</code></a>
           may be unexpected.
         </p>
         <p>
@@ -2254,6 +2257,23 @@ WebAuthTokenMaxTTL 10m
           the authentication identity, not for the authorization identity.
           There is currently no way to obtain credentials for the
           authorization identity.
+        </p>
+      </div>
+
+      <div class="note">
+        <h3>Warning for WebAuthForceLogin</h3>
+        <p>
+          Be aware that, with the typical WebLogin configuration, setting
+          <a href="#webauthforcelogin"><code class="directive">WebAuthForceLogin</code></a>
+          will make asserting an authorization identity impossible.
+          Normally, WebLogin lets the user change the authorization
+          identity after authentication, since only then does it know what
+          possible authorization identities are permitted.  But when
+          <code class="directive">WebAuthForceLogin</code> is in effect, the
+          authorization identity cannot be changed without repeating the
+          authentication, which may effectively disable the option.  If
+          you are using authorization identities, consider using <a href="#webauthrequiresessionfactor"><code class="directive">WebAuthRequireSessionFactor</code></a>
+          instead.
         </p>
       </div>
 
