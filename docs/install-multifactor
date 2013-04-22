@@ -287,6 +287,7 @@ User Information Service
         <!-- Optional.  May contain a message for the user to display on
              the first load of the multifactor authentication page.
         <user-message>{message-for-user}</user-message>
+
         <!-- Optional.  May contain a string-serialized object that
              will be returned on a subsequent request to the
              validate service.  May be deserilized in WebLogin and
