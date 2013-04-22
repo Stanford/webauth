@@ -90,6 +90,13 @@ General:
    Apache server and would be a natural extension of the work already done
    in the native Java implementation.
 
+ * WEBAUTH-131: Missing configuration directives should not be a fatal
+   error for any of the Apache modules, since Apache doesn't provide a
+   good way of reporting and handling that error properly.  Instead, we
+   should accept the configuration but reject any use of the module.  This
+   will also allow us to enable the modules by default when installed as
+   Debian packages.
+
 libwebauth:
 
  * WEBAUTH-37: Provide a way to report diagnostic warnings in the library,
