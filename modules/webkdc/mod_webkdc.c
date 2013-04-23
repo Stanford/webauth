@@ -556,8 +556,6 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
     struct webauth_token token;
     struct webauth_key *key;
 
-    ms = MWK_ERROR;
-
     /* only create service tokens from krb5 creds */
     if (strcmp(req_cred->type, "krb5") != 0) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
@@ -687,8 +685,6 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     struct webauth_token_webkdc_proxy *sub_pt;
     struct webauth_token token;
     void *sad;
-
-    ms = MWK_ERROR;
 
     /* make sure auth_type is not NULL */
     if (auth_type == NULL) {
@@ -2004,7 +2000,6 @@ handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
 
     pt_data = NULL;
     *subject_out = "<unknown>";
-    ms = MWK_ERROR;
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
