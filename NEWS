@@ -148,6 +148,14 @@ WebAuth 4.5.0 (unreleased)
     protocol error or an internal error, rather than using a separate
     field in the response struct.
 
+    Update to C TAP Harness 2.1:
+
+    * runtests now treats the command line as a list of tests by default.
+    * The full test executable path can now be passed to runtests -o.
+    * Improved harness output for tests with lazy plans.
+    * Improved harness output to a terminal for some abort cases.
+    * Flush harness output after each test even when not on a terminal.
+
 WebAuth 4.4.3 (2013-03-12)
 
     Fix a coding error in the WebAuthTrustAuthzIdentity directive parsing
