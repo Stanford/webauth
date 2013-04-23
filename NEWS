@@ -2,10 +2,151 @@
 
 WebAuth 4.5.0 (unreleased)
 
+    Apache 2.4 error logging has been fixed for all modules to properly
+    indicate the module name originating the message.
+
+    mod_webauth and mod_webkdc will now produce significantly better
+    Apache error log messages with more context and details about the
+    failure.
+
+    The change in interpretation of WebAuthForceLogin introduced in 4.4.0
+    has been reverted, and WebAuthForceLogin once again requires that the
+    user perform an authentication that results in a login token (either
+    password or OTP).  This seems more generally useful than making this
+    directive largely redundant with WebAuthRequireSessionFactor.  Add a
+    caution in the documentation explaining that this will not work well
+    with authorization identities in most environments.
+
+    Initial multifactor no longer satisfies a random session multifactor
+    requirement, correcting a long-standing bug in random multifactor
+    handling.
+
     mod_webauthldap supports a new WebAuthLdapOperationalAttribute
     directive that is the same as WebAuthLdapAttribute but searches the
     directory for operational attributes and adds them to the environment.
     Patch from William Orr.
+
+    WebLogin no longer supports obtaining the password expiration from a
+    kadmin-remctl backend with a direct remctl call.  Instead, it uses the
+    password expiration time returned by the WebKDC, which in turn gets it
+    from the user information service.
+
+    A new WebAuth confirmation page template variable is available,
+    expire_timestamp, which includes the timestamp (in seconds since UNIX
+    epoch) when the password will expire.  This should be used instead of
+    the old (and now deprecated) expire_date variable since it allows the
+    time information to be localized.  See the example confirm.tmpl file
+    to see how to format this using Perl's Time::Duration module.
+
+    WebLogin now supports login form templates that allow the user (or the
+    template) to say that this authentication is from an untrusted
+    computer.  If that form element is set, WebLogin will only retain
+    single sign-on cookies and persistent factor cookies long enough to
+    complete the login process and will then discard them, reducing the
+    risk of theft of authentication tokens when someone walks away from an
+    untrusted computer.
+
+    The WebKDC and WebLogin now support persistent cookies that add
+    additional authentication factors to a successful authentication.
+    This can be used to require multifactor authentication only from
+    browsers that have not previously completed a multifactor
+    authentication (similar to "remember this device" in various web
+    services).  The additional factors are stored in a new webkdc-factor
+    token type and a new webauth_wft cookie.  A persistent factor cookie
+    is created when the user information service validation call for an
+    OTP authentication returns a list of persistent factors.  The
+    validation service can indicate the lifetime of the cookie.  The
+    cookies will be re-encrypted in the current WebKDC private key on each
+    interaction with WebLogin to prevent them from becoming invalid due to
+    key rotation (although this does mean that they will become invalid
+    over long periods of inactivity).
+
+    The user information service can invalidate all persistent factor
+    tokens created before a particular timestamp by including an
+    <valid-threshold> element in the userinfo reply.
+
+    WebLogin supports optionally warning the user when persistent factor
+    tokens are about to expire.  See the generic confirmation page
+    template for an example of how to do this.  The warning threshold can
+    be configured in /etc/webkdc/webkdc.conf.
+
+    When the WebKDC calls the user information service, it now provides,
+    as an additional parameter, the current initial authentication factors
+    for the user.  This can be used by the user information service to
+    decide whether or not to require a multifactor authentication.  This
+    is most useful in combination with persistent factors; for example,
+    the user information service can require multifactor authentication if
+    the user didn't present a persistent factor token for the "d" (device)
+    factor, indicating that device had previously authenticated with
+    multifactor.
+
+    In addition to requiring a multifactor authentication, the user
+    information service can now add a specific list of factors that will
+    be required for this authentication.  The user will be required to
+    provide the union of this list and the list of factors requested by
+    the WebAuth Application Server.  Contributed by Benjamin Coddington.
+
+    The user information service can return a message to WebLogin for
+    display in the multifactor authentication page.  One possible use is
+    for the user information service to tell the user why a multifactor
+    authentication is required.  Contributed by Benjamin Coddington.
+
+    The user information service (with both the userinfo and validate
+    calls) can return an opaque login state string, which is passed to
+    WebLogin and from there to the multifactor login template.  The
+    template can set the login state as a form variable and pass it back
+    to the user information service validate function.  This allows for
+    multistep multifactor authentication using serialized data, allowing
+    implementation of (for example) resynchronization of a hardware token.
+    Contributed by Benjamin Coddington.
+
+    The user information service can now add factors to the user's
+    authentication if the user successfully completed an interactive
+    authentication (defined as one that involved WebLogin sending a login
+    token, which in practice means an OTP or password authentication).
+    The new "h" (human verification) factor has been added to the factor
+    list for this purpose and counts as an additional factor for the
+    purposes of satisfying multifactor.  The intended use of this feature
+    is to allow a local support desk to verify someone's identity out of
+    band and then bless their authentications for a certain length of time
+    as satisfying multifactor even if they've forgotten their second
+    factor.
+
+    WebLogin and the multifactor authentication template now receive a
+    list of which factors the user must provide but has not already
+    provided, rather than a complete list of required factors.  This is
+    used to provide a better value for the factor_type template parameter
+    for the multifactor login template.  Contributed by Benjamin
+    Coddington.
+
+    WebLogin can now tell the WebKDC what type of OTP was used for a
+    multifactor authentication, if it knows, and the WebKDC will pass that
+    information to the user information service validate call.
+    Contributed by Benjamin Coddington.
+
+    The user information service can now indicate the expiration time of a
+    webkdc-proxy token created via an OTP authentication by including an
+    <expiration> element in its reply.
+
+    Errors contacting the user information service are now logged to the
+    Apache error log by mod_webkdc even if it is configured to ignore
+    those errors and continue as if no user information service is
+    availabe.
+
+    webauth_factors is now a private data structure with a much richer C
+    API for manipulating sets of factors.  Several other internal APIs,
+    particularly the ones related to the WebKDC login process or the user
+    information service, take opaque webauth_factors structs instead of
+    APR lists of factors.
+
+    mod_webkdc no longer supports obtaining proxy tokens with
+    <getTokenRequest>.  This was never used by WebAuth code and is
+    conceptually useless.
+
+    The WebKDC login API now expects encrypted token strings rather than
+    decrypted token structs as input and returns the error code, whether a
+    protocol error or an internal error, rather than using a separate
+    field in the response struct.
 
 WebAuth 4.4.3 (2013-03-12)
 
