@@ -274,6 +274,11 @@ WebLogin:
    using CGI::Application parameters for per-query data or to collect them
    in a single parameter that can be more easily cleared.
 
+ * WEBAUTH-130: Support displaying the last password change date for a
+   user if they enter an incorrect password, as a reminder that they've
+   recently changed their password.  This would allow matching the
+   behavior of Google authentication.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
