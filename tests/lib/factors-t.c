@@ -199,6 +199,6 @@ main(void)
               "Subtracting m from rm results in the empty set");
 
     /* Clean up. */
-    webauth_context_free(ctx);
+    apr_terminate();
     return 0;
 }

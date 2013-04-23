@@ -119,8 +119,10 @@ kinit_with_addresses(struct kerberos_config *config)
     krb5_cc_close(ctx, ccache);
     krb5_free_cred_contents(ctx, &creds);
     krb5_kt_close(ctx, keytab);
+    krb5_get_init_creds_opt_free(ctx, opts);
     krb5_free_principal(ctx, kprinc);
     krb5_free_context(ctx);
+    free(krbtgt);
     test_tmpdir_free(tmpdir);
     return cache;
 }
