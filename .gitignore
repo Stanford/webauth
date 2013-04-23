@@ -78,6 +78,7 @@
 /tests/runtests
 /tests/webauth_keyring
 /tests/webauth_keyring2
+/tmp-valgrind/
 /tools/wa_keyring
 /tools/wa_keyring.1
 /webauth-*.tar.gz
