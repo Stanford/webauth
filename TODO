@@ -99,10 +99,6 @@ General:
 
 libwebauth:
 
- * WEBAUTH-37: Provide a way to report diagnostic warnings in the library,
-   and use that to report user information service failures when
-   ignore_failure is set.
-
  * WEBAUTH-41: Add locking to the code reading and writing keyrings so
    that two processes don't simultaneously update a keyring.
 
@@ -112,9 +108,6 @@ libwebauth:
 
  * WEBAUTH-48: Format times properly when reporting errors about expired
    or stale tokens from token decoding.
-
- * WEBAUTH-92: Provide a way of appending a context to an error message
-   thrown by a lower-level function without changing the error message.
 
  * WEBAUTH-115: Split the app and request tokens into two separate structs
    in the library API.  We have to continue to use the same encoding on
@@ -126,10 +119,27 @@ libwebauth:
 
  * WEBAUTH-122: Support enterprise principal names.
 
+ * WEBAUTH-132: Support setting persistent factors from the userinfo call
+   as well as the validate call.
+
+ * WEBAUTH-133: Support passing parameters to the user information service
+   with JSON instead of an ordered list.
+
+ * WEBAUTH-134: Decode factors directly into struct webauth_factors when
+   decoding tokens.
+
+ * WEBAUTH-135: Support obtaining the password expiration time from the
+   Kerberos KDC reply if the relevant functions are available and fill in
+   that field even if we don't have a user information service or it
+   doesn't provide us with that information.
+
 mod_webauth:
 
  * WEBAUTH-94: Rewrite the service token management in mod_webauth to be
-   clearer about object lifetimes.
+   clearer about object lifetimes.  This will probably require adding
+   support for child contexts and copying the keyring back into the parent
+   context so that we can destroy the child context and free any transient
+   memory.
 
  * WEBAUTH-49: Provide a way to force reauthentication of a user who has
    valid credentials but ones that are about to expire, and apply it only
@@ -169,6 +179,10 @@ mod_webauth:
    obvious; perhaps require that REMOTE_USER be a full principal name if
    krb5 authenticators are used?
 
+ * WEBAUTH-136: Convert the factor requirements to require directives so
+   that they can be used with the new authorization math support in Apache
+   2.4.
+
 mod_webauthldap:
 
  * WEBAUTH-55: User request: There's no inherent reason why
@@ -195,9 +209,6 @@ mod_webauthldap:
    the Apache version conditionals are handled.
 
 mod_webkdc:
-
- * WEBAUTH-17: Return from a password login any additional information
-   provided by the KDC, such as upcoming password expiration information.
 
  * WEBAUTH-60: Ensure there is a proper return from a password login for
    an expired password so that it can be recognized and acted on by the
@@ -230,19 +241,7 @@ mod_webkdc:
    the WebLogin server can choose whether to tell the user about them.
    This will let us remove the token.acl parser in WebLogin.
 
- * WEBAUTH-114: Allow the user information service to provide the last
-   password change date, and expose that information via the login
-   history.
-
- * WEBAUTH-117: Provide some mechanism to handle OTP "try again" requests.
-   Some OTP mechanisms may re-prompt the user for an additional code (or
-   multiple additional codes) if the offset is too large.
-
 WebLogin:
-
- * WEBAUTH-14: Pass the password expiration information to the templates
-   as seconds since epoch rather than as pre-formatted dates.  This will
-   be friendlier to localized interfaces.
 
  * WEBAUTH-65: When going to a site with multiple pieces of content
    protected by WebAuth, the browser seems to go to WebLogin multiple
@@ -263,18 +262,11 @@ WebLogin:
    included WebLogin scripts, used to set the cookie saying to use
    Negotiate-Auth.
 
- * WEBAUTH-13: Add a checkbox to the login page indicating that the user
-   is coming from a public cluster.  If checked, don't set a single
-   sign-on cookie.
-
  * WEBAUTH-118: In support of localization and site customization,
    WebLogin should not be generating any error strings in the Perl code
    where possible.  Instead, it should set parameters that are used on the
    login template to display appropriate text.  Move the remaining error
    messages into the template.
-
- * WEBAUTH-119: Document how to set up multiple WebLogin servers with
-   different themes.
 
  * WEBAUTH-128: Rework the WebLogin implementation strategy to either stop
    using CGI::Application parameters for per-query data or to collect them
@@ -293,6 +285,10 @@ Perl Modules:
    send multifactor messages.  The current parsing doesn't take apart the
    XML document and retrieve the actual status result.
 
+ * WEBAUTH-137: Include in the distribution as much as possible of the
+   Stanford user information service implementation as a basis upon which
+   other sites can write their own.
+
 Test Suite:
 
  * WEBAUTH-71: A test suite (and a redesign of the code so that it can be
@@ -306,6 +302,11 @@ Test Suite:
    structure, and update the coding style.
 
  * WEBAUTH-126: Generate C token tests from the Perl configuration data.
+
+ * WEBAUTH-138: Generate the WebKDC login tests from Perl configuration
+   data.
+
+ * WEBAUTH-139: Rewrite the userinfo tests to be data-driven.
 
 Documentation:
 
@@ -342,9 +343,6 @@ Documentation:
    the WAS may choose to trust it rather than validating the authenticator
    (since the choice of requested credentials was the WAS's anyway.)
 
- * WEBAUTH-106: Flesh out the WebLogin module documentation with the entry
-   points, run modes, and parameters.
-
 Style:
 
  * WEBAUTH-80: The mod_webauthldap module needs a lot of formatting and
@@ -355,3 +353,7 @@ Style:
    this list or removal as unimportant.
 
  * WEBAUTH-120: Update coding style for the WebAuth Perl modules.
+
+ * WEBAUTH-140: Change wai_error_set to return the new error code and use
+   that to simplify some of the error handling logic throughout the code
+   base.
