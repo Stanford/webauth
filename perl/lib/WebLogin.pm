@@ -1321,7 +1321,7 @@ sub change_user_password {
     if (ref $e and $e->isa('WebKDC::WebKDCException')) {
         return ($e->status(), $e->message());
     } elsif (ref $e and $e->isa('WebAuth::Exception')) {
-        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e->{krb5_em});
+        return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e->error_message);
     } elsif ($e) {
         return (WebKDC::WK_ERR_UNRECOVERABLE_ERROR, $e);
     } else {
@@ -2002,7 +2002,7 @@ sub pwchange : Runmode {
 
     # Attempt password change via krb5_change_password API.
     my $error = '';
-    if ($status != 0) {
+    if ($status == WK_SUCCESS) {
         ($status, $error) = $self->change_user_password;
     }
 
@@ -2042,6 +2042,7 @@ sub pwchange : Runmode {
     # using an external password strength checking program, adds a prefix to
     # the error message that users don't care about, so strip that out.
     } else {
+        $error =~ s/^Kerberos error \((.*)\)/$1/;
         $error =~ s/^password change failed for \S+: \(\d+\) //;
         $error =~ s/External password quality program failed: //;
         $self->template_params ({error => 1});

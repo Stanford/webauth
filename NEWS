@@ -2,13 +2,6 @@
 
 WebAuth 4.5.0 (unreleased)
 
-    Apache 2.4 error logging has been fixed for all modules to properly
-    indicate the module name originating the message.
-
-    mod_webauth and mod_webkdc will now produce significantly better
-    Apache error log messages with more context and details about the
-    failure.
-
     The change in interpretation of WebAuthForceLogin introduced in 4.4.0
     has been reverted, and WebAuthForceLogin once again requires that the
     user perform an authentication that results in a login token (either
@@ -16,6 +9,18 @@ WebAuth 4.5.0 (unreleased)
     directive largely redundant with WebAuthRequireSessionFactor.  Add a
     caution in the documentation explaining that this will not work well
     with authorization identities in most environments.
+
+    Fix password change handling in WebLogin, which has been broken since
+    4.4.0 due to code changes for handling account lockout.  Also fix
+    reporting of the reason for a rejected password change, which has been
+    broken since WebAuth 4.3.0.
+
+    Apache 2.4 error logging has been fixed for all modules to properly
+    indicate the module name originating the message.
+
+    mod_webauth and mod_webkdc will now produce significantly better
+    Apache error log messages with more context and details about the
+    failure.
 
     Initial multifactor no longer satisfies a random session multifactor
     requirement, correcting a long-standing bug in random multifactor
