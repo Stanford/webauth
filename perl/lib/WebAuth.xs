@@ -62,6 +62,14 @@ typedef struct {
 /* Used to generate the Perl glue for WebAuth constants. */
 #define IV_CONST(X) newCONSTSUB(stash, #X, newSViv(X))
 
+/* Used to check that an object argument to a function is not NULL. */
+#define CROAK_NULL(o, t, f)                     \
+    do {                                        \
+        if ((o) == NULL)                        \
+            croak(t " object is undef in " f);  \
+    } while (0);
+#define CROAK_NULL_SELF(o, t, f) CROAK_NULL((o), t, t "::" f)
+
 /*
  * Encoding and decoding magic for tokens.
  *
@@ -330,7 +338,7 @@ map_hash_to_token(struct token_mapping mapping[], HV *hash, const void *token)
 /*
  * Turn a WebAuth error into a Perl exception.
  */
-static void
+static void __attribute__((__noreturn__))
 webauth_croak(struct webauth_context *ctx, const char *detail, int s)
 {
     HV *hv;
@@ -446,6 +454,8 @@ new(class)
     int status;
   CODE:
 {
+    if (strcmp(class, "WebAuth") != 0)
+        croak("subclassing of WebAuth is not supported");
     status = webauth_context_init(&ctx, NULL);
     if (status != WA_ERR_NONE)
         webauth_croak(NULL, "webauth_context_init", status);
@@ -486,6 +496,7 @@ key_create(self, type, size, key_material = NULL)
     int status;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth", "key_create");
     status = webauth_key_create(self, type, size, key_material, &key);
     if (status != WA_ERR_NONE)
         webauth_croak(self, "webauth_key_create", status);
@@ -503,6 +514,7 @@ keyring_new(self, ks)
     WebAuth__Keyring ring;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth", "keyring_new");
     ring = malloc(sizeof(*ring));
     if (ring == NULL)
         croak("cannot allocate memory");
@@ -532,6 +544,7 @@ keyring_decode(self, data)
     STRLEN length;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth", "keyring_decode");
     ring = malloc(sizeof(*ring));
     if (ring == NULL)
         croak("cannot allocate memory");
@@ -555,6 +568,7 @@ keyring_read(self, file)
     int status;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth", "keyring_read");
     ring = malloc(sizeof(*ring));
     if (ring == NULL)
         croak("cannot allocate memory");
@@ -578,6 +592,7 @@ krb5_new(self)
     SV *output;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth", "krb5_new");
     krb5 = malloc(sizeof(*krb5));
     if (krb5 == NULL)
         croak("cannot allocate memory");
@@ -604,6 +619,8 @@ token_decode(self, input, ring)
     SV *object;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth", "token_decode");
+    CROAK_NULL(ring, "WebAuth::Keyring", "WebAuth::token_decode");
     encoded = SvPV_nolen(input);
     status = webauth_token_decode(self, WA_TOKEN_ANY, encoded, ring->ring,
                                   &token);
@@ -690,6 +707,8 @@ token_decrypt(self, input, ring)
     size_t outlen;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth", "token_decrypt");
+    CROAK_NULL(ring, "WebAuth::Keyring", "WebAuth::token_decrypt");
     encoded = SvPV(input, length);
     status = webauth_token_decrypt(self, encoded, length, &output, &outlen,
                                    ring->ring);
@@ -714,6 +733,8 @@ token_encrypt(self, input, ring)
     size_t outlen;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth", "token_encrypt");
+    CROAK_NULL(ring, "WebAuth::Keyring", "WebAuth::token_encrypt");
     data = SvPV(input, length);
     status = webauth_token_encrypt(self, data, length, &output, &outlen,
                                    ring->ring);
@@ -731,7 +752,10 @@ enum webauth_key_type
 type(self)
     WebAuth::Key self
   CODE:
+{
+    CROAK_NULL_SELF(self, "WebAuth::Key", "type");
     RETVAL = self->type;
+}
   OUTPUT:
     RETVAL
 
@@ -740,7 +764,10 @@ enum webauth_key_size
 length(self)
     WebAuth::Key self
   CODE:
+{
+    CROAK_NULL_SELF(self, "WebAuth::Key", "length");
     RETVAL = self->length;
+}
   OUTPUT:
     RETVAL
 
@@ -749,7 +776,10 @@ SV *
 data(self)
     WebAuth::Key self
   CODE:
+{
+    CROAK_NULL_SELF(self, "WebAuth::Key", "data");
     RETVAL = newSVpvn((const void *) self->data, self->length);
+}
   OUTPUT:
     RETVAL
 
@@ -773,6 +803,8 @@ add(self, creation, valid_after, key)
     int s;
   PPCODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Keyring", "add");
+    CROAK_NULL(key, "WebAuth::Key", "WebAuth::Keyring::add");
     webauth_keyring_add(self->ctx, self->ring, creation, valid_after, key);
     XSRETURN_YES;
 }
@@ -788,11 +820,12 @@ best_key(self, usage, hint)
     int s;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Keyring", "best_key");
     s = webauth_keyring_best_key(self->ctx, self->ring, usage, hint, &key);
     if (s == WA_ERR_NONE)
         RETVAL = key;
     else if (s == WA_ERR_NOT_FOUND)
-        XSRETURN_UNDEF;
+        RETVAL = NULL;
     else
         webauth_croak(self->ctx, "webauth_keyring_best_key", s);
 }
@@ -809,6 +842,7 @@ encode(self)
     size_t length;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Keyring", "encode");
     s = webauth_keyring_encode(self->ctx, self->ring, &data, &length);
     if (s != WA_ERR_NONE)
         webauth_croak(self->ctx, "webauth_keyring_encode", s);
@@ -825,6 +859,7 @@ entries(self)
     struct webauth_keyring *ring;
   PPCODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Keyring", "entries");
     ring = self->ring;
     if (GIMME_V == G_ARRAY) {
         struct webauth_keyring_entry *e;
@@ -854,6 +889,7 @@ remove(self, n)
     int s;
   PPCODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Keyring", "remove");
     s = webauth_keyring_remove(self->ctx, self->ring, n);
     if (s != WA_ERR_NONE)
         webauth_croak(self->ctx, "webauth_keyring_remove", s);
@@ -869,6 +905,7 @@ write(self, path)
     int s;
   PPCODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Keyring", "write");
     s = webauth_keyring_write(self->ctx, self->ring, path);
     if (s != WA_ERR_NONE)
         webauth_croak(self->ctx, "webauth_keyring_write", s);
@@ -882,7 +919,10 @@ time_t
 creation(self)
     WebAuth::KeyringEntry self
   CODE:
+{
+    CROAK_NULL_SELF(self, "WebAuth::KeyringEntry", "creation");
     RETVAL = self->creation;
+}
   OUTPUT:
     RETVAL
 
@@ -891,7 +931,10 @@ time_t
 valid_after(self)
     WebAuth::KeyringEntry self
   CODE:
+{
+    CROAK_NULL_SELF(self, "WebAuth::KeyringEntry", "valid_after");
     RETVAL = self->valid_after;
+}
   OUTPUT:
     RETVAL
 
@@ -900,7 +943,10 @@ WebAuth::Key
 key(self)
     WebAuth::KeyringEntry self
   CODE:
+{
+    CROAK_NULL_SELF(self, "WebAuth::KeyringEntry", "key");
     RETVAL = self->key;
+}
   OUTPUT:
     RETVAL
 
@@ -912,6 +958,8 @@ DESTROY(self)
     WebAuth::Krb5 self
   CODE:
 {
+    if (self == NULL)
+        return;
     webauth_krb5_free(self->ctx, self->kc);
     free(self);
 }
@@ -925,6 +973,7 @@ init_via_cache(self, cache = NULL)
     int status;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "init_via_cache");
     if (cache != NULL && cache[0] == '\0')
         cache = NULL;
     status = webauth_krb5_init_via_cache(self->ctx, self->kc, cache);
@@ -943,6 +992,7 @@ init_via_keytab(self, keytab, server = NULL, cache = NULL)
     int status;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "init_via_keytab");
     if (server != NULL && server[0] == '\0')
        server = NULL;
     status = webauth_krb5_init_via_keytab(self->ctx, self->kc, keytab, server,
@@ -967,6 +1017,7 @@ init_via_password(self, username, password, principal = NULL, keytab = NULL, \
     int status;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "init_via_password");
     if (principal != NULL && principal[0] == '\0')
        principal = NULL;
     if (server != NULL && server[0] == '\0')
@@ -997,6 +1048,7 @@ export_cred(self, principal = NULL)
     SV *out;
     int status;
 
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "export_cred");
     if (principal != NULL && principal[0] == '\0')
         principal = NULL;
     status = webauth_krb5_export_cred(self->ctx, self->kc, principal, &cred,
@@ -1032,6 +1084,7 @@ import_cred(self, cred, cache = NULL)
     int status;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "import_cred");
     data = SvPV(cred, length);
     status = webauth_krb5_import_cred(self->ctx, self->kc, data, length,
                                       cache);
@@ -1049,6 +1102,7 @@ get_principal(self, canon = 0)
     char *principal;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "get_principal");
     status = webauth_krb5_get_principal(self->ctx, self->kc, &principal,
                                         canon);
     if (status != WA_ERR_NONE)
@@ -1073,6 +1127,7 @@ make_auth(self, server, data = NULL)
     size_t in_length = 0;
     int status;
 
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "make_auth");
     if (data != NULL)
         in_data = SvPV(data, in_length);
     status = webauth_krb5_make_auth_data(self->ctx, self->kc, server, &req,
@@ -1114,11 +1169,13 @@ read_auth(self, request, keytab, server = NULL, canon = 0, data = NULL)
     const void *req;
     const void *in_data = NULL;
     void *out_data;
-    size_t req_len, in_len, out_len;
+    size_t req_len, out_len;
+    size_t in_len = 0;
     char *client;
     SV *out;
     int status;
 
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "read_auth");
     req = SvPV(request, req_len);
     if (data != NULL)
         in_data = SvPV(data, in_len);
@@ -1156,6 +1213,7 @@ change_password(self, password)
     int status;
   CODE:
 {
+    CROAK_NULL_SELF(self, "WebAuth::Krb5", "change_password");
     status = webauth_krb5_change_password(self->ctx, self->kc, password);
     if (status != WA_ERR_NONE)
         webauth_croak(self->ctx, "webauth_krb5_change_password", status);
@@ -1178,6 +1236,7 @@ encode(self, ring)
     const char *output;
   CODE:
 {
+    CROAK_NULL(ring, "WebAuth::Keyring", "WebAuth::Token::encode");
     if (!sv_derived_from(self, "WebAuth::Token"))
         croak("self is not of type WebAuth::Token");
     hash = (HV *) SvRV(self);

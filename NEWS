@@ -148,6 +148,10 @@ WebAuth 4.5.0 (unreleased)
     protocol error or an internal error, rather than using a separate
     field in the response struct.
 
+    Diagnose undef arguments to various Perl WebAuth module functions
+    implemented in XS and throw exceptions rather than segfaulting from a
+    NULL pointer dereference.
+
     Update to C TAP Harness 2.1:
 
     * runtests now treats the command line as a list of tests by default.
