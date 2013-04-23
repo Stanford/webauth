@@ -1,6 +1,13 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.4.3 (unreleased)
+WebAuth 4.5.0 (unreleased)
+
+    mod_webauthldap supports a new WebAuthLdapOperationalAttribute
+    directive that is the same as WebAuthLdapAttribute but searches the
+    directory for operational attributes and adds them to the environment.
+    Patch from William Orr.
+
+WebAuth 4.4.3 (2013-03-12)
 
     Fix a coding error in the WebAuthTrustAuthzIdentity directive parsing
     that also enabled WebAuthDoLogout for the same scope.
@@ -20,11 +27,6 @@ WebAuth 4.4.3 (unreleased)
     opens the possibility of overflowing the allowed size of the
     environment, but the maximum environment size is quite large on most
     modern operating systems.
-
-    mod_webauthldap supports a new WebAuthLdapOperationalAttribute
-    directive that is the same as WebAuthLdapAttribute but searches the
-    directory for operational attributes and adds them to the environment.
-    Patch from William Orr.
 
     Fix syntax error in the replay condition in the default WebLogin error
     template.
