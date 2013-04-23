@@ -133,6 +133,8 @@ libwebauth:
    that field even if we don't have a user information service or it
    doesn't provide us with that information.
 
+ * WEBAUTH-141: Add support for FAST if the Kerberos libraries support it.
+
 mod_webauth:
 
  * WEBAUTH-94: Rewrite the service token management in mod_webauth to be
