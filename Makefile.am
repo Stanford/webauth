@@ -451,8 +451,8 @@ check-valgrind: $(check_PROGRAMS)
 	rm -rf $(abs_top_builddir)/tmp-valgrind
 	mkdir $(abs_top_builddir)/tmp-valgrind
 	env RRA_MAINTAINER_TESTS= valgrind --leak-check=full		   \
-	    --track-fds=yes --trace-children=yes			   \
+	    --show-reachable=yes --trace-children=yes			   \
 	    --log-file=$(abs_top_builddir)/tmp-valgrind/log.%p		   \
 	    --suppressions=$(abs_top_srcdir)/tests/data/valgrind.supp	   \
-	    --trace-children-skip="/bin/sh,*/cat,*/cut,*/expr,*/getopt,*/kinit,*/ls,*/mkdir,*/rm,*/rmdir,*/sed,*/sleep,*/wc,*/data/cmd-*,*/docs/pod*-t" \
-	    tests/runtests $(abs_top_srcdir)/tests/TESTS
+	    --trace-children-skip="/bin/sh,*/cat,*/cut,*/expr,*/getopt,*/kinit,*/ls,*/mkdir,*/rm,*/rmdir,*/sed,*/sleep,*/wc,*/remctld,*/data/cmd-*,*/data/generate-krb5-conf,*/docs/*-t,*/perl/*-t,*/util/xmalloc-t" \
+	    tests/runtests -l $(abs_top_srcdir)/tests/TESTS
