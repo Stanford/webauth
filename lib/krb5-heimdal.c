@@ -203,7 +203,7 @@ decode_creds(struct webauth_context *ctx, struct webauth_krb5 *kc,
      * correct order.  This code could theoretically be simplified to always
      * swap if nothing older is still in the wild.
      */
-    if (data.flags & mask)
+    if (data.flags & 0xffff0000)
         creds->flags.i = swap_flag_bits(data.flags);
     else
         creds->flags.i = data.flags;

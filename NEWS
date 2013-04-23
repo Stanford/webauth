@@ -152,6 +152,9 @@ WebAuth 4.5.0 (unreleased)
     implemented in XS and throw exceptions rather than segfaulting from a
     NULL pointer dereference.
 
+    Fix compilation error with Heimdal Kerberos libraries, introduced in
+    WebAuth 4.4.0.
+
     Update to C TAP Harness 2.1:
 
     * runtests now treats the command line as a list of tests by default.
