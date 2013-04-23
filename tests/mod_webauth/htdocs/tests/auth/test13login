@@ -1,35 +1,27 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2003, 2011
+# Copyright 2003, 2011, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+use lib '../lib/';
+use WebAuth::Tests qw(build_page);
 
-require 'util.pl';
+# Text for the page.
+my @extended = ('If you are seeing this, the test failed, possibly because '
+                .'WebAuthReturnURL was not correctly honored.');
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 13,
+    test_desc     => 'lazy session support',
+    extended_desc => \@extended,
+);
 
 print "Content-type: text/html\n\n";
-
-print "<html>\n";
-
-test_title(12, "test POST with expired cookie");
-
-print<<EOS;
-<p>
-You are accessing a webauth-protected page as the user: $REMOTE_USER
-</p>
-<p>
-If you are seeing this, the test failed, possibly because WebAuthReturnURL
-was not correctly honored.
-</p>
-EOS
-
-&return_links;
-
-&dump_stuff;
-
-print "</html>";
+print build_page(\%settings);

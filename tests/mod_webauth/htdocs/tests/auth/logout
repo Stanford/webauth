@@ -1,16 +1,16 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Roland Schemers
-# Copyright 2003
+# Copyright 2003, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
-
-require 'util.pl';
+use lib '../lib/';
+use WebAuth::Tests qw(build_page);
 
 print "Content-type: text/html\n\n";
 
@@ -24,8 +24,6 @@ Clearing webauth cookie. You should be logged out.
 <br>
 Click <a href="../index.html">here</a> to return.
 EOS
-
-&dump_stuff;
 
 print "</html>";
 

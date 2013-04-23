@@ -1,38 +1,30 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Roland Schemers
-# Copyright 2003
+# Copyright 2003, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+use lib '../lib/';
+use WebAuth::Tests qw(build_page);
 
-require 'util.pl';
+# Text for the page.
+my @extended = (
+    'If you are seeing this then you might not have run the test correctly.',
+    'Please logout and run the test again.  Make sure to wait 10-15 seconds '
+                .'before re-running the test after logging in.'
+);
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 7,
+    test_desc     => 'testing 5 second app-token lifetime',
+    extended_desc => \@extended,
+);
 
 print "Content-type: text/html\n\n";
-
-print "<html>\n";
-
-test_title(7, "testing 5 second app-token lifetime");
-
-print<<EOS;
-
-You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
-<br>
-If you are seeing then you might not have run the test correctly.
-<br>
-<br>
-Please logout and run the test again. Make sure to wait 10-15 seconds
-before re-running the test after logging in.
-<br>
-EOS
-
-&return_links;
-
-&dump_stuff;
-
-print "</html>";
-
+print build_page(\%settings);

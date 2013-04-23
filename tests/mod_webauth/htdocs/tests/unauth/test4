@@ -1,34 +1,27 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Roland Schemers
-# Copyright 2003
+# Copyright 2003, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
-
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+use warnings;
 
 require '../auth/util.pl';
 
+# Set information for the tests.
+my %settings;
+my $settings{test_number} = 4;
+my $settings{test_desc}   = 'test WebAuthLoginCancelURL';
+
+my @extended = (
+    'You have successfully canceled out of logging in and have been sent '
+    . 'back to the correct page.');
+$settings{extended_desc} = \@extended;
+
+$settings{unauth_location} = 1;
+
 print "Content-type: text/html\n\n";
-
-print "<html>";
-
-test_title(4, "test WebAuthLoginCancelURL");
-
-print<<EOS;
-
-<br>
-You have successfully canceled out of logging in and have been sent
-back to the correct page.
-<br>
-EOS
-
-&unauth_return_links;
-
-#&dump_stuff;
-
-print "</html>";
-
+print build_page(\%settings);

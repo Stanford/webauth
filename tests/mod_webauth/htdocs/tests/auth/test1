@@ -1,34 +1,28 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Roland Schemers
-# Copyright 2003
+# Copyright 2003, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+use lib '../lib/';
+use WebAuth::Tests qw(build_page);
 
-require 'util.pl';
+# Text for the page.
+my @extended = (
+    'This test tests the basic ability of WebAuth to protect a page.',
+);
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 1,
+    test_desc     => 'basic WebAuth test',
+    extended_desc => \@extended,
+);
 
 print "Content-type: text/html\n\n";
-
-print "<html>";
-
-test_title(1, "basic WebAuth test");
-
-print<<EOS;
-
-You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
-<br>
-This test tests the basic ability of WebAuth to protect a page.
-<br>
-EOS
-
-&return_links;
-
-&dump_stuff;
-
-print "</html>";
-
+print build_page(\%settings);
