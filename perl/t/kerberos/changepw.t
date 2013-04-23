@@ -24,6 +24,16 @@ use WebKDC::Config ();
 
 use Test::More;
 
+# Obtain Kerberos credentials for a user to verify that a password change
+# actually worked.  Takes the username and password.
+sub verify_password {
+    my ($username, $password) = @_;
+    my $wa = WebAuth->new;
+    my $krb5 = $wa->krb5_new;
+    eval { $krb5->init_via_password ($username, $password) };
+    return !$@;
+}
+
 # Whether we've found a valid kerberos config.
 my $kerberos_config = 0;
 
@@ -35,7 +45,7 @@ if ($username && $password) {
 }
 
 if ($kerberos_config) {
-    plan tests => 11;
+    plan tests => 15;
 } else {
     plan skip_all => 'Kerberos tests not configured';
 }
@@ -67,6 +77,7 @@ $weblogin->add_changepw_token;
 my ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
 is ($error, undef, '... with no error');
+ok (verify_password ($username, $newpassword), '... and password was changed');
 
 # And undo it.
 $weblogin->query->param ('password', $newpassword);
@@ -74,6 +85,7 @@ $weblogin->query->param ('new_passwd1', $password);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
 is ($error, undef, '... with no error');
+ok (verify_password ($username, $password), '... and password was changed');
 
 # Test going to change_user_password with password but not CPT (should work)
 $weblogin->param ('CPT', '');
@@ -86,6 +98,7 @@ $weblogin->query->param ('new_passwd1', $newpassword);
 is ($status, WebKDC::WK_SUCCESS,
     'changing the password with old password but no CPT works');
 is ($error, undef, '... with no error');
+ok (verify_password ($username, $newpassword), '... and password was changed');
 
 # And undo it.
 $weblogin->query->param ('password', $newpassword);
@@ -93,6 +106,7 @@ $weblogin->query->param ('new_passwd1', $password);
 ($status, $error) = $weblogin->change_user_password;
 is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
 is ($error, undef, '... with no error');
+ok (verify_password ($username, $password), '... and password was changed');
 
 # Test going to change_user_password no CPT or password (should not work).
 $query = new CGI;
