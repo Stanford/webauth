@@ -436,7 +436,7 @@ perl/t/data/tokens.conf: $(srcdir)/tests/data/tokens.conf
 	cp tests/data/tokens/* perl/t/data/tokens/
 
 check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS $(BINDINGS_CHECK)
-	cd tests && ./runtests $(abs_top_srcdir)/tests/TESTS
+	cd tests && ./runtests -l $(abs_top_srcdir)/tests/TESTS
 	@set -e; if [ -f perl/Build ] ; then				\
 	    echo '' ;							\
 	    cd perl && LD_LIBRARY_PATH='$(abs_top_builddir)/lib/.libs'	\
