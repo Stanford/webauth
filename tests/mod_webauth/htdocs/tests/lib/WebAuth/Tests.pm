@@ -1,18 +1,36 @@
 # Utility functions for mod_webauth tests.
 #
 # Written by Roland Schemers
+# Rewritten as a module by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2003, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
-# See LICENSE for licensing terms.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
 
 package WebAuth::Tests;
 
+use 5.006;
 use strict;
 use warnings;
 
 use Carp;
-use CGI qw/:standard/;
+use CGI qw(:standard);
 use CGI::Cookie;
 use Data::Dumper;
 use Template;
@@ -273,9 +291,12 @@ __END__
 # Documentation
 ##############################################################################
 
+=for stopwords
+WebAuth
+
 =head1 NAME
 
-WebAuth::Tests - Functions for the mod_webauth Perl tests
+WebAuth::Tests - Assists with constructing WebAuth Apache module tests
 
 =head1 SYNOPSIS
 
@@ -292,35 +313,115 @@ WebAuth::Tests - Functions for the mod_webauth Perl tests
 
 =head1 DESCRIPTION
 
-This module contains functions for tests run against a mod_webkdc server
-to ensure that various pieces are all working properly.  Most of the actual
-tests are done by configuration files, but these tests will run to check
-environment variables to see that the tests did what they should, and to
-provide useful debugging information if they did not.
+This module provides shared code for the test suite for the mod_webauth
+Apache module.  It is used by the individual test programs and test Apache
+configuration to construct a variety of scenarios to exercise most of the
+functionality of mod_webauth and some of the WebLogin and mod_webkdc
+features.  Most of the test setup is in the Apache configuration, but each
+test corresponds to a Perl script, which uses this module, that checks
+environment variables to see that the tests did what they should and
+provides useful debugging information if they did not.
 
-=head1 COMMANDS
+This module is primarily intended for use with the tests that are included
+with WebAuth and currently includes some defaults that make it difficult
+to use for other purposes.  The goal is to eventually make it more general
+so that it can be used for building additional tests local to a particular
+site.
+
+=head1 FUNCTIONS
+
+None of the following functions are exported by default.  They must be
+explicitly requested when using the WebAuth::Tests module.
 
 =over 4
 
-=item build_page ($arguments)
+=item build_page(SETTINGS)
 
 Performs the work of building a test page that shows the test number,
 title, information about the test run, and various tables showing current
-status and tests run.
+status and tests run.  SETTINGS should be a reference to a hash, which may
+contain one or more of the following settings:
 
-=item run_test ($name, $result, $good, $bad, $bold)
+=over 4
 
-Performs a test of webauth information, returning a hashref record about
-the results of the test.  It takes the name of the test, the results of a
-simple test (such as equality) to perform, text to display on true or
-false results, and a flag as to whether or not to bold true results.
+=item test_number
 
-=item last_used_test
+The number of this test, passed to the template.
 
-Creates an arrayref of hashrefs that contains information used to create a
-table showing the last used time for the token.
+=item test_desc
+
+The short description of this test, passed to the template.
+
+=item extended_description
+
+The extended description of this test.  This should be a reference to an
+array that contains one or more paragraphs of text as strings.  Each
+element of the array will be wrapped in <p> tags.
+
+=item extra_tests
+
+An anonymous array of hash references, each of which represents a test
+result.  The hash should have three keys: C<name>, C<result>, and
+C<comment>.  C<name> should be the name of this test, C<result> should
+be either C<PASS> or C<FAIL>, and C<comment> should provide additional
+information about the test.
+
+=item extra_tests_title
+
+If there are extra tests, this will be used as the heading for that test
+output.  If this setting is present, extra_tests should also be present.
+
+=item multifactor
+
+Set this to true to also perform multifactor tests.
+
+=item unauth_loc
+
+Set this to true if this test will be running without authentication.
+This is used by the template to change some of the boilerplate text.
+
+=back
+
+=item run_test(NAME, RESULT, GOOD, BAD, BOLD)
+
+Performs a test of WebAuth information, returning an anonymous hash
+showing the results of the test in the format required by the
+C<extra_tests> setting to build_page().  It takes the name of the test, a
+boolean value that represents the result of the test, text to display on
+true or false results, and a flag indicating whether to bold true results.
 
 =item app_lifetime_test
 
-Creates an arrayref of hashrefs that contains information used to create a
-table showing token expiration information.
+Creates an anonymous array of hash references that contains the results of
+a test for the lifetime of an application token.  The result is suitable
+for inclusion in C<extra_tests>.
+
+=item last_used_test()
+
+Creates an anonymous array of hash references that contains the results of
+a test for current last-used time for a token.  The result is suitable for
+inclusion in C<extra_tests>.
+
+=back
+
+=head1 BUGS
+
+The interactions between this module and its template aren't currently
+completely documented.
+
+No one has yet used this module for anything other than the mod_webauth
+test suite included in the distribution.  It will probably need work to
+be usable for writing site-specific tests.
+
+=head1 AUTHOR
+
+Roland Schemers and Jon Robertson <jonrober@stanford.edu>.
+
+=head1 SEE ALSO
+
+Template(3)
+
+This module is part of WebAuth.  The current version is available from
+L<http://webauth.stanford.edu/>.
+
+=cut
