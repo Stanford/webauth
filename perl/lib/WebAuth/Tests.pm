@@ -277,7 +277,7 @@ sub build_page {
     # Build and return the page from a template.
     my $tt = Template->new (RELATIVE => 1) or carp ("$Template::ERROR\n");
     my $output = '';
-    my $fname  = '../test.tt2';
+    my $fname  = $args->{template} || '../test.tt2';
     $tt->process ($fname, \%values, \$output)
         or carp ($tt->error."\n");
     return $output;
@@ -374,6 +374,12 @@ output.  If this setting is present, extra_tests should also be present.
 =item multifactor
 
 Set this to true to also perform multifactor tests.
+
+=item template
+
+The path (possibly relative) to the template used for generating HTML.
+By default, this is set to F<../test.tt2>, which works for the default
+mod_webauth test suite (and probably not for anything else).
 
 =item unauth_loc
 
