@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.5.0 (unreleased)
+WebAuth 4.5.0 (2013-04-26)
 
     The change in interpretation of WebAuthForceLogin introduced in 4.4.0
     has been reverted, and WebAuthForceLogin once again requires that the
