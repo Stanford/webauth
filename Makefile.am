@@ -31,23 +31,58 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
 	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/WebKDCException.pm	    \
 	perl/lib/WebKDC/WebRequest.pm perl/lib/WebKDC/WebResponse.pm	    \
 	perl/lib/WebKDC/XmlDoc.pm perl/lib/WebKDC/XmlElement.pm		    \
-	perl/lib/WebLogin.pm perl/t/TODO perl/t/changepw.t perl/t/config.t  \
-	perl/t/data/README perl/t/data/kadmin-fake perl/t/data/kadmin.conf  \
-	perl/t/data/templates/confirm.tmpl perl/t/data/templates/error.tmpl \
-	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
+	perl/lib/WebLogin.pm perl/t/TODO perl/t/cookies/cookies.t	    \
+	perl/t/cookies/factor-token.t perl/t/data/README		    \
+	perl/t/data/kadmin-fake perl/t/data/kadmin.conf			    \
+	perl/t/data/pages/confirm/device-expiring			    \
+	perl/t/data/pages/confirm/expired-password			    \
+	perl/t/data/pages/confirm/no-pwexpiration			    \
+	perl/t/data/pages/confirm/pending-pwchange			    \
+	perl/t/data/pages/confirm/public-computer			    \
+	perl/t/data/pages/confirm/remote-user-checkbox			    \
+	perl/t/data/pages/error/return-url				    \
+	perl/t/data/pages/error/stale-token				    \
+	perl/t/data/pages/error/unrecoverable				    \
+	perl/t/data/pages/error/unrecoverable-webauth			    \
+	perl/t/data/pages/login/empty-username				    \
+	perl/t/data/pages/login/failed perl/t/data/pages/login/forced	    \
+	perl/t/data/pages/login/forced-no-wpt				    \
+	perl/t/data/pages/login/no-password				    \
+	perl/t/data/pages/login/no-username				    \
+	perl/t/data/pages/login/no-username-password			    \
+	perl/t/data/pages/login/pass-required				    \
+	perl/t/data/pages/login/pass-required-no-remuser		    \
+	perl/t/data/pages/login/pass-required-not-error			    \
+	perl/t/data/pages/login/rejected				    \
+	perl/t/data/pages/login/remote-user perl/t/data/pages/pwchange/bare \
+	perl/t/data/pages/pwchange/cpt perl/t/data/templates/confirm.tmpl   \
+	perl/t/data/templates/error.tmpl perl/t/data/templates/login.tmpl   \
+	perl/t/data/templates/logout.tmpl				    \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
-	perl/t/data/webkdc.conf perl/t/exception.t perl/t/factor-token.t    \
-	perl/t/krb5.t perl/t/lib/Util.pm perl/t/keyring.t		    \
-	perl/t/minimum-version.t perl/t/misc.t perl/t/page-pwchange.t	    \
-	perl/t/pending-expire.t perl/t/pod-spelling.t perl/t/pod.t	    \
-	perl/t/strict.t perl/t/token-decode.t perl/t/token-encode.t	    \
-	perl/t/web-request.t perl/t/web-response.t perl/t/webauth.t	    \
-	perl/t/webkdc.t perl/t/weblogin.t perl/t/xml.t perl/typemap
+	perl/t/data/webkdc.conf perl/t/docs/pod-spelling.t		    \
+	perl/t/docs/pod.t perl/t/kerberos/changepw.t perl/t/kerberos/krb5.t \
+	perl/t/kerberos/webkdc.t perl/t/kerberos/weblogin.t		    \
+	perl/t/keyring/keyring.t perl/t/keyring/keys.t			    \
+	perl/t/keyring/token-decode.t perl/t/keyring/token-encode.t	    \
+	perl/t/keyring/token-errs.t perl/t/keyring/token-rights.t	    \
+	perl/t/lib/Util.pm perl/t/misc/config.t perl/t/misc/exception.t	    \
+	perl/t/misc/webkdcexception.t perl/t/misc/weblogin.t		    \
+	perl/t/pages/confirmation.t perl/t/pages/error.t		    \
+	perl/t/pages/global-errors.t perl/t/pages/login.t		    \
+	perl/t/pages/pwchange.t perl/t/style/minimum-version.t		    \
+	perl/t/style/strict.t perl/t/token/misc.t			    \
+	perl/t/webkdc/web-request.t perl/t/webkdc/web-response.t	    \
+	perl/t/webkdc/xml.t perl/typemap
 
 # Directories that have to be created in builddir != srcdir builds before
 # copying PERL_FILES over.
-PERL_DIRECTORIES = perl/lib perl/lib/WebAuth perl/lib/WebAuth/Token \
-	perl/lib/WebKDC perl/t/data perl/t/data/templates perl/t/lib
+PERL_DIRECTORIES = perl/lib perl/lib/WebAuth perl/lib/WebAuth/Token	 \
+	perl/lib/WebKDC perl/t/cookies perl/t/data perl/t/data/pages	 \
+	perl/t/data/pages/confirm perl/t/data/pages/error		 \
+	perl/t/data/pages/login perl/t/data/pages/pwchange		 \
+	perl/t/data/templates perl/t/docs perl/t/kerberos perl/t/keyring \
+	perl/t/lib perl/t/misc perl/t/pages perl/t/style perl/t/token	 \
+	perl/t/webkdc
 
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
