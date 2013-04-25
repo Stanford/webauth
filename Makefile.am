@@ -316,7 +316,7 @@ clean-local:
 	rm -f */*.gcda */*.gcno */*/*.gcda */*/*.gcno
 	set -e; if [ -f "perl/Build" ] ; then	\
 	    cd perl && ./Build realclean ;	\
-	    rm -rf perl/t/data/tokens ;		\
+	    rm -rf t/data/tokens ;		\
 	fi
 
 # Remove the Perl files we copied over if srcdir != builddir.
