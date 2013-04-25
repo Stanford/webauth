@@ -33,7 +33,6 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
 	perl/lib/WebKDC/XmlDoc.pm perl/lib/WebKDC/XmlElement.pm		    \
 	perl/lib/WebLogin.pm perl/t/TODO perl/t/cookies/cookies.t	    \
 	perl/t/cookies/factor-token.t perl/t/data/README		    \
-	perl/t/data/kadmin-fake perl/t/data/kadmin.conf			    \
 	perl/t/data/pages/confirm/device-expiring			    \
 	perl/t/data/pages/confirm/expired-password			    \
 	perl/t/data/pages/confirm/no-pwexpiration			    \
@@ -97,7 +96,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	docs/mod_webauth.html.en docs/mod_webauth.xml			    \
 	docs/mod_webauthldap.html.en docs/mod_webauthldap.xml		    \
 	docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html	    \
-	docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth    \
+	docs/protocol.txt docs/protocol.xml				    \
+	docs/scripts/clean-apache-manual docs/test-plan docs/userauth	    \
 	docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow	    \
 	docs/weblogin-testing include/mkheader include/webauth/defines.h.in \
 	lib/encoding-rules lib/internal.h lib/libwebauth.map		    \
@@ -114,10 +114,10 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			    \
 	tests/tap/perl/Test/RRA/Automake.pm				    \
 	tests/tap/perl/Test/RRA/Config.pm tests/tools/wa_keyring-t	    \
-	tests/util/xmalloc-t tools/clean-apache-manual tools/wa_keyring.pod \
-	tools/weblogin-passcheck weblogin/images/confirm.xcf		    \
-	weblogin/images/error.xcf weblogin/images/help.xcf		    \
-	weblogin/images/login.xcf weblogin/images/logout.xcf $(PERL_FILES)
+	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
+	weblogin/images/confirm.xcf weblogin/images/error.xcf		    \
+	weblogin/images/help.xcf weblogin/images/login.xcf		    \
+	weblogin/images/logout.xcf $(PERL_FILES)
 
 # WebAuth library include files are in include.  Remember, when overriding
 # CPPFLAGS for specific build objects, to include AM_CPPFLAGS.
@@ -141,10 +141,10 @@ endif
 
 lib_LTLIBRARIES = lib/libwebauth.la
 webauthincludedir = $(includedir)/webauth
-webauthinclude_HEADERS = include/webauth/basic.h include/webauth/keys.h	\
-	include/webauth/krb5.h include/webauth/tokens.h			\
-	include/webauth/util.h include/webauth/was.h			\
-	include/webauth/webkdc.h
+webauthinclude_HEADERS = include/webauth/basic.h include/webauth/factors.h \
+	include/webauth/keys.h include/webauth/krb5.h			   \
+	include/webauth/tokens.h include/webauth/util.h			   \
+	include/webauth/was.h include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
 lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
 	lib/attr-encode.c lib/context.c lib/errors.c lib/factors.c	  \
