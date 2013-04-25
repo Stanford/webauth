@@ -114,8 +114,8 @@ libwebauth:
    the wire, but we can at least not subject the library users to the
    problem.
 
- * WEBAUTH-116: Implement automatic encoding for enums and use that to
-   replace the custom encoding and decoding code for tokens.
+ * WEBAUTH-116: Implement automatic encoding for enums and unions and use
+   that to replace the custom encoding and decoding code for tokens.
 
  * WEBAUTH-122: Support enterprise principal names.
 
@@ -134,6 +134,12 @@ libwebauth:
    doesn't provide us with that information.
 
  * WEBAUTH-141: Add support for FAST if the Kerberos libraries support it.
+
+ * WEBAUTH-143: Add a webauth_factors_add API and use it for the userinfo
+   code.
+
+ * WEBAUTH-144: Add the necessary Autoconf glue to allow us to use bool in
+   public headers.
 
 mod_webauth:
 
@@ -279,6 +285,12 @@ WebLogin:
    recently changed their password.  This would allow matching the
    behavior of Google authentication.
 
+ * WEBAUTH-125: Fix parsing of the return data from the remctl calls to
+   send multifactor messages.  The current parsing doesn't take apart the
+   XML document and retrieve the actual status result.
+
+ * WEBAUTH-145: Support remembering the username in a cookie.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
@@ -288,13 +300,25 @@ Perl Modules:
 
  * WEBAUTH-123: Add Perl WebKDC implementation.
 
- * WEBAUTH-125: Fix parsing of the return data from the remctl calls to
-   send multifactor messages.  The current parsing doesn't take apart the
-   XML document and retrieve the actual status result.
-
  * WEBAUTH-137: Include in the distribution as much as possible of the
    Stanford user information service implementation as a basis upon which
    other sites can write their own.
+
+Scripts:
+
+ * WEBAUTH-146: Provide a script or library to do synthentic transaction
+   probes against a WebLogin server.  (This by necessity will require
+   screen scraping of the login HTML.)
+
+ * WEBAUTH-147: Provide a log analysis script for WebKDC logs that
+   determines peek usage.
+
+ * WEBAUTH-148: Incorporate a script to obtain webkdc-proxy tokens from
+   the WebKDC and display information about them.
+
+ * WEBAUTH-149: Provide a script to take apart a token, given the keyring
+   that encrypted it, and display information about the token and its
+   contents.
 
 Test Suite:
 
@@ -314,6 +338,12 @@ Test Suite:
    data.
 
  * WEBAUTH-139: Rewrite the userinfo tests to be data-driven.
+
+ * WEBAUTH-150: Determine how to do test coverage analysis for the C test
+   suite and add coverage analysis to testing.
+
+ * WEBAUTH-151: Script the analysis of valgrind output from
+   check-valgrind.
 
 Documentation:
 
@@ -341,7 +371,7 @@ Documentation:
 
  * WEBAUTH-79: API documentation for libwebauth.
 
- * WEBAUTH-83: Write a full WebAuth manual.
+ * WEBAUTH-83: Write a full WebAuth manual (probably in Publican).
 
  * WEBAUTH-89: The protocol says that the subject should not be included
    in id tokens with a subject authenticator type of krb5, but we've
