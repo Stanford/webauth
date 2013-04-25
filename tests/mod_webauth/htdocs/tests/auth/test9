@@ -39,8 +39,8 @@ my %settings = (
     test_number   => 9,
     test_desc     => 'testing last-used-update',
     extended_desc => \@extended,
-    extra_title   => 'Performing LASTUSED test';
-    extra_tests   => last_used_test();
+    extra_title   => 'Performing LASTUSED test',
+    extra_tests   => last_used_test(),
 );
 
 print "Content-type: text/html\n\n";

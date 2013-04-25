@@ -13,8 +13,8 @@ require '../auth/util.pl';
 
 # Set information for the tests.
 my %settings;
-my $settings{test_number} = 4;
-my $settings{test_desc}   = 'test WebAuthLoginCancelURL';
+$settings{test_number} = 4;
+$settings{test_desc}   = 'test WebAuthLoginCancelURL';
 
 my @extended = (
     'You have successfully canceled out of logging in and have been sent '
