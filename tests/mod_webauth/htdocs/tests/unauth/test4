@@ -9,7 +9,7 @@
 use strict;
 use warnings;
 
-require '../auth/util.pl';
+use WebAuth::Tests qw(build_page);
 
 # Set information for the tests.
 my %settings;

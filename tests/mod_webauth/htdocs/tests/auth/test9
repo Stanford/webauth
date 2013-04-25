@@ -9,7 +9,6 @@
 use strict;
 use warnings;
 
-use lib '../lib/';
 use WebAuth::Tests qw(build_page last_used_test);
 
 # Find any previous visit time set in query, from earlier access.

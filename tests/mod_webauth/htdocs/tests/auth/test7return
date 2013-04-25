@@ -9,7 +9,6 @@
 use strict;
 use warnings;
 
-use lib '../lib/';
 use WebAuth::Tests qw(build_page app_lifetime_test);
 
 # Text for the page.
