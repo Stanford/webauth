@@ -134,7 +134,7 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $weblogin->param ('is_error', 0);
 my %output = index_wrapper ($weblogin);
-my %check = read_outputfile ('t/data/pages/login.remote-user');
+my %check = read_outputfile ('t/data/pages/login/remote-user');
 ok (%output, 'login page with choice for REMOTE_USER printed');
 compare_fields (\%output, \%check, @fields);
 
@@ -144,7 +144,7 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $weblogin->param ('is_error', 1);
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.pass-required');
+%check = read_outputfile ('t/data/pages/login/pass-required');
 ok (%output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT set, as error handler');
 compare_fields (\%output, \%check, @fields);
@@ -156,7 +156,7 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 $WebKDC::Config::REMUSER_REDIRECT = 'https://test.example.org/login';
 $weblogin->param ('is_error', 0);
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.pass-required-not-error');
+%check = read_outputfile ('t/data/pages/login/pass-required-not-error');
 ok (%output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT set, not as error handler');
 compare_fields (\%output, \%check, @fields);
@@ -166,7 +166,7 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $WebKDC::Config::REMUSER_REDIRECT = '';
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.pass-required-no-remuser');
+%check = read_outputfile ('t/data/pages/login/pass-required-no-remuser');
 ok (%output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
 compare_fields (\%output, \%check, @fields);
@@ -178,7 +178,7 @@ $weblogin->query->delete ('username', 'password');
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $WebKDC::Config::REMUSER_REDIRECT = '';
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.no-username-password');
+%check = read_outputfile ('t/data/pages/login/no-username-password');
 ok (%output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler, missing both '
     .'username and password');
@@ -191,7 +191,7 @@ $weblogin->query->delete ('username');
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $WebKDC::Config::REMUSER_REDIRECT = '';
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.no-username');
+%check = read_outputfile ('t/data/pages/login/no-username');
 ok (%output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler, missing username');
 compare_fields (\%output, \%check, @fields);
@@ -203,7 +203,7 @@ $weblogin->query->param ('username', '');
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $WebKDC::Config::REMUSER_REDIRECT = '';
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.no-username');
+%check = read_outputfile ('t/data/pages/login/no-username');
 ok (%output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler, empty username');
 compare_fields (\%output, \%check, @fields);
@@ -215,7 +215,7 @@ $weblogin->query->delete ('password');
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_USER_AND_PASS_REQUIRED, '');
 $WebKDC::Config::REMUSER_REDIRECT = '';
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.no-password');
+%check = read_outputfile ('t/data/pages/login/no-password');
 ok (%output, 'login page with WK_ERR_USER_AND_PASS_REQUIRED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
 compare_fields (\%output, \%check, @fields);
@@ -224,7 +224,7 @@ compare_fields (\%output, \%check, @fields);
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_LOGIN_FAILED, '');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.failed');
+%check = read_outputfile ('t/data/pages/login/failed');
 ok (%output, 'login page with WK_ERR_LOGIN_FAILED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
 compare_fields (\%output, \%check, @fields);
@@ -233,7 +233,7 @@ compare_fields (\%output, \%check, @fields);
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_USER_REJECTED, '');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.rejected');
+%check = read_outputfile ('t/data/pages/login/rejected');
 ok (%output, 'login page with WK_ERR_USER_REJECTED, '
     .'REMUSER_REDIRECT not set, not as an error handler');
 compare_fields (\%output, \%check, @fields);
@@ -243,7 +243,7 @@ compare_fields (\%output, \%check, @fields);
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_LOGIN_FORCED, '');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.forced-no-wpt');
+%check = read_outputfile ('t/data/pages/login/forced-no-wpt');
 ok (%output, 'login page with WK_ERR_LOGIN_FORCED, '
     .'REMUSER_REDIRECT not set, not as an error handler, neither '
     .'wpt_cookie nor remuser_cookie set');
@@ -258,7 +258,7 @@ my $cookie = CGI::Cookie->new (-name => 'webauth_wpt', -value => 'test');
 $ENV{HTTP_COOKIE} = "$cookie";
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_LOGIN_FORCED, '');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/login.forced');
+%check = read_outputfile ('t/data/pages/login/forced');
 ok (%output, 'login page with WK_ERR_LOGIN_FORCED, '
     .'REMUSER_REDIRECT not set, not as an error handler, wpt_cookie set');
 compare_fields (\%output, \%check, @fields);

@@ -112,7 +112,7 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 $weblogin->{response}->return_url ('test.example.org/');
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_SUCCESS, '');
 my %output = index_wrapper ($weblogin);
-my %check = read_outputfile ('t/data/pages/error.return-url');
+my %check = read_outputfile ('t/data/pages/error/return-url');
 ok (%output, 'error page for bad return URL');
 is_deeply (\%output, \%check, '... and the output matches what is expected');
 
@@ -122,7 +122,7 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
                                'unrecoverable');
 my $errmsg = 'unrecoverable error occured. Try again later.';
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/error.unrecoverable');
+%check = read_outputfile ('t/data/pages/error/unrecoverable');
 ok (%output, 'error page for unrecoverable error');
 is_deeply (\%output, \%check, '... and the output matches what is expected');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $TEST_ERROR)
@@ -131,7 +131,7 @@ is_deeply (\%output, \%check, '... and the output matches what is expected');
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_REQUEST_TOKEN_STALE, 'stale');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/error.stale-token');
+%check = read_outputfile ('t/data/pages/error/stale-token');
 ok (%output, 'error page for stale token error');
 is_deeply (\%output, \%check, '... and the output matches what is expected');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $TEST_ERROR)
@@ -141,7 +141,7 @@ $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_WEBAUTH_SERVER_ERROR,
                                'webautherr');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/error.unrecoverable-webauth');
+%check = read_outputfile ('t/data/pages/error/unrecoverable-webauth');
 ok (%output, 'error page for unrecoverable webauth server error');
 is_deeply (\%output, \%check, '... and the output matches what is expected');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $TEST_ERROR)

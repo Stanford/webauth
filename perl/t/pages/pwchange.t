@@ -57,14 +57,14 @@ $weblogin->param ('test_cookie', $WebLogin::TEST_COOKIE);
 
 # Test the basic pwchange page.
 my %output = page_wrapper ($weblogin, 'TestRT', 'TestST');
-my %check = read_outputfile ('t/data/pages/pwchange.bare');
+my %check = read_outputfile ('t/data/pages/pwchange/bare');
 ok (%output, 'pwchange was printed');
 is_deeply (\%output, \%check, '... and the output matches what is expected');
 
 # Once more, testing CPT suppressing the username and password.
 $weblogin->param ('CPT', 'TestCPT');
 %output = page_wrapper ($weblogin, 'TestRT2', 'TestST2');
-%check = read_outputfile ('t/data/pages/pwchange.cpt');
+%check = read_outputfile ('t/data/pages/pwchange/cpt');
 ok (%output, 'pwchange page was printed with CPT');
 is_deeply (\%output, \%check, '... and the output matches what is expected');
 

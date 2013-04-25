@@ -120,7 +120,7 @@ is ($weblogin->{request}->remote_user, $ENV{REMOTE_USER},
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_SUCCESS, '');
 my %output = index_wrapper ($weblogin);
-my %check = read_outputfile ('t/data/pages/confirmation.pending-pwchange');
+my %check = read_outputfile ('t/data/pages/confirm/pending-pwchange');
 ok (%output, 'success page with pending password expiration was printed');
 compare_fields (\%output, \%check, @fields);
 
@@ -128,7 +128,7 @@ compare_fields (\%output, \%check, @fields);
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_SUCCESS, '');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/confirmation.no-pwexpiration');
+%check = read_outputfile ('t/data/pages/confirm/no-pwexpiration');
 ok (%output, 'success page without pwexpiration was printed');
 compare_fields (\%output, \%check, @fields);
 
@@ -140,7 +140,7 @@ $WebKDC::Config::REMUSER_REDIRECT = '/login-spnego';
 $ENV{REMOTE_USER} = $user;
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_SUCCESS, '');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/confirmation.remote-user-checkbox');
+%check = read_outputfile ('t/data/pages/confirm/remote-user-checkbox');
 $WebKDC::Config::REMUSER_REDIRECT = '';
 ok (%output, 'success page with remuser redirect checkbox was printed');
 compare_fields (\%output, \%check, @fields);
@@ -149,7 +149,7 @@ compare_fields (\%output, \%check, @fields);
 $weblogin = init_weblogin ($user, $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_ERR_CREDS_EXPIRED, '');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/confirmation.expired-password');
+%check = read_outputfile ('t/data/pages/confirm/expired-password');
 ok (%output, 'page with expired password field checked was printed');
 compare_fields (\%output, \%check, @fields_login);
 
@@ -158,7 +158,7 @@ $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_SUCCESS, '');
 $weblogin->query->param (public_computer => 1);
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/confirmation.public-computer');
+%check = read_outputfile ('t/data/pages/confirm/public-computer');
 ok (%output, 'success page was printed for login from public computer');
 compare_fields (\%output, \%check, @fields);
 # Check print_confirm_page (public_computer = 1)
@@ -170,7 +170,7 @@ $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64);
 $weblogin->{response}->cookie('webauth_wft', 1, time + 30);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_SUCCESS, '');
 %output = index_wrapper ($weblogin);
-%check = read_outputfile ('t/data/pages/confirmation.device-expiring');
+%check = read_outputfile ('t/data/pages/confirm/device-expiring');
 ok (%output, 'success page was printed for device factor expiring');
 compare_fields (\%output, \%check, @fields);
 $WebKDC::Config::FACTOR_WARNING = $default_factor_warning;
