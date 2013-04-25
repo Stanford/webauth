@@ -39,6 +39,9 @@ use warnings;
 
 use lib "$ENV{SOURCE}/tap/perl";
 
+# FIXME: Build the Perl modules unconditionally so that this works properly.
+use lib "$ENV{SOURCE}/../perl/lib";
+
 use Test::More;
 use Test::RRA qw(use_prereq);
 use Test::RRA::Automake qw(automake_setup perl_dirs);
