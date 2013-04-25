@@ -26,7 +26,7 @@ use_prereq(qw(IPC::Run run));
 plan tests => 68;
 
 # Set up Automake testing.
-automake_setup();
+automake_setup({ chdir_build => 1 });
 
 # Run wa_keyring with the given arguments and return the exit status, standard
 # output, and standard error as a list.
