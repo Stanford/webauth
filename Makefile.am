@@ -26,6 +26,7 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
 	perl/lib/WebAuth/Token/Cred.pm perl/lib/WebAuth/Token/Error.pm	    \
 	perl/lib/WebAuth/Token/Id.pm perl/lib/WebAuth/Token/Login.pm	    \
 	perl/lib/WebAuth/Token/Proxy.pm perl/lib/WebAuth/Token/Request.pm   \
+	perl/lib/WebAuth/Token/WebKDCFactor.pm				    \
 	perl/lib/WebAuth/Token/WebKDCProxy.pm				    \
 	perl/lib/WebAuth/Token/WebKDCService.pm perl/lib/WebKDC.pm	    \
 	perl/lib/WebKDC/Config.pm perl/lib/WebKDC/WebKDCException.pm	    \
