@@ -470,7 +470,7 @@ perl/t/data/keyring: $(srcdir)/tests/data/keyring
 perl/t/data/tokens.conf: $(srcdir)/tests/data/tokens.conf
 	cp $(srcdir)/tests/data/tokens.conf perl/t/data/tokens.conf
 	[ -d perl/t/data/tokens ] || $(MKDIR_P) perl/t/data/tokens
-	cp tests/data/tokens/* perl/t/data/tokens/
+	cp $(srcdir)/tests/data/tokens/* perl/t/data/tokens/
 
 check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS $(BINDINGS_CHECK)
 	cd tests && ./runtests -l $(abs_top_srcdir)/tests/TESTS
