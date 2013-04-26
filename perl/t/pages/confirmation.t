@@ -81,7 +81,7 @@ my $rt_base64        = create_test_rt ($wa, $st);
 # Page fields to compare to the ones in test files.
 my @fields = qw(username return_url pretty_return_url login_cancel cancel_url
     show_remuser script_name warn_expire expire_timestamp pwchange_url
-    CPT public_computer device_expiring);
+    CPT remember_login device_expiring);
 my @fields_login = qw(error err_username err_password err_newpassword
     err_newpassword_match err_loginfailed err_rejected err_pwweak
     err_pwchange err_msg RT ST CPT username password new_passwd1 new_passwd2
@@ -156,12 +156,12 @@ compare_fields (\%output, \%check, @fields_login);
 # Public computer setting passed along to confirmation page.
 $weblogin = init_weblogin ('testuser3', $pass, $st_base64, $rt_base64);
 ($TEST_STATUS, $TEST_ERROR) = (WebKDC::WK_SUCCESS, '');
-$weblogin->query->param (public_computer => 1);
+$weblogin->query->param (remember_login => 'no');
 %output = index_wrapper ($weblogin);
 %check = read_outputfile ('t/data/pages/confirm/public-computer');
 ok (%output, 'success page was printed for login from public computer');
 compare_fields (\%output, \%check, @fields);
-# Check print_confirm_page (public_computer = 1)
+# Check print_confirm_page (remember_login = 'no')
 
 # Device factor expiring setting passed along to confirmation page.
 my $default_factor_warning = $WebKDC::Config::FACTOR_WARNING;

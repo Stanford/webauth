@@ -22,7 +22,7 @@ login_cancel           : a cancel URL was specified
 cancel_url             : the specified cancel URL
 show_remuser           : show REMOTE_USER login preferences
 remuser                : set if REMOTE_USER is desired
-public_computer        : set if the user has said this is a public computer
+remember_login         : set unless the user has said this is public computer
 warn_expire            : show warning for upcoming password expiration
 expire_timestamp       : timestamp for password expiration
 pwchange_url           : URL for the password change form
@@ -69,8 +69,8 @@ works of this work.
                          value="[% username FILTER html %]">
                   <input type="hidden" name="CPT"
                          value="[% CPT FILTER html %]">
-                  <input type="hidden" name="public_computer"
-                         value="[% public_computer FILTER html %]">
+                  <input type="hidden" name="remember_login"
+                         value="[% remember_login FILTER html %]">
                   <input type="submit" name="Submit"
                          value="Change Password">
                 </form>
@@ -173,8 +173,8 @@ works of this work.
         <input type="hidden" name="rm" value="edit_authz_identity">
         <input type="hidden" name="ST" value="[% ST FILTER html %]">
         <input type="hidden" name="RT" value="[% RT FILTER html %]">
-        <input type="hidden" name="public_computer"
-               value="[% public_computer FILTER html %]">
+        <input type="hidden" name="remember_login"
+               value="[% remember_login FILTER html %]">
         <table>
           <tr>
             <td><strong>Identity:</strong></td>

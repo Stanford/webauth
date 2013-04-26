@@ -75,7 +75,7 @@ Templates
       login_cancel      If set, application provided a cancel URL
       cancel_url        The cancel URL (return URL plus cancel token)
 
-      public_computer   If set, delete SSO cookies at end of login
+      remember_login    If not set, delete SSO cookies at end of login
 
       warn_expire       If set, show warning for upcoming password expiration
       expire_timestamp  Epoch seconds for time password will expire
@@ -391,6 +391,16 @@ Configuration
       outside of WebLogin.
 
       Default: not set.
+
+  $REMEMBER_FALLBACK
+
+      The fallback position for whether or not to remember a device as
+      it newly logs in, if we have not gotten a remember_login
+      parameter from the client.  This is not necessarily the default
+      value we wish, but the opposite of the value that the
+      remember_login value as sent by the client.
+
+      Default: no (default template sends yes)
 
   $FACTOR_WARNING
 

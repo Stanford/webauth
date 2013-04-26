@@ -115,7 +115,7 @@ is ($expires, time - 60 * 60 * 24, '... and set to expire immediately');
 # when the login proces is over.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$weblogin->query->param (public_computer => 1);
+$weblogin->query->param (remember_login => 'no');
 $weblogin->{response}->cookie ($cookie_name, 'test', $expires_epoch);
 %args = (cookies => $weblogin->{response}->cookies);
 $weblogin->print_headers (\%args);
@@ -134,7 +134,7 @@ is ($cookie->expires, undef, '... with the default lifetime');
 # page.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$weblogin->query->param (public_computer => 1);
+$weblogin->query->param (remember_login => 'no');
 $weblogin->{response}->cookie ($cookie_name, 'test', $expires_epoch);
 %args = (cookies => $weblogin->{response}->cookies,
          return_url => 'http://www.test.com');
@@ -155,7 +155,7 @@ is ($expires, time - 60 * 60 * 24, '... and set to expire immediately');
 # cookie.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$weblogin->query->param (public_computer => 1);
+$weblogin->query->param (remember_login => 'no');
 $weblogin->{response}->cookie ($cookie_name, 'test', $expires_epoch);
 %args = (cookies      => $weblogin->{response}->cookies,
          confirm_page => 1);
@@ -175,7 +175,7 @@ is ($expires, time - 60 * 60 * 24, '... and set to expire immediately');
 # correctly cleared even if the response doesn't contain any cookies.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$weblogin->query->param (public_computer => 1);
+$weblogin->query->param (remember_login => 'no');
 %args = (confirm_page => 1);
 {
     local $ENV{HTTP_COOKIE} = "$cookie_name=something";

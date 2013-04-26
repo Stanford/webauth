@@ -10,7 +10,7 @@
 
 use warnings;
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 12;
 
 BEGIN {
     use_ok ('WebLogin', '1.04');
@@ -44,3 +44,19 @@ is ($weblogin->param ('pretty_uri'), 'https://www.test.org',
 $weblogin->{response}->return_url ('file:///tmp/foobar.html');
 $retval = $weblogin->parse_uri;
 is ($retval, 1, '... and failed on a bad URL');
+
+# Test remember_login and fallback functionality.
+$WebKDC::Config::REMEMBER_FALLBACK = 'yes';
+$weblogin = WebLogin->new;
+$retval = $weblogin->remember_login;
+is ($retval, 'yes', 'remember_login has correct fallback');
+$weblogin->query->param ('remember_login', 'no');
+$retval = $weblogin->remember_login;
+is ($retval, 'no', '... and continues to when given a value');
+$WebKDC::Config::REMEMBER_FALLBACK = 'no';
+$weblogin = WebLogin->new;
+$retval = $weblogin->remember_login;
+is ($retval, 'no', '... and still works when we reverse the fallback');
+$weblogin->query->param ('remember_login', 'yes');
+$retval = $weblogin->remember_login;
+is ($retval, 'yes', '... and continues to when given a value');

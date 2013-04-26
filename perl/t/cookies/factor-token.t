@@ -71,6 +71,10 @@ sub init_weblogin {
 my $expires_epoch = 1577865600;
 my $expires_text  = 'Wed, 01-Jan-2020 08:00:00 GMT';
 
+# For the tests, we want to assume we are remembering device login unless
+# otherwise told..
+$WebKDC::Config::REMEMBER_FALLBACK = 'yes';
+
 #############################################################################
 # Tests
 #############################################################################
@@ -129,7 +133,7 @@ is ($expires, time - 60 * 60 * 24, '... with the correct expiration time');
 # Check clearing the webauth cookie by setting the public computer checkbox.
 $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
-$weblogin->query->param (public_computer => 1);
+$weblogin->query->param (remember_login => 'no');
 $weblogin->{response}->cookie ('webauth_wft', 'test', $expires_epoch);
 %args = (cookies => $weblogin->{response}->cookies);
 $weblogin->print_headers (\%args);

@@ -226,6 +226,19 @@ sub fix_token {
     return $token;
 }
 
+# Check to see if the user has requested to remember their login device
+# factor token.  To accomodate a form listing a checkbox for either yes or no
+# depending on site preferences, we check to see if there is a settting, and
+# if not, return the default.
+sub remember_login {
+    my ($self) = @_;
+    if ($self->query->param ('remember_login')) {
+        return $self->query->param ('remember_login');
+    } else {
+        return $WebKDC::Config::REMEMBER_FALLBACK;
+    }
+}
+
 # Create and return a cookie that will expire an existing cookie.  Used in
 # more than one place, so pulled out for logic.
 sub expire_cookie {
@@ -354,18 +367,19 @@ sub print_headers {
             $cookie = $self->expire_cookie ($name, $secure);
 
         # Also expire the factor token on any public computer.
-        } elsif ($name eq 'webauth_wft' && $q->param ('public_computer')) {
+        } elsif ($name eq 'webauth_wft'
+                 && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
         # Expire the SSO cookies on any final redirect to WAS, on a public
         # computer.
         } elsif ($name =~ /^webauth_wpt_/ && $return_url
-                   && $q->param ('public_computer')) {
+                 && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
         # Expire the SSO cookies on the confirm page on a public computer.
         } elsif ($name =~ /^webauth_wpt_/ && $confirm_page
-                   && $q->param ('public_computer')) {
+                 && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
         # Pass along the remuser cookie and update its expiration.
@@ -634,7 +648,7 @@ sub print_error_page {
     # expiration of any persistent factor cookies and proxy cookies by marking
     # this as a public computer.
     if ($params->{err_lockout}) {
-        $q->param ('public_computer', 1);
+        $q->param ('remember_login', 'no');
     }
 
     # Print out the error page.
@@ -786,7 +800,7 @@ sub print_confirm_page {
     $params->{pretty_return_url} = $pretty_return_url;
     $params->{token_rights} = $self->token_rights;
     $params->{history} = $history;
-    $params->{public_computer} = $q->param ('public_computer');
+    $params->{remember_login} = $q->param ('remember_login');
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
 
@@ -874,7 +888,7 @@ sub redisplay_confirm_page {
     $params->{show_remuser} = 1;
     my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
     $params->{remuser} = $remuser;
-    $params->{public_computer} = $q->param ('public_computer');
+    $params->{remember_login} = $q->param ('remember_login');
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
     $params->{LS} = $q->param ('LS');
@@ -970,7 +984,7 @@ sub print_multifactor_page {
 
     $params->{script_name} = $self->param ('script_name');
     $params->{username} = $q->param ('username');
-    $params->{public_computer} = $q->param ('public_computer');
+    $params->{remember_login} = $q->param ('remember_login');
     $params->{user_message} = $self->{response}->user_message;
     $params->{RT} = $RT;
     $params->{ST} = $ST;
