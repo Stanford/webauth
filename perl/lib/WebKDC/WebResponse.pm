@@ -32,7 +32,7 @@ use warnings;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.02';
+    $VERSION = '1.03';
 }
 
 # Create a new, empty request.
@@ -59,7 +59,10 @@ sub return_url           { my $r = shift; $r->_attr ('return_url',        @_) }
 sub subject              { my $r = shift; $r->_attr ('subject',           @_) }
 sub authz_subject        { my $r = shift; $r->_attr ('authz_subject',     @_) }
 sub requester_subject    { my $r = shift; $r->_attr ('requester_subject', @_) }
+sub password_expiration  { my $r = shift; $r->_attr ('pwd_expiration',    @_) }
 sub response_token       { my $r = shift; $r->_attr ('response_token',    @_) }
+sub user_message         { my $r = shift; $r->_attr ('user_message',      @_) }
+sub login_state          { my $r = shift; $r->_attr ('login_state',       @_) }
 sub response_token_type {
     my $r = shift;
     $r->_attr ('response_token_type', @_);
@@ -76,18 +79,27 @@ sub permitted_authz {
     return @{ $self->{permitted_authz} };
 }
 
-# Cookies are stored by type in a hash.  Use proxy_cookies to retrieve the
-# complete hash of cookies.
-sub proxy_cookie {
-    my ($self, $type, $value) = @_;
+# Cookies are stored by type in a hash with value and (optional) expiration.
+# Use cookies to retrieve the complete hash of cookies.
+sub cookie {
+    my ($self, $type, $value, $expiration) = @_;
     if (defined $value) {
-        $self->{cookies}{$type} = $value;
+        if (!defined $expiration) {
+            $expiration = 0;
+        }
+        $self->{cookies}{$type}{value}      = $value;
+        $self->{cookies}{$type}{expiration} = $expiration;
     }
-    return $self->{cookies}{$type};
+
+    if (exists $self->{cookies}{$type}) {
+        return $self->{cookies}{$type}{value};
+    } else {
+        return undef;
+    }
 }
 
-# Return the proxy cookies as a hash.
-sub proxy_cookies {
+# Return the cookies as a hash.
+sub cookies {
     my ($self) = @_;
     return $self->{cookies};
 }
@@ -209,19 +221,20 @@ any parameters are given, the list of acceptable authorization identities
 is replaced with the list of subjects given.  The permitted authorization
 identities are unique to this authenticated user and destination site.
 
-=item proxy_cookie (TYPE[, VALUE])
+=item cookie (TYPE[, VALUE][, EXPIRATION])
 
-Returns or sets a proxy cookie of the specified type.  The TYPE parameter
-should be the type of the proxy cookie.  The VALUE, if present, is the
-corresponding webkdc-proxy token, suitable for being set as a browser
-cookie.  Returns the webkdc-proxy token of the given type, if any is set.
+Returns or sets a cookie of the specified type.  The TYPE parameter should
+be the type of the cookie.  The VALUE, if present, is the corresponding
+token, suitable for being set as a browser cookie.  The EXPIRATION, if
+present, is the value the cookie expiration should be set for.  Returns
+the token of the given type, if any is set.
 
-=item proxy_cookies ()
+=item cookies ()
 
-Returns all proxy cookies as a hash, whose keys are the proxy types and
-whose values are the webkdc-proxy tokens.  The returned hash is a
-reference to the hash inside the WebKDC::WebResponse object and therefore
-should not be modified by the caller.
+Returns all cookies as a hash, whose keys are the types and whose values
+are the tokens.  The returned hash is a reference to the hash inside the
+WebKDC::WebResponse object and therefore should not be modified by the
+caller.
 
 =item return_url ([URL])
 
@@ -244,6 +257,16 @@ proxy token, depending on what the WebAuth application server requested.
 =item subject ([SUBJECT])
 
 Returns or sets the authenticated user identity.
+
+=item password_expiration ([EXPIRATION])
+
+Returns or sets the password expiration time for the authenticating user,
+in seconds since UNIX epoch.
+
+=item user_message ([TEXT])
+
+Text passed back from the user information service as a message to
+display to the user as explanatory text.
 
 =back
 

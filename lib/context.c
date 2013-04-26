@@ -5,7 +5,7 @@
  * state required by the WebAuth APIs.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -30,8 +30,6 @@ init_context(apr_pool_t *pool)
 
     ctx = apr_pcalloc(pool, sizeof(struct webauth_context));
     ctx->pool = pool;
-    ctx->error = NULL;
-    ctx->user = NULL;
     return ctx;
 }
 
@@ -111,127 +109,4 @@ void
 webauth_context_free(struct webauth_context *ctx UNUSED)
 {
     apr_terminate();
-}
-
-
-/*
- * Map an error code to a string.  This is used as the fallback error message,
- * and is prepended with a colon to whatever additional error information is
- * provided.
- */
-static const char *
-error_string(struct webauth_context *ctx, int code)
-{
-    switch (code) {
-    case WA_ERR_NONE:              return "no error occurred";
-    case WA_ERR_NO_ROOM:           return "supplied buffer too small";
-    case WA_ERR_CORRUPT:           return "data is incorrectly formatted";
-    case WA_ERR_NO_MEM:            return "no memory";
-    case WA_ERR_BAD_HMAC:          return "HMAC check failed";
-    case WA_ERR_RAND_FAILURE:      return "unable to get random data";
-    case WA_ERR_BAD_KEY:           return "unable to use key";
-    case WA_ERR_FILE_OPENWRITE:    return "unable to open file for writing";
-    case WA_ERR_FILE_WRITE:        return "error writing to file";
-    case WA_ERR_FILE_OPENREAD:     return "unable to open file for reading";
-    case WA_ERR_FILE_READ:         return "error reading from file";
-    case WA_ERR_FILE_VERSION:      return "bad file data version";
-    case WA_ERR_NOT_FOUND:         return "item not found while searching";
-    case WA_ERR_KRB5:              return "Kerberos error";
-    case WA_ERR_INVALID_CONTEXT:   return "invalid context passed to function";
-    case WA_ERR_LOGIN_FAILED:      return "login failed";
-    case WA_ERR_TOKEN_EXPIRED:     return "token has expired";
-    case WA_ERR_TOKEN_STALE:       return "token is stale";
-    case WA_ERR_CREDS_EXPIRED:     return "password has expired";
-    case WA_ERR_APR:               return "APR error";
-    case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
-    case WA_ERR_INVALID:           return "invalid argument to function";
-    case WA_ERR_REMOTE_FAILURE:    return "a remote service call failed";
-    case WA_ERR_FILE_NOT_FOUND:    return "file does not exist";
-    default:
-        if (ctx != NULL)
-            return apr_psprintf(ctx->pool, "unknown error code %d", code);
-        else
-            return "unknown error code";
-        break;
-    }
-}
-
-
-/*
- * Map an error code to an error message.  If there's an error message stored
- * in the context and the error code matches the one that's passed in, return
- * that error message.  Otherwise, and if the context is NULL, map the error
- * code to a static error string and return it.
- */
-const char *
-webauth_error_message(struct webauth_context *ctx, int err)
-{
-    if (ctx != NULL && ctx->error != NULL && ctx->code == err)
-        return ctx->error;
-    return error_string(ctx, err);
-}
-
-
-/*
- * Set the error message and code to the provided values, supporting
- * printf-style formatting.  This function is internal to the WebAuth library
- * and is not exposed to external consumers.
- */
-void
-wai_error_set(struct webauth_context *ctx, int err, const char *format, ...)
-{
-    va_list args;
-    char *string;
-
-    va_start(args, format);
-    string = apr_pvsprintf(ctx->pool, format, args);
-    va_end(args);
-    ctx->error = apr_pstrcat(ctx->pool, error_string(ctx, err),
-                             " (", string, ")", NULL);
-    ctx->code = err;
-}
-
-
-/*
- * Set the error message and code to the provided values, supporting
- * printf-style formatting and including the string explanation of an APR
- * status.  This function is internal to the WebAuth library and is not
- * exposed to external consumers.
- */
-void
-wai_error_set_apr(struct webauth_context *ctx, int err, apr_status_t status,
-                  const char *format, ...)
-{
-    va_list args;
-    char *string;
-    char buf[BUFSIZ];
-
-    va_start(args, format);
-    string = apr_pvsprintf(ctx->pool, format, args);
-    va_end(args);
-    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, err),
-                              string, apr_strerror(status, buf, sizeof(buf)));
-    ctx->code = err;
-}
-
-
-/*
- * Set the error message and code to the provided values, supporting
- * printf-style formatting and including the string explanation of an errno.
- * This function is internal to the WebAuth library and is not exposed to
- * external consumers.
- */
-void
-wai_error_set_system(struct webauth_context *ctx, int err, int syserr,
-                     const char *format, ...)
-{
-    va_list args;
-    char *string;
-
-    va_start(args, format);
-    string = apr_pvsprintf(ctx->pool, format, args);
-    va_end(args);
-    ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, err),
-                              string, strerror(syserr));
-    ctx->code = err;
 }

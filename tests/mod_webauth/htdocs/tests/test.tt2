@@ -1,0 +1,129 @@
+<html>
+    <head>
+        <title>test [% test_num FILTER html %]</title>
+    </head>
+    <body>
+        <h1>test [% test_num FILTER html %]: [% test_desc FILTER html %]</h2>
+        <hr />
+
+        <p>You are accessing a webauth-protected page as the user:
+            [% remote_user FILTER html %]</p>
+
+[% FOREACH desc IN extended_description %]
+        <p>[% desc -%]</p>
+[% END -%]
+
+[% IF unauth_location -%]
+        <p>Click <a href="/tests-new/index.html">here</a> to return to
+            tests</p>
+[% ELSE -%]
+        <p>Click <a href="/tests-new/index.html">here</a> to return without
+            logging out<br />
+           Click <a href="/tests-new/auth/logout">here</a> to logout and
+            return
+        </p>
+[% END -%]
+
+[% IF extra_tests_title -%]
+        <hr />
+        <h1>[% extra_tests_title %]</h1>
+        <table border="1" cellpadding="3" width="80%">
+            <tr align="center">
+                <th>Test</th>
+                <th>Result</th>
+                <th>Comment</th>
+            </tr>
+    [% FOREACH t IN extra_tests -%]
+            <tr>
+                <td>[% t.name FILTER html %]</td>
+                <td>
+                    [% IF t.result == "PASS" %][% t.result FILTER html %]
+                    [% ELSE %]<strong>[% t.result FILTER html%]</strong>
+                    [% END -%]
+                </td>
+                <td>[% t.comment %]</td>
+            </tr>
+    [% END -%]
+        </table>
+        <br />
+[% END -%]
+
+        <hr />
+        <h1>Performing Standard Tests</h1>
+        <table border="1" cellpadding="3" width="80%">
+            <tr align="center">
+                <th>Test</th>
+                <th>Result</th>
+                <th>Comment</th>
+            </tr>
+[% FOREACH t IN standard_tests -%]
+            <tr>
+                <td>[% t.name %]</td>
+                <td>
+                    [% IF t.result == "1" %]
+                        PASS
+                    [% ELSE %]
+                        <strong>FAIL</strong>
+                    [% END -%]
+                </td>
+                <td>
+                    [% IF t.comment_bold == 1 || t.result == 0 %]
+                        <strong>[% t.comment FILTER html%]</strong>
+                    [% ELSE %]
+                        [% t.comment FILTER html %]
+                    [% END -%]
+                </td>
+            </tr>
+[% END -%]
+        </table>
+        <br />
+
+        <hr />
+        <h1>WebAuth Cookies (set on the way in)</h1>
+        <table border="1" cellpadding="3" width="80%">
+            <tr align="center">
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+[% FOREACH c IN cookies -%]
+            <tr>
+                <td>[% c.name FILTER html %]</td>
+                <td>[% c.value FILTER html %]</td>
+            </tr>
+[% END -%]
+        </table>
+        <br />
+
+        <hr />
+        <h1>Important Environment Variables</h1>
+        <table border="1" cellpadding="3" width="80%">
+            <tr align="center">
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+[% FOREACH e IN environment_important -%]
+            <tr>
+                <td>[% e.name FILTER html %]</td>
+                <td>[% e.value FILTER html %]</td>
+            </tr>
+[% END -%]
+        </table>
+        <br />
+
+        <hr />
+        <h1>Miscellaneous Environment Variables</h1>
+        <table border="1" cellpadding="3" width="80%">
+            <tr align="center">
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+[% FOREACH e IN environment_misc -%]
+            <tr>
+                <td>[% e.name FILTER html %]</td>
+                <td>[% e.value FILTER html %]</td>
+            </tr>
+[% END -%]
+        </table>
+
+    </body>
+</html>

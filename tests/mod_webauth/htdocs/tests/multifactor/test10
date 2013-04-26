@@ -1,35 +1,31 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Jon Robertson
-# Copyright 2011
+# Copyright 2011, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+use WebAuth::Tests qw(build_page);
 
-require '../auth/util.pl';
+# Text for the page.
+my @extended = (
+    'This test checks the ability of WebAuth to require a specific level of '
+    .'assurance for any users logging in, combined with a specific otp '
+    .'method. You should only be able to visit the page if you both have a '
+    .'level 3 LoA and o3 configured multifactor.',
+);
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 10,
+    test_desc     => 'LoA plus o3 test',
+    extended_desc => \@extended,
+    multifactor   => 1,
+);
 
 print "Content-type: text/html\n\n";
-
-print "<html>";
-
-test_title (1, "LoA plus o3 test");
-
-print<<EOS;
-<p>You are accessing a webauth-protected page as the user: $REMOTE_USER</p>
-<p>This test checks the ability of WebAuth to require a specific level of
-   assurance for any users logging in, combined with a specific otp method.
-   You should only be able to visit the page if you both have a level 3 LoA
-   and o3 confitured multifactor.</p>
-EOS
-
-&return_links;
-
-&multifactor_tests;
-&dump_stuff;
-
-print "</html>";
-
+print build_page(\%settings);

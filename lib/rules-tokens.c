@@ -391,6 +391,18 @@ const struct wai_encoding wai_token_login_encoding[] = {
         NULL
     },
     {
+        "ott",
+        "otp type",
+        WA_TYPE_STRING,
+        true,  /* optional */
+        false, /* ascii    */
+        false, /* creation */
+        offsetof(struct webauth_token_login, otp_type),
+        0,
+        0,
+        NULL
+    },
+    {
         "ct",
         "creation",
         WA_TYPE_TIME,
@@ -644,6 +656,57 @@ const struct wai_encoding wai_token_request_encoding[] = {
         false, /* ascii    */
         true,  /* creation */
         offsetof(struct webauth_token_request, creation),
+        0,
+        0,
+        NULL
+    },
+    WA_ENCODING_END
+};
+const struct wai_encoding wai_token_webkdc_factor_encoding[] = {
+    {
+        "s",
+        "subject",
+        WA_TYPE_STRING,
+        false, /* optional */
+        false, /* ascii    */
+        false, /* creation */
+        offsetof(struct webauth_token_webkdc_factor, subject),
+        0,
+        0,
+        NULL
+    },
+    {
+        "ia",
+        "factors",
+        WA_TYPE_STRING,
+        false, /* optional */
+        false, /* ascii    */
+        false, /* creation */
+        offsetof(struct webauth_token_webkdc_factor, factors),
+        0,
+        0,
+        NULL
+    },
+    {
+        "ct",
+        "creation",
+        WA_TYPE_TIME,
+        false, /* optional */
+        false, /* ascii    */
+        true,  /* creation */
+        offsetof(struct webauth_token_webkdc_factor, creation),
+        0,
+        0,
+        NULL
+    },
+    {
+        "et",
+        "expiration",
+        WA_TYPE_TIME,
+        false, /* optional */
+        false, /* ascii    */
+        false, /* creation */
+        offsetof(struct webauth_token_webkdc_factor, expiration),
         0,
         0,
         NULL

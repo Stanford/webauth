@@ -20,6 +20,8 @@ multifactor_sentauth    : the form was submitted to run the sendauth function
 error                   : some error occurred
 err_multifactor_missing : the form was submitted previously without an OTP
 err_multifactor_invalid : could not validate a submitted OTP
+remember_login          : set if single sign-on cookies should be generated
+user_message            : raw HTML returned by the user information service
 
 You may customize this file however you wish for your site.
 
@@ -35,21 +37,24 @@ works of this work.
 
   <body onload="document.login.otp.focus();">
     <h1 align="center">WebAuth Multifactor</h1>
-    [% IF error %]
+    [% IF error || user_message %]
       <div class="error" align="center">
+        [% IF user_message %][% user_message %][% END %]
         <p><strong>
           [% IF err_multifactor_missing %]
             <!-- Error: no OTP submitted. -->
             Error: Enter a one-time password.
           [% END %]
 
-          [% IF err_multifactor_invalid %]
+          [% IF err_multifactor_invalid && !user_message %]
             <!-- Error: login failed. -->
             Error: You entered an incorrect one-time password.
           [% END %]
 
         </strong></p>
-        <p>Click <a href="/help.html">help</a> for assistance.</p>
+        [% IF error %]
+          <p>Click <a href="/help.html">help</a> for assistance.</p>
+        [% END %]
       </div>
     [% END %]
 
@@ -76,10 +81,14 @@ works of this work.
                          value="[% RT FILTER html %]">
                   <input type="hidden" name="ST"
                          value="[% ST FILTER html %]">
+                  <input type="hidden" name="LS"
+                         value="[% LS FILTER html %]">
                   <input type="hidden" name="username"
                          value="[% username FILTER html %]">
                   <input type="hidden" name="factor_type"
                          value="[% factor_type FILTER html %]">
+                  <input type="hidden" name="remember_login"
+                         value="[% remember_login FILTER html %]">
                 </form>
                 [% IF multifactor_sentauth %]
                   <p><strong>You have sent an OTP to your configured device.
@@ -97,10 +106,14 @@ works of this work.
                        value="[% RT FILTER html %]">
                 <input type="hidden" name="ST"
                        value="[% ST FILTER html %]">
+                <input type="hidden" name="LS"
+                       value="[% LS FILTER html %]">
                 <input type="hidden" name="username"
                        value="[% username FILTER html %]">
                 <input type="hidden" name="factor_type"
                        value="[% factor_type FILTER html %]">
+                <input type="hidden" name="remember_login"
+                       value="[% remember_login FILTER html %]">
                 <table>
                   <tr>
                     <td><strong>One-Time Password (OTP):</strong></td>

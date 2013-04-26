@@ -152,7 +152,7 @@ COMPILING AND TESTING
     sure that the library functions are working correctly.  In order to do
     more than limited tests of the low-level routines, you should first
     create a keytab for testing use containing the key for a principal in
-    your local realm.  See tests/data/README for instructions on what to
+    your local realm.  See tests/config/README for instructions on what to
     create and where to place the files.  If you are building the Perl
     bindings and modules, see perl/t/data/README for instructions about
     further configuration required to test the WebAuth Perl bindings and
