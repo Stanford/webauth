@@ -465,10 +465,11 @@ tests_util_xmalloc_LDADD = util/libutil.a portable/libportable.la
 # keyring, and all the pre-generated tokens.  Handle copying those over via
 # Makefile rules and remove them on make clean.
 perl/t/data/keyring: $(srcdir)/tests/data/keyring
+	[ -d perl/t/data] || $(MKDIR_P) perl/t/data
 	cp $(srcdir)/tests/data/keyring perl/t/data/keyring
 perl/t/data/tokens.conf: $(srcdir)/tests/data/tokens.conf
 	cp $(srcdir)/tests/data/tokens.conf perl/t/data/tokens.conf
-	[ -d perl/t/data/tokens ] || mkdir perl/t/data/tokens
+	[ -d perl/t/data/tokens ] || $(MKDIR_P) perl/t/data/tokens
 	cp tests/data/tokens/* perl/t/data/tokens/
 
 check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS $(BINDINGS_CHECK)

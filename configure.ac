@@ -22,6 +22,7 @@ AM_PROG_AR
 AC_PROG_INSTALL
 LT_INIT
 RRA_LD_VERSION_SCRIPT
+AC_PROG_MKDIR_P
 
 dnl Store information about the time the package was configured and the person
 dnl who configured it into another variable.
