@@ -53,6 +53,7 @@ GSS-API Kerberos via SASL.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapfilter">WebAuthLdapFilter</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldaphost">WebAuthLdapHost</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapkeytab">WebAuthLdapKeytab</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapoperationalattribute">WebAuthLdapOperationalAttribute</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapport">WebAuthLdapPort</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapprivgroup">WebAuthLdapPrivgroup</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapseparator">WebAuthLdapSeparator</a></li>
@@ -238,7 +239,8 @@ override this behavior, see
 <a href="#webauthldapseparator">WebAuthLdapSeparator</a>.</p>
 
 <p>The attributes can be any attribute found in your LDAP server that
-the server using this module has access to read.</p>
+the server using this module has access to read, except for operational
+attributes, like entryUUID.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 &lt;Location /private/&gt;<br />
@@ -437,6 +439,33 @@ the principal to use.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapOperationalAttribute" id="WebAuthLdapOperationalAttribute">WebAuthLdapOperationalAttribute</a> <a name="webauthldapoperationalattribute" id="webauthldapoperationalattribute">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>LDAP operational attribute to place in the environment</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapOperationalAttribute<em>oper_attribute</em>  [<em>oper_attribute</em>] ...</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
+<p>All attributes defined by this directive will be looked up additionally
+and their values will be inserted into the environment. This directive can
+also be used multiple times.</p>
+
+<p>Like<a href="#webauthldapattribute">WebAuthLdapAttribute</a>, the name
+of the enviornment variable is formed by prepending WEBAUTH_LDAP_ to the
+uppercased name. Multivalued attributes work exactly the same as well.</p>
+
+<div class="example"><h3>Example</h3><p><code>
+&lt;Location /private/&gt;<br />
+AuthType WebAuth<br />
+Require privgroup stanford:staff<br />
+WebAuthLdapOperationalAttribute entryUUID<br />
+&lt;/Location&gt;<br />
 </code></p></div>
 
 </div>

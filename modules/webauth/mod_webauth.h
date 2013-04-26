@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebAuth module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -21,9 +21,6 @@
 
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
-
-/* The module initialization struct, used to retrieve configuration. */
-extern module webauth_module;
 
 /* Command table provided by the configuration handling code. */
 extern const command_rec webauth_cmds[];
@@ -292,11 +289,8 @@ mwa_log_request(request_rec *r, const char *msg);
  * log a webauth-related error
  */
 void
-mwa_log_webauth_error(server_rec *r,
-                      int status,
-                      const char *mwa_func,
-                      const char *func,
-                      const char *extra);
+mwa_log_webauth_error(MWA_REQ_CTXT *rc, int status, const char *mwa_func,
+                      const char *func, const char *extra);
 
 /*
  * this should only be called in the module init routine

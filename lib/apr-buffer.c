@@ -7,7 +7,7 @@
  * allocations.  Buffers increase in increments of 64 bytes.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -21,14 +21,14 @@
 
 
 /*
- * Allocate a new struct buffer and initialize it.
+ * Allocate a new struct wai_buffer and initialize it.
  */
-struct buffer *
+struct wai_buffer *
 wai_buffer_new(apr_pool_t *pool)
 {
-    struct buffer *buffer;
+    struct wai_buffer *buffer;
 
-    buffer = apr_palloc(pool, sizeof(struct buffer));
+    buffer = apr_palloc(pool, sizeof(struct wai_buffer));
     if (buffer == NULL)
         return buffer;
     buffer->pool = pool;
@@ -45,7 +45,7 @@ wai_buffer_new(apr_pool_t *pool)
  * reallocations.  Refuse to resize a buffer to make it smaller.
  */
 void
-wai_buffer_resize(struct buffer *buffer, size_t size)
+wai_buffer_resize(struct wai_buffer *buffer, size_t size)
 {
     char *data;
 
@@ -64,7 +64,7 @@ wai_buffer_resize(struct buffer *buffer, size_t size)
  * Resize the buffer if needed.
  */
 void
-wai_buffer_set(struct buffer *buffer, const char *data, size_t length)
+wai_buffer_set(struct wai_buffer *buffer, const char *data, size_t length)
 {
     wai_buffer_resize(buffer, length + 1);
     if (length > 0)
@@ -79,7 +79,7 @@ wai_buffer_set(struct buffer *buffer, const char *data, size_t length)
  * at the end of the buffer.  Resize the buffer if needed.
  */
 void
-wai_buffer_append(struct buffer *buffer, const char *data, size_t length)
+wai_buffer_append(struct wai_buffer *buffer, const char *data, size_t length)
 {
     if (length == 0)
         return;
@@ -95,7 +95,7 @@ wai_buffer_append(struct buffer *buffer, const char *data, size_t length)
  * The trailing nul is not added to the buffer.
  */
 void
-wai_buffer_append_vsprintf(struct buffer *buffer, const char *format,
+wai_buffer_append_vsprintf(struct wai_buffer *buffer, const char *format,
                            va_list args)
 {
     size_t avail;
@@ -124,7 +124,7 @@ wai_buffer_append_vsprintf(struct buffer *buffer, const char *format,
  * needed.  The trailing nul is not added to the buffer.
  */
 void
-wai_buffer_append_sprintf(struct buffer *buffer, const char *format, ...)
+wai_buffer_append_sprintf(struct wai_buffer *buffer, const char *format, ...)
 {
     va_list args;
 
@@ -140,7 +140,7 @@ wai_buffer_append_sprintf(struct buffer *buffer, const char *format, ...)
  * terminator is found and false otherwise.
  */
 bool
-wai_buffer_find_string(struct buffer *buffer, const char *string,
+wai_buffer_find_string(struct wai_buffer *buffer, const char *string,
                        size_t start, size_t *offset)
 {
     char *terminator, *data;

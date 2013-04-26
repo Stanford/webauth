@@ -16,39 +16,499 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
-#include <time.h>
-
 #include <tests/tap/basic.h>
-#include <tests/tap/kerberos.h>
-#include <tests/tap/remctl.h>
+#include <tests/tap/webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
-#include <webauth/tokens.h>
 #include <webauth/webkdc.h>
+
+/* Test cases to run without an identity file. */
+static const struct wat_login_test tests_login[] = {
+
+    /* Attempt login with no authentication. */
+    {
+        "No authentication",
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
+    /* The same, but with a login cancel token. */
+    {
+        "No authentication and login cancel",
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
+    /* Pass in a webkdc-proxy token and obtain an id token. */
+    {
+        "webkdc-proxy authentication",
+        LOGIN_SUCCESS,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, "data", 4, "https://example.com/", "lc",
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "testuser", NULL, "webkdc", NULL, 0, "x,x1", NULL, 3,
+                0, 1938063600
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
+    /* The same, but also add a webkdc-factor token. */
+    {
+        "webkdc-proxy and webkdc-factor authentication",
+        LOGIN_SUCCESS,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            {
+                { "testuser", "d", 0, 1906527600 },
+                EMPTY_TOKEN_WKFACTOR,
+                EMPTY_TOKEN_WKFACTOR
+            },
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1,d", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            { "testuser", "d", 0, 1906527600 },
+            {
+                "testuser", NULL, "webkdc", NULL, 0, "x,x1,d", "d", 3,
+                0, 1938063600
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
+    /* Forced login with a proxy token should fail. */
+    {
+        "Forced login with webkdc-proxy token",
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 10, 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", "fa",
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 10, 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
+    /* A proxy token request with a webkdc-proxy token should fail. */
+    {
+        "Proxy token request with webkdc-proxy token",
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "proxy", NULL, "krb5", NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    }
+};
+
+/* Test cases to run with a login timeout of 15 minutes. */
+static const struct wat_login_test tests_time_limit[] = {
+
+    /* Forced login should still fail with a fresh webkdc-proxy token. */
+    {
+        "Forced login within login timeout",
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 10, 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", "fa",
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 10, 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+};
+
+/* Test cases to run with an identity file. */
+static const struct wat_login_test tests_id_acl[] = {
+
+    /* Don't attempt to assert an identity. */
+    {
+        "Proxy authentication with identity ACL",
+        LOGIN_SUCCESS,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "testuser", NULL, "webkdc", NULL, 0, "x,x1", NULL, 3,
+                0, 1938063600
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            { "otheruser", "bar", NULL }
+        },
+    },
+
+    /* Now assert an authorization identity. */
+    {
+        "Proxy authentication with authorization identity",
+        LOGIN_SUCCESS,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            "otheruser",
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "testuser", "otheruser", "webkdc", NULL, 0, "x,x1", NULL, 3,
+                0, 1938063600
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            { "otheruser", "bar", NULL }
+        },
+    },
+
+    /* Assert an identity we're not allowed to assert. */
+    {
+        "Unauthorized authorization identity",
+        WA_PEC_UNAUTHORIZED,
+        "authorization denied (may not assert that identity)",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            "foo",
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            { "otheruser", "bar", NULL }
+        },
+    },
+
+    /* Assert the same identity as the subject. */
+    {
+        "Authorization identity matching subject",
+        LOGIN_SUCCESS,
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            "testuser",
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 1365725079, 1938063600, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            {
+                "testuser", NULL, "webkdc", NULL, 0, "x,x1", NULL, 3,
+                0, 1938063600
+            },
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            { "otheruser", "bar", NULL }
+        },
+    }
+};
 
 
 int
 main(void)
 {
     apr_pool_t *pool = NULL;
-    struct webauth_keyring *ring, *session;
-    struct webauth_key *session_key;
-    int status;
-    char *keyring;
-    time_t now;
     struct webauth_context *ctx;
+    struct webauth_keyring *ring;
     struct webauth_webkdc_config config;
-    struct webauth_webkdc_login_request request;
-    struct webauth_webkdc_login_response *response;
-    struct webauth_token *token, wkproxy;
-    struct webauth_token_request req;
-    struct webauth_token_webkdc_proxy *pt;
-    struct webauth_token_webkdc_service service;
-    struct webauth_webkdc_proxy_data *pd;
-    const char *authz;
+    size_t i;
+    int s;
+    char *keyring;
 
-    plan(110);
+    /* Use lazy planning so that test counts can vary on some errors. */
+    plan_lazy();
 
+    /* Initialize APR and WebAuth. */
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
     if (apr_pool_create(&pool, NULL) != APR_SUCCESS)
@@ -58,319 +518,49 @@ main(void)
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read(ctx, keyring, &ring);
-    if (status != WA_ERR_NONE)
-        bail("cannot read %s: %s", keyring,
-             webauth_error_message(ctx, status));
+    s = webauth_keyring_read(ctx, keyring, &ring);
+    if (s != WA_ERR_NONE)
+        bail("cannot read %s: %s", keyring, webauth_error_message(ctx, s));
     test_file_path_free(keyring);
 
     /* Provide basic configuration to the WebKDC code. */
     memset(&config, 0, sizeof(config));
     config.local_realms = apr_array_make(pool, 0, sizeof(const char *));
     config.permitted_realms = apr_array_make(pool, 0, sizeof(const char *));
-    status = webauth_webkdc_config(ctx, &config);
-    if (status != WA_ERR_NONE)
-        diag("configuration failed: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "WebKDC configuration succeeded");
+    s = webauth_webkdc_config(ctx, &config);
+    if (s != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "WebKDC configuration succeeded");
 
-    /* Flesh out the absolute minimum required in the request. */
-    now = time(NULL);
-    memset(&request, 0, sizeof(request));
-    memset(&service, 0, sizeof(service));
-    service.subject = "krb5:webauth/example.com@EXAMPLE.COM";
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL,
-                                &session_key);
-    if (status != WA_ERR_NONE)
-        bail("cannot create key: %s", webauth_error_message(ctx, status));
-    session = webauth_keyring_from_key(ctx, session_key);
-    service.session_key = session_key->data;
-    service.session_key_len = session_key->length;
-    service.creation = now;
-    service.expiration = now + 60;
-    request.service = &service;
-    memset(&req, 0, sizeof(req));
-    req.type = "id";
-    req.auth = "webkdc";
-    req.return_url = "https://example.com/";
-    req.creation = now;
-    request.request = &req;
-    request.creds = apr_array_make(pool, 1, sizeof(struct token *));
+    /* Run the first set of tests. */
+    for (i = 0; i < ARRAY_SIZE(tests_login); i++)
+        run_login_test(ctx, &tests_login[i], ring, NULL);
 
     /*
-     * Attempted login with no proxy or login tokens.  Should return an error
-     * indicating that a proxy token is required.
-     */
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Minimal login returns success");
-    is_int(WA_PEC_PROXY_TOKEN_REQUIRED, response->login_error,
-           "...with correct error code");
-    is_string("need a proxy token", response->login_message,
-              "...and correct error message");
-    ok(response->factors_wanted == NULL, "...no factors wanted");
-    ok(response->factors_configured == NULL, "...no factors configured");
-    ok(response->proxies == NULL, "...no new webkdc-proxy tokens");
-    is_string("https://example.com/", response->return_url,
-              "...return URL is correct");
-    is_string("krb5:webauth/example.com@EXAMPLE.COM", response->requester,
-              "...requester is correct");
-    is_string(NULL, response->subject, "...no subject");
-    is_string(NULL, response->result, "...no result token");
-    is_string(NULL, response->result_type, "...no result type");
-    is_string(NULL, response->login_cancel, "...no login cancel token");
-    ok(response->app_state == NULL, "...no app state");
-    is_int(0, response->app_state_len, "...no app state length");
-    ok(response->logins == NULL, "...no login information");
-
-    /* Try again, but with a login cancel token requested. */
-    req.options = "lc";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Login w/cancel returns success");
-    is_int(WA_PEC_PROXY_TOKEN_REQUIRED, response->login_error,
-           "...with correct error code");
-    is_string("need a proxy token", response->login_message,
-              "...and correct error message");
-    ok(response->login_cancel != NULL, "...and now a cancel token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ERROR, response->login_cancel,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...which decodes properly");
-    if (status != WA_ERR_NONE)
-        ok_block(3, 0, "...invalid error token");
-    else {
-        is_int(WA_PEC_LOGIN_CANCELED, token->token.error.code,
-               "...with correct code");
-        is_string("user canceled login", token->token.error.message,
-                  "...and message");
-        ok(token->token.error.creation - now < 3, "...and creation time");
-    }
-
-    /* Get an id token with a single sign-on webkdc-proxy token. */
-    memset(&wkproxy, 0, sizeof(wkproxy));
-    wkproxy.type = WA_TOKEN_WEBKDC_PROXY;
-    wkproxy.token.webkdc_proxy.subject = "testuser";
-    wkproxy.token.webkdc_proxy.proxy_type = "remuser";
-    wkproxy.token.webkdc_proxy.proxy_subject = "WEBKDC:remuser";
-    wkproxy.token.webkdc_proxy.data = "testuser";
-    wkproxy.token.webkdc_proxy.data_len = strlen("testuser");
-    wkproxy.token.webkdc_proxy.initial_factors = "x,x1";
-    wkproxy.token.webkdc_proxy.loa = 3;
-    wkproxy.token.webkdc_proxy.creation = now - 10 * 60;
-    wkproxy.token.webkdc_proxy.expiration = now + 60 * 60;
-    request.creds = apr_array_make(pool, 1, sizeof(struct webauth_token *));
-    APR_ARRAY_PUSH(request.creds, struct webauth_token *) = &wkproxy;
-    req.type = "id";
-    req.auth = "webkdc";
-    req.proxy_type = NULL;
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Proxy auth for webkdc returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    ok(response->proxies != NULL, "...and we have proxy tokens");
-    if (response->proxies == NULL)
-        ok_block(5, 0, "...no proxy tokens");
-    else {
-        is_int(1, response->proxies->nelts, "...one proxy token");
-        pd = &APR_ARRAY_IDX(response->proxies, 0,
-                            struct webauth_webkdc_proxy_data);
-        is_string("remuser", pd->type, "...of type webkdc");
-        status = webauth_token_decode(ctx, WA_TOKEN_WEBKDC_PROXY, pd->token,
-                                      ring, &token);
-        is_int(WA_ERR_NONE, status, "...which decodes properly");
-        pt = &token->token.webkdc_proxy;
-        is_string("testuser", pt->subject, "...with correct subject");
-        is_string("x,x1", pt->initial_factors, "...and initial factors");
-    }
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
-        ok_block(8, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("testuser", token->token.id.subject,
-                  "...result subject is right");
-        is_string(NULL, token->token.id.authz_subject,
-                  "...and there is no authz subject");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("x,x1", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string(NULL, token->token.proxy.session_factors,
-                  "...and there are no session factors");
-        is_int(3, token->token.id.loa, "...result LoA is right");
-        ok(token->token.id.creation - now < 3, "...and creation is sane");
-        is_int(now + 60 * 60, token->token.id.expiration,
-               "...and expiration matches the expiration of the proxy token");
-    }
-    is_string("x,x1", response->initial_factors, "...initial factors");
-    is_string(NULL, response->session_factors, "...session factors");
-    is_int(3, response->loa, "...level of assurance");
-    ok(response->authz_subject == NULL, "...authz subject");
-    ok(response->permitted_authz == NULL, "...allowed identities");
-
-    /* Set an identity ACL file and try again. */
-    config.id_acl_path = test_file_path("data/id.acl");
-    status = webauth_webkdc_config(ctx, &config);
-    if (status != WA_ERR_NONE)
-        diag("configuration failed: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Identity ACL configuration succeeded");
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Allowed identities returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    ok(response->authz_subject == NULL, "...and no authz subject");
-    ok(response->permitted_authz != NULL,
-       "...and there are allowed identities");
-    if (response->permitted_authz == NULL)
-        ok_block(3, 0, "...no identities");
-    else {
-        is_int(2, response->permitted_authz->nelts,
-               "...two allowed identities");
-        authz = APR_ARRAY_IDX(response->permitted_authz, 0, const char *);
-        is_string("otheruser", authz, "...first is correct");
-        authz = APR_ARRAY_IDX(response->permitted_authz, 1, const char *);
-        is_string("bar", authz, "...second is correct");
-    }
-
-    /* Attempt to assert an identity and try again. */
-    request.authz_subject = "otheruser";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Asserting an authz subject returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    is_string("otheruser", response->authz_subject,
-              "...and the correct authz subject");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
-        ok_block(8, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("testuser", token->token.id.subject,
-                  "...result subject is right");
-        is_string("otheruser", token->token.id.authz_subject,
-                  "...result authz subject is right");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("x,x1", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string(NULL, token->token.proxy.session_factors,
-                  "...and there are no session factors");
-        is_int(3, token->token.id.loa, "...result LoA is right");
-        ok(token->token.id.creation - now < 3, "...and creation is sane");
-        is_int(now + 60 * 60, token->token.id.expiration,
-               "...and expiration matches the expiration of the proxy token");
-    }
-
-    /* Try asserting an identity we're not allowed to assert. */
-    request.authz_subject = "foo";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status,
-           "Asserting a disallowed authz subject returns success");
-    is_int(WA_PEC_UNAUTHORIZED, response->login_error,
-           "...with the right error");
-    is_string("not authorized to assert that identity",
-              response->login_message, "...and the right message");
-    ok(response->authz_subject == NULL, "...and authz subject is NULL");
-
-    /* Assert the same identity as the subject. */
-    request.authz_subject = "testuser";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    if (status != WA_ERR_NONE)
-        diag("error status: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status,
-           "Asserting matching authz subject returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    is_string(NULL, response->authz_subject, "...and no authz subject");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
-        ok_block(8, 0, "...no result token: %s",
-                 webauth_error_message(ctx, status));
-    else {
-        is_string("testuser", token->token.id.subject,
-                  "...result subject is right");
-        is_string(NULL, token->token.id.authz_subject,
-                  "...and no result authz subject");
-        is_string("webkdc", token->token.id.auth,
-                  "...result auth type is right");
-        is_string("x,x1", token->token.proxy.initial_factors,
-                  "...result initial factors is right");
-        is_string(NULL, token->token.proxy.session_factors,
-                  "...and there are no session factors");
-        is_int(3, token->token.id.loa, "...result LoA is right");
-        ok(token->token.id.creation - now < 3, "...and creation is sane");
-        is_int(now + 60 * 60, token->token.id.expiration,
-               "...and expiration matches the expiration of the proxy token");
-    }
-
-    /* Set forced authentication and try again. */
-    request.authz_subject = NULL;
-    req.options = "fa";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Proxy auth w/forced login returns success");
-    is_int(WA_PEC_LOGIN_FORCED, response->login_error,
-           "...with the right error");
-    is_string("forced authentication, need to login", response->login_message,
-              "...and the right message");
-    is_string("testuser", response->subject, "...but we do know the subject");
-
-    /*
-     * Retry forced authentication with a 15 minute login timeout.  The
-     * webkdc-proxy token is dated 10 minutes ago, so this should succeed.
+     * Set a login time limit of 15 minutes.  Since the webkdc-proxy tokens
+     * are dated 10 minutes ago, this will make them considered fresh.
      */
     config.login_time_limit = 15 * 60;
-    status = webauth_webkdc_config(ctx, &config);
-    if (status != WA_ERR_NONE)
-        diag("configuration failed: %s", webauth_error_message(ctx, status));
-    is_int(WA_ERR_NONE, status, "Setting login timeout succeeded");
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status,
-           "Auth w/forced login and long timeout returns success");
-    is_int(0, response->login_error, "...with no error");
-    is_string(NULL, response->login_message, "...and no message");
-    ok(response->result != NULL, "...there is a result token");
-    is_string("id", response->result_type, "...which is an id token");
-    status = webauth_token_decode(ctx, WA_TOKEN_ID, response->result,
-                                  session, &token);
-    is_int(WA_ERR_NONE, status, "...result token decodes properly");
-    if (status != WA_ERR_NONE)
-        ok(0, "...no result token: %s",
-           webauth_error_message(ctx, status));
-    else
-        is_string("testuser", token->token.id.subject,
-                  "...result subject is right");
-    is_string("x,x1", response->initial_factors, "...initial factors");
-    is_string("x,x1", response->session_factors, "...session factors");
+    s = webauth_webkdc_config(ctx, &config);
+    if (s != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Setting login timeout succeeded");
 
-    /* Remove forced authentication but ask for a proxy token. */
-    req.options = NULL;
-    req.type = "proxy";
-    req.auth = NULL;
-    req.proxy_type = "krb5";
-    status = webauth_webkdc_login(ctx, &request, &response, ring);
-    is_int(WA_ERR_NONE, status, "Proxy auth for proxy returns success");
-    is_int(WA_PEC_PROXY_TOKEN_REQUIRED, response->login_error,
-           "...with the right error");
-    is_string("need a proxy token", response->login_message,
-              "...and the right message");
-    is_string("testuser", response->subject, "...but we do know the subject");
+    /* Run the batch of tests requiring the login timeout setting. */
+    for (i = 0; i < ARRAY_SIZE(tests_time_limit); i++)
+        run_login_test(ctx, &tests_time_limit[i], ring, NULL);
+
+    /* Set up an identity ACL (and clear the login time limit). */
+    config.id_acl_path = test_file_path("data/id.acl");
+    config.login_time_limit = 0;
+    s = webauth_webkdc_config(ctx, &config);
+    if (s != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Identity ACL configuration succeeded");
+
+    /* Run the batch of tests requiring an identity ACL. */
+    for (i = 0; i < ARRAY_SIZE(tests_id_acl); i++)
+        run_login_test(ctx, &tests_id_acl[i], ring, NULL);
 
     /* Clean up. */
     apr_terminate();

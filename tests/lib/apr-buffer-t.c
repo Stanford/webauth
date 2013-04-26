@@ -5,7 +5,7 @@
  * libwebauth library.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2012
+ * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -26,7 +26,7 @@ static const char test_string3[] = "This is a test\0 of the buffer system";
  * Test wai_buffer_append_vsprintf.  Wrapper needed to generate the va_list.
  */
 static void
-test_append_vsprintf(struct buffer *buffer, const char *format, ...)
+test_append_vsprintf(struct wai_buffer *buffer, const char *format, ...)
 {
     va_list args;
 
@@ -40,7 +40,7 @@ int
 main(void)
 {
     apr_pool_t *pool;
-    struct buffer *buffer;
+    struct wai_buffer *buffer;
     size_t offset;
     char *data;
 
@@ -54,6 +54,8 @@ main(void)
     /* buffer_new, buffer_set, buffer_append */
     buffer = wai_buffer_new(pool);
     ok(buffer != NULL, "buffer is not NULL");
+    if (buffer == NULL)
+        bail("Cannot continue after buffer creation failed");
     is_int(0, buffer->size, "buffer starts with no data");
     is_int(0, buffer->used, "...and no data used");
     ok(buffer->data == NULL, "...and no data pointer");

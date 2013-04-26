@@ -1,0 +1,14 @@
+username testuser3
+return_url https://test.example.org/?WEBAUTHR=TestResponse;
+pretty_return_url https://test.example.org
+login_cancel 
+cancel_url 
+show_remuser 
+remuser 
+script_name 
+warn_expire 
+expire_timestamp 
+pwchange_url 
+CPT 
+remember_login no
+device_expiring 

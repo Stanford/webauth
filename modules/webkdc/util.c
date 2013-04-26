@@ -2,7 +2,7 @@
  * Utility functions for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2009, 2011, 2012
+ * Copyright 2002, 2003, 2009, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -21,6 +21,8 @@
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/krb5.h>
+
+APLOG_USE_MODULE(webkdc);
 
 /* Initiaized in child. */
 static apr_thread_mutex_t *mwk_mutex[MWK_MUTEX_MAX];

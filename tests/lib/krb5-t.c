@@ -3,7 +3,7 @@
  *
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2012
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -119,8 +119,10 @@ kinit_with_addresses(struct kerberos_config *config)
     krb5_cc_close(ctx, ccache);
     krb5_free_cred_contents(ctx, &creds);
     krb5_kt_close(ctx, keytab);
+    krb5_get_init_creds_opt_free(ctx, opts);
     krb5_free_principal(ctx, kprinc);
     krb5_free_context(ctx);
+    free(krbtgt);
     test_tmpdir_free(tmpdir);
     return cache;
 }
@@ -152,6 +154,8 @@ main(void)
     s = webauth_krb5_new(ctx ,&kc);
     CHECK(ctx, s, "Creating a Kerberos context");
     ok(kc != NULL, "...and the context is not NULL");
+    if (kc == NULL)
+        bail("Cannot continue without a Kerberos context");
 
     /* We can't get information before we initialize. */
     s = webauth_krb5_get_principal(ctx, kc, &cprinc, WA_KRB5_CANON_LOCAL);

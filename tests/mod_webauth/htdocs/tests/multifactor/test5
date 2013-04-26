@@ -1,35 +1,31 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Jon Robertson
-# Copyright 2011
+# Copyright 2011, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+use WebAuth::Tests qw(build_page);
 
-require '../auth/util.pl';
+# Text for the page.
+my @extended = (
+    'This test checks the ability of WebAuth to require a specific otp '
+    .'multifactor method for any users logging in.  In this case we require '
+    .'o3.  The meaning of o3 varies from site to site, but is implied to be '
+    .'a relatively strong multifactor method.',
+);
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 5,
+    test_desc     => 'o3 multifactor',
+    extended_desc => \@extended,
+    multifactor   => 1,
+);
 
 print "Content-type: text/html\n\n";
-
-print "<html>";
-
-test_title (1, "o3 multifactor");
-
-print<<EOS;
-<p>You are accessing a webauth-protected page as the user: $REMOTE_USER</p>
-<p>This test checks the ability of WebAuth to require a specific otp
-   multifactor method for any users logging in.  In this case we require
-   o3.  The meaning of o3 varies from site to site, but is implied to be a
-   relatively strong multifactor method.</p>
-EOS
-
-&return_links;
-
-&multifactor_tests;
-&dump_stuff;
-
-print "</html>";
-
+print build_page(\%settings);

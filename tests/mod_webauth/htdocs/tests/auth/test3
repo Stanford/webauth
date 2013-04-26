@@ -1,42 +1,80 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Roland Schemers
-# Copyright 2003
+# Copyright 2003, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+use WebAuth::Tests qw(build_page run_test);
 
-require 'util.pl';
+# Text for the page.
+my @extended;
+push (@extended,
+      'This test is to make sure that the WebAuthVarPrefix directive is '
+      .'working.');
+push (@extended,
+      'This test page has it set to "TEST_", so extra environment variables '
+      .'that start with "TEST_" should be set in addition to the standard '
+      .'WebAuth environment variables.');
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 3,
+    test_desc     => 'testing WebAuthVarPrefix',
+    extended_desc => \@extended,
+    extra_title   => 'Performing WebAuthVarPrefix tests',
+    extra_tests   => varprefix_tests(),
+);
 
 print "Content-type: text/html\n\n";
+print build_page(\%settings);
 
-print "<html>\n";
+#############################################################################
+# Tests only for this page
+#############################################################################
 
-test_title(3, "testing WebAuthVarPrefix");
+# Run all tests for WebAuthVarPrefix and return as an array for reporting.
+sub varprefix_tests {
 
-print<<EOS;
+    my $webauth_token_creation        = $ENV{'WEBAUTH_TOKEN_CREATION'};
+    my $webauth_token_expiration      = $ENV{'WEBAUTH_TOKEN_EXPIRATION'};
+    my $webauth_user                  = $ENV{'WEBAUTH_USER'};
+    my $test_webauth_token_creation   = $ENV{'TEST_WEBAUTH_TOKEN_CREATION'};
+    my $test_webauth_token_expiration = $ENV{'TEST_WEBAUTH_TOKEN_EXPIRATION'};
+    my $test_webauth_user             = $ENV{'TEST_WEBAUTH_USER'};
 
-You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
-<br>
-This test is to make sure that the WebAuthVarPrefix directive is working. 
-<br>
-<br>
-This
-test page has it set to "TEST_", so extra environment variables
-that start with "TEST_" should be set in addition to the standard
-WebAuth environment variables.
-<br>
-EOS
+    my @tests;
+    my $record = run_test('TEST_WEBAUTH_USER',
+                          $test_webauth_user ne '',
+                          $test_webauth_user,
+                          'not set!',
+                          1);
+    push (@tests, $record);
 
-&return_links;
+    $record = run_test('WEBAUTH_USER == TEST_WEBAUTH_USER',
+                       $webauth_user eq $test_webauth_user,
+                       'they are equal',
+                       'they are not equal!',
+                       0);
+    push (@tests, $record);
 
-&varprefix_tests;
+    $record = run_test('WEBAUTH_TOKEN_CREATION == TEST_WEBAUTH_TOKEN_CREATION',
+                       $webauth_token_creation == $test_webauth_token_creation,
+                       'they are equal',
+                       'they are not equal!',
+                       0);
+    push (@tests, $record);
 
-&dump_stuff;
+    $record = run_test('WEBAUTH_TOKEN_EXPIRATION == TEST_WEBAUTH_TOKEN_EXPIRATION',
+                       $webauth_token_expiration == $test_webauth_token_expiration,
+                       'they are equal',
+                       'they are not equal!',
+                       0);
+    push (@tests, $record);
 
-print "</html>";
-
+    return \@tests;
+}

@@ -2,7 +2,7 @@
  * Core WebAuth Apache module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -18,10 +18,11 @@
 #include <modules/webauth/mod_webauth.h>
 #include <util/macros.h>
 #include <webauth/basic.h>
+#include <webauth/factors.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
 
-module AP_MODULE_DECLARE_DATA webauth_module;
+APLOG_USE_MODULE(webauth);
 
 
 static void
@@ -304,7 +305,8 @@ nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
             *val++ = '\0';
             /* don't nuke any webkdc cookies, which noramlly wouldn't
                show up, but due during development */
-            if (strncmp(cookie, "webauth_wpt", 11) != 0) {
+            if (strncmp(cookie, "webauth_wpt", 11) != 0
+                && strncmp(cookie, "webauth_wft", 11) != 0) {
                 nuke_cookie(rc, cookie, 1);
             }
         }
@@ -764,7 +766,7 @@ make_proxy_cookie(const char *proxy_type,
     pt->expiration = expiration_time;
     status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
+        mwa_log_webauth_error(rc, status, mwa_func,
                               "webauth_token_encode_proxy", subject);
         return 0;
     }
@@ -791,9 +793,8 @@ make_cred_cookie(struct webauth_token_cred *ct, MWA_REQ_CTXT *rc)
     data.token.cred = *ct;
     status = webauth_token_encode(rc->ctx, &data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_encode_cred",
-                              ct->subject);
+        mwa_log_webauth_error(rc, status, mwa_func,
+                              "webauth_token_encode_cred", ct->subject);
         return 0;
     }
     fixup_setcookie(rc, cred_cookie_name(ct->type, ct->service, rc), token);
@@ -848,7 +849,7 @@ make_app_cookie(const char *subject,
     app->expiration = expiration_time;
     status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
+        mwa_log_webauth_error(rc, status, mwa_func,
                               "webauth_token_encode_app", subject);
         return 0;
     }
@@ -931,8 +932,8 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
                      " expired", app_cookie_name());
         return 0;
     } else if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_decode_app", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return 0;
     }
     rc->at = &app->token.app;
@@ -994,8 +995,8 @@ parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
     status = webauth_token_decode(rc->ctx, WA_TOKEN_PROXY, token,
                                   rc->sconf->ring, &pt);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status,
-                              mwa_func, "webauth_token_decode_proxy", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return NULL;
     }
     return &pt->token.proxy;
@@ -1050,8 +1051,8 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     status = webauth_token_decode(rc->ctx, WA_TOKEN_APP, token,
                                   rc->sconf->ring, &data);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status,
-                              mwa_func, "webauth_token_decode_app", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return NULL;
     }
     app = &data->token.app;
@@ -1222,8 +1223,8 @@ parse_returned_token(char *token, struct webauth_key *key, MWA_REQ_CTXT *rc)
     ring = webauth_keyring_from_key(rc->ctx, key);
     status = webauth_token_decode(rc->ctx, type, token, ring, &data);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_decode", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_decode",
+                              NULL);
         return code;
     }
 
@@ -1251,6 +1252,7 @@ parse_returned_token(char *token, struct webauth_key *key, MWA_REQ_CTXT *rc)
     case WA_TOKEN_CRED:
     case WA_TOKEN_LOGIN:
     case WA_TOKEN_REQUEST:
+    case WA_TOKEN_WEBKDC_FACTOR:
     case WA_TOKEN_WEBKDC_PROXY:
     case WA_TOKEN_WEBKDC_SERVICE:
     case WA_TOKEN_ANY:
@@ -1460,8 +1462,8 @@ redirect_request_token(MWA_REQ_CTXT *rc)
     ring = webauth_keyring_from_key(rc->ctx, &st->key);
     status = webauth_token_encode(rc->ctx, &data, ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_encode_request", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func, "webauth_token_encode",
+                              NULL);
         return failure_redirect(rc);
     }
 
@@ -1799,9 +1801,8 @@ gather_creds(MWA_REQ_CTXT *rc)
 static int
 gather_tokens(MWA_REQ_CTXT *rc)
 {
-    int code, in_url, status;
-    char *initial, *session;
-    struct webauth_factors *have = NULL, *want = NULL;
+    int code, in_url;
+    struct webauth_factors *have, *want;
 
     /* check the URL. this will parse the token in WEBAUTHR if there
        was one, and create the appropriate cookies, as well as fill in
@@ -1832,8 +1833,6 @@ gather_tokens(MWA_REQ_CTXT *rc)
      * We have an app token.  Now check whether our factor and LoA
      * requirements are met.  If they're not, return a redirect.
      *
-     * FIXME: This is hideous code.  Needs to be refactored badly.
-     *
      * FIXME: Need better error reporting if there are no initial or session
      * factors in the app token.  We may be dealing with a WebKDC that cannot
      * satisfy our request.  Consider making that a fatal error leading to a
@@ -1848,68 +1847,40 @@ gather_tokens(MWA_REQ_CTXT *rc)
         return redirect_request_token(rc);
     }
     if (rc->dconf->initial_factors != NULL) {
-        initial = apr_array_pstrcat(rc->r->pool, rc->dconf->initial_factors,
-                                    ',');
+        want = webauth_factors_new(rc->ctx, rc->dconf->initial_factors);
         if (rc->at->initial_factors == NULL) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: initial authentication factors"
-                          " required (want %s)", initial);
+                          " required (want %s)",
+                          webauth_factors_string(rc->ctx, want));
             return redirect_request_token(rc);
         }
-        status = webauth_factors_parse(rc->ctx, rc->at->initial_factors,
-                                       &have);
-        if (status != WA_ERR_NONE) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, rc->r,
-                          "mod_webauth: cannot parse factors: %s",
-                          webauth_error_message(rc->ctx, status));
-            return redirect_request_token(rc);
-        }
-        status = webauth_factors_parse(rc->ctx, initial, &want);
-        if (status != WA_ERR_NONE) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, rc->r,
-                          "mod_webauth: cannot parse factors: %s",
-                          webauth_error_message(rc->ctx, status));
-            return redirect_request_token(rc);
-        }
-        if (!webauth_factors_subset(rc->ctx, want, have)) {
+        have = webauth_factors_parse(rc->ctx, rc->at->initial_factors);
+        if (!webauth_factors_satisfies(rc->ctx, have, want)) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: insufficient initial"
                           " authentication factors (have %s, want %s)",
-                          rc->at->initial_factors, initial);
+                          rc->at->initial_factors,
+                          webauth_factors_string(rc->ctx, want));
             return redirect_request_token(rc);
         }
     }
     if (rc->dconf->session_factors != NULL) {
-        session = apr_array_pstrcat(rc->r->pool, rc->dconf->session_factors,
-                                    ',');
+        want = webauth_factors_new(rc->ctx, rc->dconf->session_factors);
         if (rc->at->session_factors == NULL) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: session authentication factors"
-                          " required (want %s)", session);
+                          " required (want %s)",
+                          webauth_factors_string(rc->ctx, want));
             return redirect_request_token(rc);
         }
-        have = NULL;
-        status = webauth_factors_parse(rc->ctx, rc->at->session_factors,
-                                       &have);
-        if (status != WA_ERR_NONE) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, rc->r,
-                          "mod_webauth: cannot parse factors: %s",
-                          webauth_error_message(rc->ctx, status));
-            return redirect_request_token(rc);
-        }
-        want = NULL;
-        status = webauth_factors_parse(rc->ctx, session, &want);
-        if (status != WA_ERR_NONE) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, rc->r,
-                          "mod_webauth: cannot parse factors: %s",
-                          webauth_error_message(rc->ctx, status));
-            return redirect_request_token(rc);
-        }
-        if (!webauth_factors_subset(rc->ctx, want, have)) {
+        have = webauth_factors_parse(rc->ctx, rc->at->session_factors);
+        if (!webauth_factors_satisfies(rc->ctx, have, want)) {
             ap_log_rerror(APLOG_MARK, APLOG_INFO, 0, rc->r,
                           "mod_webauth: insufficient session"
                           " authentication factors (have %s, want %s)",
-                          rc->at->session_factors, session);
+                          rc->at->session_factors,
+                          webauth_factors_string(rc->ctx, want));
             return redirect_request_token(rc);
         }
     }

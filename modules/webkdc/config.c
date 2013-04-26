@@ -8,7 +8,7 @@
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Based on original code by Roland Schemers
- * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -23,6 +23,8 @@
 #include <webauth/basic.h>
 #include <webauth/util.h>
 #include <webauth/webkdc.h>
+
+APLOG_USE_MODULE(webkdc);
 
 /*
  * For each directive, we have the directive name (CD_), a usage string (CU_),

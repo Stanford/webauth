@@ -16,23 +16,25 @@
 
 #include <apr_errno.h>          /* apr_status_t */
 #include <apr_pools.h>          /* apr_pool_t */
+#include <apr_tables.h>         /* apr_array_header_t */
 #include <apr_xml.h>            /* apr_xml_elem */
-
-/* Factor constants. */
-#define WA_FA_COOKIE               "c"
-#define WA_FA_DEVICE               "d"
-#define WA_FA_KERBEROS             "k"
-#define WA_FA_MULTIFACTOR          "m"
-#define WA_FA_OTP                  "o"
-#define WA_FA_OTP_TYPE             "o%d"
-#define WA_FA_PASSWORD             "p"
-#define WA_FA_RANDOM_MULTIFACTOR   "rm"
-#define WA_FA_UNKNOWN              "u"
-#define WA_FA_X509                 "x"
-#define WA_FA_X509_TYPE            "x%d"
+#include <webauth/basic.h>      /* enum webauth_log_level, webauth_log_func */
 
 struct webauth_keyring;
 struct webauth_token;
+struct webauth_token_request;
+struct webauth_webkdc_login_request;
+struct webauth_webkdc_login_response;
+
+/*
+ * Data for a logging callback for a WebAuth context.  The function pointer is
+ * called with the WebAuth context, the user-provided opaque data, and the
+ * string of the message to log.
+ */
+struct wai_log_callback {
+    webauth_log_func callback;
+    void *data;
+};
 
 /*
  * The internal context struct, which holds any state information required for
@@ -41,7 +43,13 @@ struct webauth_token;
 struct webauth_context {
     apr_pool_t *pool;           /* Pool used for all memory allocations. */
     const char *error;          /* Error message from last failure. */
-    int code;                   /* Error code from last failure. */
+    int status;                 /* WebAuth status code from last failure. */
+
+    /* Logging callbacks. */
+    struct wai_log_callback warn;
+    struct wai_log_callback notice;
+    struct wai_log_callback info;
+    struct wai_log_callback trace;
 
     /* The below are used only for the WebKDC functions. */
 
@@ -54,9 +62,11 @@ struct webauth_context {
 
 /*
  * An APR-managed buffer, used to accumulate data that comes in chunks.  This
- * is managed by the wai_buffer_* functions.
+ * is managed by the wai_buffer_* functions.  The data will always be
+ * nul-terminated, but the nul won't be counted as part of the used size, and
+ * nul characters are permitted in the buffer.
  */
-struct buffer {
+struct wai_buffer {
     apr_pool_t *pool;
     size_t size;
     size_t used;
@@ -127,6 +137,7 @@ extern const struct wai_encoding wai_token_id_encoding[];
 extern const struct wai_encoding wai_token_login_encoding[];
 extern const struct wai_encoding wai_token_proxy_encoding[];
 extern const struct wai_encoding wai_token_request_encoding[];
+extern const struct wai_encoding wai_token_webkdc_factor_encoding[];
 extern const struct wai_encoding wai_token_webkdc_proxy_encoding[];
 extern const struct wai_encoding wai_token_webkdc_service_encoding[];
 extern const struct wai_encoding wai_was_token_cache_encoding[];
@@ -194,33 +205,83 @@ struct wai_keyring {
     struct wai_keyring_entry *entry;
 };
 
+/*
+ * Internal state for the WebKDC login process.  This is used to hold
+ * information from a webauth_webkdc_login_request and information that will
+ * be put into a webauth_webkdc_login_response to reduce the number of
+ * parameters passed around internally.
+ */
+struct wai_webkdc_login_state {
+    struct webauth_token_webkdc_service *service;
+    struct webauth_token_request *request;
+
+    /* Arrays of pointers to webauth_token_* structs from the request. */
+    apr_array_header_t *wkproxies;
+    apr_array_header_t *wkfactors;
+    apr_array_header_t *logins;
+
+    /* Additional request data. */
+    const char *client_ip;       /* Host sending the command */
+    const char *remote_ip;       /* Host connecting to the WebLogin server */
+
+    /* Input and output login state for multifactor validation. */
+    const char *login_state_in;
+    const char *login_state_out;
+
+    /* Input and output requested authorization identity. */
+    const char *authz_subject_in;
+    const char *authz_subject_out;
+
+    /* Session keyring created from the session key in the service token. */
+    struct webauth_keyring *session;
+
+    /* True if there was a login token and a successful authentication. */
+    bool did_login;
+
+    /* Merged webkdc-proxy and webkdc-factor tokens created by the login. */
+    struct webauth_token *wkproxy;
+    struct webauth_token *wkfactor;
+
+    /* Output userinfo data for the response. */
+    const char *user_message;
+    const struct webauth_factors *factors_wanted;
+    const struct webauth_factors *factors_configured;
+    time_t password_expires;
+
+    /* Array of weblogin_login structs from userinfo service. */
+    const apr_array_header_t *login_info;
+
+    /* Permitted authorization identities from the identity ACL. */
+    const apr_array_header_t *permitted_authz;
+};
+
 BEGIN_DECLS
 
 /* Default to a hidden visibility for all internal functions. */
 #pragma GCC visibility push(hidden)
 
 /* Allocate a new buffer and initialize its contents. */
-struct buffer *wai_buffer_new(apr_pool_t *)
+struct wai_buffer *wai_buffer_new(apr_pool_t *)
     __attribute__((__nonnull__));
 
 /*
  * Resize a buffer to be at least as large as the provided size.  Invalidates
  * pointers into the buffer.
  */
-void wai_buffer_resize(struct buffer *, size_t);
+void wai_buffer_resize(struct wai_buffer *, size_t);
 
 /* Set the buffer contents, ignoring anything currently there. */
-void wai_buffer_set(struct buffer *, const char *data, size_t length)
+void wai_buffer_set(struct wai_buffer *, const char *data, size_t length)
     __attribute__((__nonnull__));
 
 /* Append data to the buffer. */
-void wai_buffer_append(struct buffer *, const char *data, size_t length)
+void wai_buffer_append(struct wai_buffer *, const char *data, size_t length)
     __attribute__((__nonnull__));
 
 /* Append printf-style data to the buffer. */
-void wai_buffer_append_sprintf(struct buffer *, const char *, ...)
+void wai_buffer_append_sprintf(struct wai_buffer *, const char *, ...)
     __attribute__((__nonnull__, __format__(printf, 2, 3)));
-void wai_buffer_append_vsprintf(struct buffer *, const char *, va_list)
+void wai_buffer_append_vsprintf(struct wai_buffer *, const char *, va_list)
     __attribute__((__nonnull__));
 
 /*
@@ -228,7 +289,7 @@ void wai_buffer_append_vsprintf(struct buffer *, const char *, va_list)
  * the same meaning as start) in offset if found, and returns true if the
  * terminator is found and false otherwise.
  */
-bool wai_buffer_find_string(struct buffer *, const char *, size_t start,
+bool wai_buffer_find_string(struct wai_buffer *, const char *, size_t start,
                             size_t *offset)
     __attribute__((__nonnull__));
 
@@ -268,19 +329,39 @@ int wai_encode_token(struct webauth_context *,
                      const struct webauth_token *, void **, size_t *)
     __attribute__((__nonnull__));
 
+/* Change the status code for the current error, keeping the message. */
+int wai_error_change(struct webauth_context *, int old, int s)
+    __attribute__((__nonnull__));
+
+/* Add context to the current error, whatever it is. */
+void wai_error_context(struct webauth_context *, const char *, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+
+/*
+ * Given a WebAuth status code, convert it to a status code that can be used
+ * in protocol elements such as error tokens and XML.  Most internal errors
+ * will be mapped to WA_PEC_INVALID_REQUEST or WA_PEC_SERVER_FAILURE.
+ *
+ * Note that this cannot convert more general internal error codes, such as
+ * WA_ERR_TOKEN_EXPIRED, to the specific protocol error codes such as
+ * WA_PEC_SERVICE_TOKEN_EXPIRED.  That mapping must be done manually.
+ */
+int wai_error_protocol(struct webauth_context *, int)
+    __attribute__((__nonnull__, __pure__));
+
 /* Set the internal WebAuth error message and error code. */
-void wai_error_set(struct webauth_context *, int err, const char *, ...)
-    __attribute__((__nonnull__, __format__(printf, 3, 4)));
+void wai_error_set(struct webauth_context *, int s, const char *, ...)
+    __attribute__((__nonnull__(1), __format__(printf, 3, 4)));
 
 /* The same, but include the string expansion of an APR error. */
-void wai_error_set_apr(struct webauth_context *, int err, apr_status_t,
+void wai_error_set_apr(struct webauth_context *, int s, apr_status_t,
                        const char *, ...)
-    __attribute__((__nonnull__, __format__(printf, 4, 5)));
+    __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
 
 /* The same, but include the string expansion of an errno. */
-void wai_error_set_system(struct webauth_context *, int err, int syserr,
+void wai_error_set_system(struct webauth_context *, int s, int syserr,
                           const char *, ...)
-    __attribute__((__nonnull__, __format__(printf, 4, 5)));
+    __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
 
 /* Read the contents of a file into memory. */
 int wai_file_read(struct webauth_context *, const char *, void **, size_t *)
@@ -332,6 +413,30 @@ int webauth_hex_decode(char *input, size_t input_len,
     __attribute__((__nonnull__));
 
 /*
+ * Log a message at various possible log levels.  This is controlled by the
+ * configured callback.  If the callback is NULL, the message will be silently
+ * discarded.
+ */
+void wai_log_info(struct webauth_context *, const char *format, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+void wai_log_notice(struct webauth_context *, const char *format, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+void wai_log_trace(struct webauth_context *, const char *format, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+void wai_log_warn(struct webauth_context *, const char *format, ...)
+    __attribute__((__nonnull__, __format__(printf, 2, 3)));
+
+/*
+ * The same, but the message is the result of calling webauth_error_message on
+ * the provided WebAuth status and the level at which to log it is identified
+ * by an enum.  An additional message to log at the start of the log message
+ * can be provided via the printf format, which may be NULL.
+ */
+void wai_log_error(struct webauth_context *, enum webauth_log_level, int,
+                   const char *format, ...)
+    __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
+
+/*
  * Map a token type code to the corresponding encoding rule set and data
  * pointer.  Takes the token struct (which must have the type filled out), and
  * stores a pointer to the encoding rules and a pointer to the correct data
@@ -341,6 +446,49 @@ int webauth_hex_decode(char *input, size_t input_len,
  */
 int wai_token_encoding(struct webauth_context *, const struct webauth_token *,
                        const struct wai_encoding **, const void **)
+    __attribute__((__nonnull__));
+
+/*
+ * Merge an array of webkdc-factor tokens into a single token.  Takes the
+ * context, the array of webkdc-factor tokens, and a place to store the newly
+ * created webkdc-factor token.  Returns a WebAuth error code.
+ */
+int wai_token_merge_webkdc_factor(struct webauth_context *,
+                                  const apr_array_header_t *,
+                                  struct webauth_token **)
+    __attribute__((__nonnull__));
+
+/*
+ * Merge an array of webkdc-proxy tokens into a single token.  Takes the
+ * context, the array of webkdc-proxy tokens, the maximum age in seconds for
+ * tokens to contribute to the session factors, and a place to store the newly
+ * created webkdc-proxy token.  Returns a WebAuth error code.
+ */
+int wai_token_merge_webkdc_proxy(struct webauth_context *,
+                                 apr_array_header_t *,
+                                 unsigned long session_limit,
+                                 struct webauth_token **)
+    __attribute__((__nonnull__(1, 2, 4)));
+
+/*
+ * Merge factors from a webkdc-factor token into a webkdc-proxy token,
+ * returning the result in the last argument.  The webkdc-proxy token is given
+ * first and the webkdc-factor token is given second.  Returns a WebAuth error
+ * code.
+ */
+int wai_token_merge_webkdc_proxy_factor(struct webauth_context *,
+                                        struct webauth_token *wkproxy,
+                                        struct webauth_token *wkfactor,
+                                        struct webauth_token **)
+    __attribute__((__nonnull__(1, 2, 4)));
+
+/*
+ * Log the results of a <requestTokenRequest>.  The int argument is the
+ * WebAuth status of the login.
+ */
+void wai_webkdc_log_login(struct webauth_context *,
+                          const struct wai_webkdc_login_state *, int,
+                          const struct webauth_webkdc_login_response *)
     __attribute__((__nonnull__));
 
 /* Retrieve all of the text inside an XML element and return it. */

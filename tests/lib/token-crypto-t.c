@@ -6,7 +6,7 @@
  * attribute formatting or content.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2012
+ * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -54,7 +54,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_keyring *ring;
     char *keyring;
-    int status;
+    int s;
     void *data, *out, *token;
     size_t length, outlen;
     const char raw_data[] = { ';', ';', 0, ';', 't', '4', 1, 255 };
@@ -69,25 +69,24 @@ main(void)
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read(ctx, keyring, &ring);
-    if (status != WA_ERR_NONE)
-        bail("cannot read %s: %s", keyring,
-             webauth_error_message(ctx, status));
+    s = webauth_keyring_read(ctx, keyring, &ring);
+    if (s != WA_ERR_NONE)
+        bail("cannot read %s: %s", keyring, webauth_error_message(ctx, s));
     test_file_path_free(keyring);
 
     /*
      * Test encrypting and then decrypting data and make sure that the
      * functions are symmetric.
      */
-    status = webauth_token_encrypt(ctx, raw_data, sizeof(raw_data), &data,
-                                   &length, ring);
-    if (status != WA_ERR_NONE)
-        diag("error: %s", webauth_error_message(ctx, status));
-    is_int(0, status, "Token encryption works");
-    status = webauth_token_decrypt(ctx, data, length, &out, &outlen, ring);
-    if (status != WA_ERR_NONE)
-        diag("error: %s", webauth_error_message(ctx, status));
-    is_int(0, status, "Token decryption works");
+    s = webauth_token_encrypt(ctx, raw_data, sizeof(raw_data), &data, &length,
+                              ring);
+    if (s != WA_ERR_NONE)
+        diag("error: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Token encryption works");
+    s = webauth_token_decrypt(ctx, data, length, &out, &outlen, ring);
+    if (s != WA_ERR_NONE)
+        diag("error: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Token decryption works");
     is_int(sizeof(raw_data), outlen, "...and output length is correct");
     if (out == NULL)
         ok(false, "...and output data is correct");
@@ -96,22 +95,22 @@ main(void)
            "...and output data is correct");
 
     /* Test encrypting and decrypting the empty token. */
-    status = webauth_token_encrypt(ctx, "", 0, &data, &length, ring);
-    if (status != WA_ERR_NONE)
-        diag("error: %s", webauth_error_message(ctx, status));
-    is_int(0, status, "Encryption of empty token works");
-    status = webauth_token_decrypt(ctx, data, length, &out, &outlen, ring);
-    if (status != WA_ERR_NONE)
-        diag("error: %s", webauth_error_message(ctx, status));
-    is_int(0, status, "Decryption of empty token works");
+    s = webauth_token_encrypt(ctx, "", 0, &data, &length, ring);
+    if (s != WA_ERR_NONE)
+        diag("error: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Encryption of empty token works");
+    s = webauth_token_decrypt(ctx, data, length, &out, &outlen, ring);
+    if (s != WA_ERR_NONE)
+        diag("error: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Decryption of empty token works");
     is_int(0, outlen, "...and output length is correct");
 
     /* Load some known data and decrypt it to verify the results. */
     read_token("data/tokens/app-raw", &token, &length);
-    status = webauth_token_decrypt(ctx, token, length, &out, &outlen, ring);
-    if (status != WA_ERR_NONE)
-        diag("error: %s", webauth_error_message(ctx, status));
-    is_int(0, status, "Decryption of app-raw works");
+    s = webauth_token_decrypt(ctx, token, length, &out, &outlen, ring);
+    if (s != WA_ERR_NONE)
+        diag("error: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Decryption of app-raw works");
     is_int(sizeof(app_raw) - 1, outlen, "...and output length is correct");
     ok(memcmp(app_raw, out, sizeof(app_raw) - 1) == 0,
        "...and output data is correct");

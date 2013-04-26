@@ -3,7 +3,7 @@
 # Run this shell script to bootstrap as necessary after a fresh checkout.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2004, 2006, 2009, 2012
+# Copyright 2004, 2006, 2009, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -19,20 +19,20 @@ pod2man --release="$version" --center="WebAuth" tools/wa_keyring.pod \
     > tools/wa_keyring.1
 
 # Generate encoding rules for WebAuth structs.
-lib/encoding-rules include/webauth/was.h \
-    webauth_was_token_cache \
+lib/encoding-rules include/webauth/was.h        \
+    webauth_was_token_cache                     \
     > lib/rules-cache.c
-lib/encoding-rules lib/internal.h \
-    wai_keyring_entry wai_keyring \
+lib/encoding-rules lib/internal.h               \
+    wai_keyring_entry wai_keyring               \
     > lib/rules-keyring.c
-lib/encoding-rules lib/internal.h \
-    wai_krb5_cred_address wai_krb5_cred_authdata wai_krb5_cred \
+lib/encoding-rules lib/internal.h                               \
+    wai_krb5_cred_address wai_krb5_cred_authdata wai_krb5_cred  \
     > lib/rules-krb5.c
-lib/encoding-rules include/webauth/tokens.h \
-    webauth_token_app webauth_token_cred webauth_token_error \
-    webauth_token_id webauth_token_login webauth_token_proxy \
-    webauth_token_request webauth_token_webkdc_proxy \
-    webauth_token_webkdc_service \
+lib/encoding-rules include/webauth/tokens.h                     \
+    webauth_token_app webauth_token_cred webauth_token_error    \
+    webauth_token_id webauth_token_login webauth_token_proxy    \
+    webauth_token_request webauth_token_webkdc_factor           \
+    webauth_token_webkdc_proxy webauth_token_webkdc_service     \
     > lib/rules-tokens.c
 
 # Generate protocol documentation.

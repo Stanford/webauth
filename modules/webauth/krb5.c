@@ -24,6 +24,8 @@
 #include <webauth/krb5.h>
 #include <webauth/tokens.h>
 
+APLOG_USE_MODULE(webauth);
+
 
 static void
 log_webauth_error(struct webauth_context *ctx, server_rec *s, int status,

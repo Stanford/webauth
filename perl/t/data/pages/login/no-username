@@ -1,0 +1,17 @@
+error 1
+err_missinginput 1
+err_username 1
+err_password
+err_loginfailed
+err_forced
+err_rejected
+RT \S+
+ST \S+
+LC
+username
+login_cancel
+cancel_url
+show_remuser
+remuser_url
+remuser_failed
+script_name /login

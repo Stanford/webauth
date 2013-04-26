@@ -9,7 +9,7 @@
  * decode function to convert between those two representations.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,52 +43,6 @@ struct webauth_context;
 struct webauth_keyring;
 
 /*
- * Protocol error codes (PEC) for error tokens and XML messages.  These
- * numbers must not change, as they are part of the protocol
- */
-enum webauth_error_code {
-    WA_PEC_SERVICE_TOKEN_EXPIRED       =  1,
-    WA_PEC_SERVICE_TOKEN_INVALID       =  2, /* Can't decrypt / bad format */
-    WA_PEC_PROXY_TOKEN_EXPIRED         =  3,
-    WA_PEC_PROXY_TOKEN_INVALID         =  4, /* Can't decrypt / bad format */
-    WA_PEC_INVALID_REQUEST             =  5, /* Missing/incorrect data, etc */
-    WA_PEC_UNAUTHORIZED                =  6, /* Access denied */
-    WA_PEC_SERVER_FAILURE              =  7, /* Server failure, try again */
-    WA_PEC_REQUEST_TOKEN_STALE         =  8,
-    WA_PEC_REQUEST_TOKEN_INVALID       =  9, /* Can't decrypt / bad format */
-    WA_PEC_GET_CRED_FAILURE            = 10, /* Can't get credential */
-    WA_PEC_REQUESTER_KRB5_CRED_INVALID = 11, /* <requesterCredential> was bad */
-    WA_PEC_LOGIN_TOKEN_STALE           = 12,
-    WA_PEC_LOGIN_TOKEN_INVALID         = 13, /* Can't decrypt / bad format */
-    WA_PEC_LOGIN_FAILED                = 14, /* Username/password failed */
-    WA_PEC_PROXY_TOKEN_REQUIRED        = 15, /* Missing required proxy-token */
-    WA_PEC_LOGIN_CANCELED              = 16, /* User cancelled login */
-    WA_PEC_LOGIN_FORCED                = 17, /* User must re-login */
-    WA_PEC_USER_REJECTED               = 18, /* Principal not permitted */
-    WA_PEC_CREDS_EXPIRED               = 19, /* User password expired */
-    WA_PEC_MULTIFACTOR_REQUIRED        = 20, /* Multifactor login required */
-    WA_PEC_MULTIFACTOR_UNAVAILABLE     = 21, /* MF required, not available */
-    WA_PEC_LOGIN_REJECTED              = 22, /* User may not log on now */
-    WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
-    WA_PEC_AUTH_REJECTED               = 24, /* Auth to this site rejected */
-    WA_PEC_AUTH_REPLAY                 = 25, /* Auth was a replay */
-    WA_PEC_AUTH_LOCKOUT                = 26  /* Too many failed attempts */
-};
-
-/*
- * Stores a set of factors that we want to perform operations on.  This is a
- * list of authentication methods (like "p", "o1", etc.) plus flags for the
- * presence of "derived" factors, such as "m" (which is present if the user
- * has used two separate factors) or "o" (which is present if the user has
- * used any of the OTP factors).
- */
-struct webauth_factors {
-    int multifactor;                    /* "m" (two factors in use) */
-    int random;                         /* "rm" (random multifactor) */
-    WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
-};
-
-/*
  * The types of tokens specified in the protocol, used in the type field of
  * the webauth_token struct.  WA_TOKEN_UNKNOWN will never be returned in that
  * struct but is used internally for errors.  WA_TOKEN_ANY is used as the
@@ -104,6 +58,7 @@ enum webauth_token_type {
     WA_TOKEN_LOGIN,
     WA_TOKEN_PROXY,
     WA_TOKEN_REQUEST,
+    WA_TOKEN_WEBKDC_FACTOR,
     WA_TOKEN_WEBKDC_PROXY,
     WA_TOKEN_WEBKDC_SERVICE,
     WA_TOKEN_ANY = 255
@@ -187,6 +142,7 @@ struct webauth_token_login {
     const char *username;               /* encode: u */
     const char *password;               /* encode: p, optional */
     const char *otp;                    /* encode: otp, optional */
+    const char *otp_type;               /* encode: ott, optional */
     time_t creation;                    /* encode: ct, creation */
 };
 
@@ -231,6 +187,21 @@ struct webauth_token_request {
     unsigned long loa;                  /* encode: loa, optional */
     const char *command;                /* encode: cmd, optional */
     time_t creation;                    /* encode: ct, creation */
+};
+
+/*
+ * WebKDC facter token, which adds additional factors that will be combined
+ * with valid login or webkdc-proxy tokens but which cannot, by themselves,
+ * authenticate the user.  This token is stored as a separate cookie in the
+ * user's browser, possibly with a longer lifespan than the single sign-on
+ * credentials, and may also be returned by the user information service for
+ * certain types of authentications.
+ */
+struct webauth_token_webkdc_factor {
+    const char *subject;                /* encode: s */
+    const char *factors;                /* encode: ia */
+    time_t creation;                    /* encode: ct, creation */
+    time_t expiration;                  /* encode: et */
 };
 
 /*
@@ -293,41 +264,13 @@ struct webauth_token {
         struct webauth_token_login login;
         struct webauth_token_proxy proxy;
         struct webauth_token_request request;
+        struct webauth_token_webkdc_factor webkdc_factor;
         struct webauth_token_webkdc_proxy webkdc_proxy;
         struct webauth_token_webkdc_service webkdc_service;
     } token;
 };
 
-
 BEGIN_DECLS
-
-/*
- * Given a comma-separated string of factors, parse it into a webauth_factors
- * struct.  If the value of the last argument is not NULL, add the factors to
- * the existing webauth_factors struct rather than allocating a new one.  The
- * string may be NULL, in which case the resulting factors struct will be
- * empty.  Returns a status code.
- */
-int webauth_factors_parse(struct webauth_context *, const char *,
-                          struct webauth_factors **)
-    __attribute__((__nonnull__(1, 3)));
-
-/*
- * Given a webauth_factors struct, return its value as a comma-separated
- * string suitable for inclusion in a token.  The new string is
- * pool-allocated.  If the webauth_factors struct is NULL, returns NULL.
- */
-char *webauth_factors_string(struct webauth_context *,
-                             struct webauth_factors *)
-    __attribute__((__nonnull__(1)));
-
-/*
- * Given two sets of factors (struct webauth_factors), return true if the
- * first set is satisfied by the second set, false otherwise.
- */
-int webauth_factors_subset(struct webauth_context *, struct webauth_factors *,
-                           struct webauth_factors *)
-    __attribute__((__nonnull__));
 
 /*
  * Map a token code to the string name used for the toke type attribute, or

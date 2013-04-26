@@ -1,7 +1,7 @@
 # An object encapsulating a request to a WebKDC.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2005, 2009, 2012
+# Copyright 2002, 2003, 2005, 2009, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,7 +32,7 @@ use warnings;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.02';
+    $VERSION = '1.03';
 }
 
 # Create a new, empty request.
@@ -57,12 +57,15 @@ sub authz_subject  { my $r = shift; $r->_attr ('authz_subject',  @_) }
 sub local_ip_addr  { my $r = shift; $r->_attr ('local_ip_addr',  @_) }
 sub local_ip_port  { my $r = shift; $r->_attr ('local_ip_port',  @_) }
 sub otp            { my $r = shift; $r->_attr ('otp',            @_) }
+sub otp_type       { my $r = shift; $r->_attr ('otp_type',       @_) }
+sub login_state    { my $r = shift; $r->_attr ('login_state',    @_) }
 sub pass           { my $r = shift; $r->_attr ('pass',           @_) }
 sub remote_ip_addr { my $r = shift; $r->_attr ('remote_ip_addr', @_) }
 sub remote_ip_port { my $r = shift; $r->_attr ('remote_ip_port', @_) }
 sub remote_user    { my $r = shift; $r->_attr ('remote_user',    @_) }
 sub request_token  { my $r = shift; $r->_attr ('request_token',  @_) }
 sub service_token  { my $r = shift; $r->_attr ('service_token',  @_) }
+sub factor_token   { my $r = shift; $r->_attr ('factor_token',   @_) }
 sub user           { my $r = shift; $r->_attr ('user',           @_) }
 
 # Set or retrieve a proxy cookie of a particular type.  If given two
@@ -170,6 +173,22 @@ the local interface and port to which that client connected.
 Retrieve or set the one-time password sent by the user.  Either this or
 pass should be set, but not both.
 
+=item otp_type ([CODE])
+
+Retrieve or set the one-time password type sent by the user.  This should
+be a WebAuth factor code corresponding to the type of one-time password
+that this login token represents.  It may be left unset if the caller
+doesn't know.
+
+=item login_state ([STATE])
+
+Get or set the login state of the request.  This field can contain any
+data the implementer chooses to place and will be passed, by the WebKDC,
+to the user information service as part of an OTP validation.  It is
+usually used in conjunction with multifactor authentication to provide
+some additional data about the type of multifactor being used.  It may be
+left unset if unneeded.
+
 =item pass ([PASSWORD])
 
 Retrieve or set the password sent by the user.  Either this or otp should
@@ -216,6 +235,12 @@ WebKDC::WebRequest.
 Retrieve or set the service token provided by the WebAuth application
 server, which contains the key used to decrypt the request token.  This
 must be set to create a valid WebKDC::WebRequest.
+
+=item factor_token ([TOKEN])
+
+Retrieve or set the factor token, which contains a token given to the
+user's device in an earlier login to denote a successful multifactor
+login with that device.
 
 =item user ([USER])
 

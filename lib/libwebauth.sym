@@ -2,9 +2,14 @@ webauth_context_free
 webauth_context_init
 webauth_context_init_apr
 webauth_error_message
+webauth_factors_array
+webauth_factors_contains
+webauth_factors_new
 webauth_factors_parse
+webauth_factors_satisfies
 webauth_factors_string
-webauth_factors_subset
+webauth_factors_subtract
+webauth_factors_union
 webauth_key_copy
 webauth_key_create
 webauth_keyring_add
@@ -33,6 +38,7 @@ webauth_krb5_new
 webauth_krb5_prepare_via_cred
 webauth_krb5_read_auth
 webauth_krb5_read_auth_data
+webauth_log_callback
 webauth_parse_interval
 webauth_token_decode
 webauth_token_decode_raw

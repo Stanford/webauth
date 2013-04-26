@@ -5,7 +5,7 @@
  * data, which means that it can run without a Kerberos configuration.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2012
+ * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -216,7 +216,7 @@ import_cred(struct webauth_context *ctx, const char *file)
     FILE *input;
     char buffer[BUFSIZ];
     size_t size;
-    int status;
+    int s;
     struct webauth_krb5 *kc;
     krb5_context krb5_ctx;
     krb5_ccache cc;
@@ -240,11 +240,11 @@ import_cred(struct webauth_context *ctx, const char *file)
     /* Import the credential and create a ticket cache. */
     tmpdir = test_tmpdir();
     basprintf(&cache, "%s/krb5cc_import", tmpdir);
-    status = webauth_krb5_new(ctx, &kc);
-    CHECK_BAIL(ctx, status);
+    s = webauth_krb5_new(ctx, &kc);
+    CHECK_BAIL(ctx, s);
     basprintf(&message, "import %s cred", file);
-    status = webauth_krb5_import_cred(ctx, kc, buffer, size, cache);
-    CHECK(ctx, status, message);
+    s = webauth_krb5_import_cred(ctx, kc, buffer, size, cache);
+    CHECK(ctx, s, message);
     free(message);
 
     /* Create a Kerberos context and pull the credential from the cache. */

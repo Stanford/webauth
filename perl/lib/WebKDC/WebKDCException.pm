@@ -325,8 +325,12 @@ will be one of the WK_ERR_* codes.
 =item verbose_message ()
 
 This method returns a verbose error message, which consists of the status
-code, message, and any error code.  The verbose_message method is also
-called if the exception is used as a string.
+code, message, and any error code.
+
+=item to_string ()
+
+This method is called if the exception is used as a string.  It is a
+wrapper around the verbose_message method.
 
 =back
 

@@ -5,7 +5,7 @@
 # contains the bootstrap and export code and the documentation.
 #
 # Written by Roland Schemers
-# Copyright 2003, 2005, 2008, 2009, 2011, 2012
+# Copyright 2003, 2005, 2008, 2009, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -40,76 +40,76 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.06';
+    $VERSION = '3.07';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 BEGIN {
-    my @constants = qw(WA_ERR_NONE
-                       WA_ERR_NO_ROOM
-                       WA_ERR_CORRUPT
-                       WA_ERR_NO_MEM
-                       WA_ERR_BAD_HMAC
-                       WA_ERR_RAND_FAILURE
-                       WA_ERR_BAD_KEY
-                       WA_ERR_FILE_OPENWRITE
-                       WA_ERR_FILE_WRITE
-                       WA_ERR_FILE_OPENREAD
-                       WA_ERR_FILE_READ
-                       WA_ERR_FILE_VERSION
-                       WA_ERR_NOT_FOUND
-                       WA_ERR_KRB5
-                       WA_ERR_INVALID_CONTEXT
-                       WA_ERR_LOGIN_FAILED
-                       WA_ERR_TOKEN_EXPIRED
-                       WA_ERR_TOKEN_STALE
-                       WA_ERR_CREDS_EXPIRED
-                       WA_ERR_USER_REJECTED
-                       WA_ERR_APR
-                       WA_ERR_UNIMPLEMENTED
-                       WA_ERR_INVALID
-                       WA_ERR_REMOTE_FAILURE
-                       WA_ERR_FILE_NOT_FOUND
+    my @constants = qw(
+        WA_PEC_SERVICE_TOKEN_EXPIRED
+        WA_PEC_SERVICE_TOKEN_INVALID
+        WA_PEC_PROXY_TOKEN_EXPIRED
+        WA_PEC_PROXY_TOKEN_INVALID
+        WA_PEC_INVALID_REQUEST
+        WA_PEC_UNAUTHORIZED
+        WA_PEC_SERVER_FAILURE
+        WA_PEC_REQUEST_TOKEN_STALE
+        WA_PEC_REQUEST_TOKEN_INVALID
+        WA_PEC_GET_CRED_FAILURE
+        WA_PEC_REQUESTER_KRB5_CRED_INVALID
+        WA_PEC_LOGIN_TOKEN_STALE
+        WA_PEC_LOGIN_TOKEN_INVALID
+        WA_PEC_LOGIN_FAILED
+        WA_PEC_PROXY_TOKEN_REQUIRED
+        WA_PEC_LOGIN_CANCELED
+        WA_PEC_LOGIN_FORCED
+        WA_PEC_USER_REJECTED
+        WA_PEC_CREDS_EXPIRED
+        WA_PEC_MULTIFACTOR_REQUIRED
+        WA_PEC_MULTIFACTOR_UNAVAILABLE
+        WA_PEC_LOGIN_REJECTED
+        WA_PEC_LOA_UNAVAILABLE
+        WA_PEC_AUTH_REJECTED
+        WA_PEC_AUTH_REPLAY
+        WA_PEC_AUTH_LOCKOUT
 
-                       WA_PEC_SERVICE_TOKEN_EXPIRED
-                       WA_PEC_SERVICE_TOKEN_INVALID
-                       WA_PEC_PROXY_TOKEN_EXPIRED
-                       WA_PEC_PROXY_TOKEN_INVALID
-                       WA_PEC_INVALID_REQUEST
-                       WA_PEC_UNAUTHORIZED
-                       WA_PEC_SERVER_FAILURE
-                       WA_PEC_REQUEST_TOKEN_STALE
-                       WA_PEC_REQUEST_TOKEN_INVALID
-                       WA_PEC_GET_CRED_FAILURE
-                       WA_PEC_REQUESTER_KRB5_CRED_INVALID
-                       WA_PEC_LOGIN_TOKEN_STALE
-                       WA_PEC_LOGIN_TOKEN_INVALID
-                       WA_PEC_LOGIN_FAILED
-                       WA_PEC_PROXY_TOKEN_REQUIRED
-                       WA_PEC_LOGIN_CANCELED
-                       WA_PEC_LOGIN_FORCED
-                       WA_PEC_USER_REJECTED
-                       WA_PEC_CREDS_EXPIRED
-                       WA_PEC_MULTIFACTOR_REQUIRED
-                       WA_PEC_MULTIFACTOR_UNAVAILABLE
-                       WA_PEC_LOGIN_REJECTED
-                       WA_PEC_LOA_UNAVAILABLE
-                       WA_PEC_AUTH_REJECTED
-                       WA_PEC_AUTH_REPLAY
-                       WA_PEC_AUTH_LOCKOUT
+        WA_ERR_APR
+        WA_ERR_BAD_HMAC
+        WA_ERR_BAD_KEY
+        WA_ERR_CORRUPT
+        WA_ERR_FILE_NOT_FOUND
+        WA_ERR_FILE_OPENREAD
+        WA_ERR_FILE_OPENWRITE
+        WA_ERR_FILE_READ
+        WA_ERR_FILE_VERSION
+        WA_ERR_FILE_WRITE
+        WA_ERR_INVALID
+        WA_ERR_INVALID_CONTEXT
+        WA_ERR_KRB5
+        WA_ERR_NONE
+        WA_ERR_NOT_FOUND
+        WA_ERR_NO_MEM
+        WA_ERR_NO_ROOM
+        WA_ERR_RAND_FAILURE
+        WA_ERR_REMOTE_FAILURE
+        WA_ERR_TOKEN_EXPIRED
+        WA_ERR_TOKEN_REJECTED
+        WA_ERR_TOKEN_STALE
+        WA_ERR_UNIMPLEMENTED
 
-                       WA_KEY_AES
+        WA_KEY_AES
 
-                       WA_AES_128
-                       WA_AES_192
-                       WA_AES_256
+        WA_AES_128
+        WA_AES_192
+        WA_AES_256
 
-                       WA_KEY_DECRYPT
-                       WA_KEY_ENCRYPT
+        WA_KEY_DECRYPT
+        WA_KEY_ENCRYPT
 
-                       WA_KRB5_CANON_NONE
-                       WA_KRB5_CANON_LOCAL
-                       WA_KRB5_CANON_STRIP);
+        WA_KRB5_CANON_NONE
+        WA_KRB5_CANON_LOCAL
+        WA_KRB5_CANON_STRIP
+    );
 
     %EXPORT_TAGS = ('const' => [ @constants ]);
     @EXPORT_OK = (@{ $EXPORT_TAGS{'const'} });
@@ -328,36 +328,9 @@ normally be used instead.
 
 =head1 CONSTANTS
 
-The following API constants for the WebAuth library are available.
-WebAuth error codes used in WebAuth::Exception for API call failures.
-
-    WA_ERR_NONE
-    WA_ERR_NO_ROOM
-    WA_ERR_CORRUPT
-    WA_ERR_NO_MEM
-    WA_ERR_BAD_HMAC
-    WA_ERR_RAND_FAILURE
-    WA_ERR_BAD_KEY
-    WA_ERR_FILE_OPENWRITE
-    WA_ERR_FILE_WRITE
-    WA_ERR_FILE_OPENREAD
-    WA_ERR_FILE_READ
-    WA_ERR_FILE_VERSION
-    WA_ERR_NOT_FOUND
-    WA_ERR_KRB5
-    WA_ERR_INVALID_CONTEXT
-    WA_ERR_LOGIN_FAILED
-    WA_ERR_TOKEN_EXPIRED
-    WA_ERR_TOKEN_STALE
-    WA_ERR_CREDS_EXPIRED
-    WA_ERR_USER_REJECTED
-    WA_ERR_APR
-    WA_ERR_UNIMPLEMENTED
-    WA_ERR_INVALID
-    WA_ERR_REMOTE_FAILURE
-    WA_ERR_FILE_NOT_FOUND
-
-WebAuth protocol error codes used for login errors:
+This module also provides a variety of API constants for the WebAuth
+library.  WebAuth API status codes used both for API calls and for login
+errors and error tokens:
 
     WA_PEC_SERVICE_TOKEN_EXPIRED
     WA_PEC_SERVICE_TOKEN_INVALID
@@ -385,6 +358,32 @@ WebAuth protocol error codes used for login errors:
     WA_PEC_AUTH_REJECTED
     WA_PEC_AUTH_REPLAY
     WA_PEC_AUTH_LOCKOUT
+
+Status codes used only for API calls:
+
+    WA_ERR_NONE
+    WA_ERR_NO_ROOM
+    WA_ERR_CORRUPT
+    WA_ERR_NO_MEM
+    WA_ERR_BAD_HMAC
+    WA_ERR_RAND_FAILURE
+    WA_ERR_BAD_KEY
+    WA_ERR_FILE_OPENWRITE
+    WA_ERR_FILE_WRITE
+    WA_ERR_FILE_OPENREAD
+    WA_ERR_FILE_READ
+    WA_ERR_FILE_VERSION
+    WA_ERR_NOT_FOUND
+    WA_ERR_KRB5
+    WA_ERR_INVALID_CONTEXT
+    WA_ERR_TOKEN_EXPIRED
+    WA_ERR_TOKEN_STALE
+    WA_ERR_APR
+    WA_ERR_UNIMPLEMENTED
+    WA_ERR_INVALID
+    WA_ERR_REMOTE_FAILURE
+    WA_ERR_FILE_NOT_FOUND
+    WA_ERR_TOKEN_REJECTED
 
 Key types for key_create() and C<< WebAuth::Key->new >>:
 

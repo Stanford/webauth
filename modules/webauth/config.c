@@ -25,6 +25,8 @@
 #include <webauth/basic.h>
 #include <webauth/util.h>
 
+APLOG_USE_MODULE(webauth);
+
 /*
  * For each directive, we have the directive name (CD_), a usage string (CU_),
  * and an enum constant (E_) used to identify the directive in the parsing

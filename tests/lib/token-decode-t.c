@@ -2,7 +2,7 @@
  * Test token decoding.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -12,6 +12,7 @@
 #include <portable/system.h>
 
 #include <tests/tap/basic.h>
+#include <tests/tap/string.h>
 #include <util/xmalloc.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
@@ -56,19 +57,18 @@ check_decode(struct webauth_context *ctx, enum webauth_token_type type,
              const char *name, const struct webauth_keyring *ring, int count)
 {
     char *path, *token;
-    int status;
+    int s;
     struct webauth_token *result;
 
-    if (asprintf(&path, "data/tokens/%s", name) < 0)
-        sysbail("cannot allocate memory");
+    basprintf(&path, "data/tokens/%s", name);
     token = read_token(path);
     free(path);
-    status = webauth_token_decode(ctx, type, token, ring, &result);
+    s = webauth_token_decode(ctx, type, token, ring, &result);
     free(token);
-    is_int(WA_ERR_NONE, status, "%secode %s",
+    is_int(WA_ERR_NONE, s, "%secode %s",
            (type == WA_TOKEN_ANY) ? "Generic d" : "D", name);
     if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        is_string("", webauth_error_message(ctx, s), "Decoding failed");
         ok_block(count, 0, "Decoding failed");
     } else {
         ok(result != NULL, "...succeeded");
@@ -91,11 +91,10 @@ check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
     FILE *token;
     char buffer[4096];
     size_t len;
-    int status;
+    int s;
     struct webauth_token *result;
 
-    if (asprintf(&filename, "data/tokens/%s", name) < 0)
-        sysbail("cannot allocate memory");
+    basprintf(&filename, "data/tokens/%s", name);
     path = test_file_path(filename);
     if (path == NULL)
         bail("cannot find test file %s", filename);
@@ -108,11 +107,11 @@ check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
         sysbail("cannot read %s", path);
     test_file_path_free(path);
     fclose(token);
-    status = webauth_token_decode_raw(ctx, type, buffer, len, ring, &result);
-    is_int(WA_ERR_NONE, status, "%secode %s",
+    s = webauth_token_decode_raw(ctx, type, buffer, len, ring, &result);
+    is_int(WA_ERR_NONE, s, "%secode %s",
            (type == WA_TOKEN_ANY) ? "Generic d" : "D", name);
     if (result == NULL) {
-        is_string("", webauth_error_message(ctx, status), "Decoding failed");
+        is_string("", webauth_error_message(ctx, s), "Decoding failed");
         ok_block(count, 0, "Decoding failed");
     } else {
         ok(result != NULL, "...succeeded");
@@ -129,21 +128,26 @@ check_decode_raw(struct webauth_context *ctx, enum webauth_token_type type,
 static void
 check_error(struct webauth_context *ctx, enum webauth_token_type type,
             const char *name, const struct webauth_keyring *ring, int code,
-            const char *message)
+            const char *message, const char *type_string)
 {
     int s;
-    char *path, *token, *err;
+    char *path, *token, *err, *tmp;
     struct webauth_token *result;
 
-    if (asprintf(&path, "data/tokens/%s", name) < 0)
-        sysbail("cannot allocate memory");
+    basprintf(&path, "data/tokens/%s", name);
     token = read_token(path);
     free(path);
     s = webauth_token_decode(ctx, type, token, ring, &result);
     is_int(code, s, "Fail to decode %s", name);
-    if (asprintf(&err, "%s (%s)", webauth_error_message(NULL, code),
-                 message) < 0)
-        sysbail("cannot allocate memory");
+    if (message == NULL)
+        tmp = bstrdup(webauth_error_message(NULL, code));
+    else
+        basprintf(&tmp, "%s (%s)", webauth_error_message(NULL, code), message);
+    if (type_string == NULL)
+        basprintf(&err, "%s while decoding token", tmp);
+    else
+        basprintf(&err, "%s while decoding %s token", tmp, type_string);
+    free(tmp);
     is_string(err, webauth_error_message(ctx, s), "...with error");
     free(err);
     free(token);
@@ -156,7 +160,7 @@ main(void)
     struct webauth_keyring *ring, *bad_ring;
     struct webauth_key *key;
     char *keyring;
-    int status;
+    int s;
     struct webauth_context *ctx;
     struct webauth_token *result;
     struct webauth_token_app *app;
@@ -166,6 +170,7 @@ main(void)
     struct webauth_token_login *login;
     struct webauth_token_proxy *proxy;
     struct webauth_token_request *req;
+    struct webauth_token_webkdc_factor *wkfactor;
     struct webauth_token_webkdc_proxy *wkproxy;
     struct webauth_token_webkdc_service *service;
 
@@ -180,10 +185,9 @@ main(void)
      * that's stored in that directory.  So start by loading that keyring.
      */
     keyring = test_file_path("data/keyring");
-    status = webauth_keyring_read(ctx, keyring, &ring);
-    if (status != WA_ERR_NONE)
-        bail("cannot read %s: %s", keyring,
-             webauth_error_message(ctx, status));
+    s = webauth_keyring_read(ctx, keyring, &ring);
+    if (s != WA_ERR_NONE)
+        bail("cannot read %s: %s", keyring, webauth_error_message(ctx, s));
     test_file_path_free(keyring);
 
     /*
@@ -251,26 +255,26 @@ main(void)
 
     /* Test decoding error cases for app tokens. */
     check_error(ctx, WA_TOKEN_APP, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
-                "HMAC check failed while decrypting token");
+                NULL, "app");
     check_error(ctx, WA_TOKEN_APP, "app-bad-session", ring, WA_ERR_CORRUPT,
-                "subject not valid with session key in app token");
+                "subject not valid with session key", "app");
     check_error(ctx, WA_TOKEN_APP, "app-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "expired at 1308871632");
+                "expired at 1308871632", "app");
     check_error(ctx, WA_TOKEN_APP, "app-missing", ring, WA_ERR_CORRUPT,
-                "missing subject in app token");
+                "missing subject", "app");
     check_error(ctx, WA_TOKEN_APP, "cred-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type cred, expected app");
+                "wrong token type cred", "app");
 
     /*
      * Create a different keyring and test decoding a token using a keyring
      * that does not contain a usable key.
      */
-    status = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
+    s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_128, NULL, &key);
     if (key == NULL)
-        bail("cannot create key: %s", webauth_error_message(ctx, status));
+        bail("cannot create key: %s", webauth_error_message(ctx, s));
     bad_ring = webauth_keyring_from_key(ctx, key);
-    check_error(ctx, WA_TOKEN_APP, "app-ok", bad_ring, WA_ERR_BAD_HMAC,
-                "HMAC check failed while decrypting token");
+    check_error(ctx, WA_TOKEN_APP, "app-ok", bad_ring, WA_ERR_BAD_HMAC, NULL,
+                "app");
 
     /* Test decoding of a credential token. */
     result = check_decode(ctx, WA_TOKEN_CRED, "cred-ok", ring, 7);
@@ -288,13 +292,13 @@ main(void)
 
     /* Test decoding error cases for cred tokens. */
     check_error(ctx, WA_TOKEN_CRED, "cred-expired", ring,
-                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632", "cred");
     check_error(ctx, WA_TOKEN_CRED, "cred-missing", ring, WA_ERR_CORRUPT,
-                "decoding subject");
+                "decoding subject", "cred");
     check_error(ctx, WA_TOKEN_CRED, "cred-type", ring, WA_ERR_CORRUPT,
-                "unknown credential type foo in cred token");
+                "unknown credential type foo", "cred");
     check_error(ctx, WA_TOKEN_CRED, "error-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type error, expected cred");
+                "wrong token type error", "cred");
 
     /* Test decoding of an error token. */
     result = check_decode(ctx, WA_TOKEN_ERROR, "error-ok", ring, 3);
@@ -307,9 +311,9 @@ main(void)
 
     /* Test decoding error cases for error tokens. */
     check_error(ctx, WA_TOKEN_ERROR, "error-code", ring, WA_ERR_CORRUPT,
-                "invalid encoded number");
+                "invalid encoded number", "error");
     check_error(ctx, WA_TOKEN_ERROR, "id-krb5", ring, WA_ERR_CORRUPT,
-                "wrong token type id, expected error");
+                "wrong token type id", "error");
 
     /* Test decoding of a id tokens.  There are several variants. */
     result = check_decode(ctx, WA_TOKEN_ID, "id-webkdc", ring, 9);
@@ -387,11 +391,11 @@ main(void)
 
     /* Test decoding error cases for id tokens. */
     check_error(ctx, WA_TOKEN_ID, "id-expired", ring, WA_ERR_TOKEN_EXPIRED,
-                "expired at 1308871632");
+                "expired at 1308871632", "id");
     check_error(ctx, WA_TOKEN_ID, "id-type", ring, WA_ERR_CORRUPT,
-                "unknown auth type foo in id token");
+                "unknown auth type foo", "id");
     check_error(ctx, WA_TOKEN_ID, "login-pass", ring, WA_ERR_CORRUPT,
-                "wrong token type login, expected id");
+                "wrong token type login", "id");
 
     /* Test decoding of login tokens. */
     result = check_decode(ctx, WA_TOKEN_LOGIN, "login-pass", ring, 4);
@@ -408,18 +412,30 @@ main(void)
         is_string("testuser", login->username, "...username");
         is_string(NULL, login->password, "...password");
         is_string("489147", login->otp, "...otp");
+        is_string("o1", login->otp_type, "...otp type");
+        is_int(1308777900, login->creation, "...creation");
+    }
+    result = check_decode(ctx, WA_TOKEN_LOGIN, "login-otp-minimal", ring, 4);
+    if (result != NULL) {
+        login = &result->token.login;
+        is_string("testuser", login->username, "...username");
+        is_string(NULL, login->password, "...password");
+        is_string("489147", login->otp, "...otp");
+        is_string(NULL, login->otp_type, "...otp type");
         is_int(1308777900, login->creation, "...creation");
     }
 
     /* Test decoding error cases for login tokens. */
     check_error(ctx, WA_TOKEN_LOGIN, "login-both", ring, WA_ERR_CORRUPT,
-                "both password and otp set in login token");
+                "both password and otp set", "login");
     check_error(ctx, WA_TOKEN_LOGIN, "login-missing", ring, WA_ERR_CORRUPT,
-                "decoding creation");
+                "decoding creation", "login");
     check_error(ctx, WA_TOKEN_LOGIN, "login-neither", ring, WA_ERR_CORRUPT,
-                "either password or otp required in login token");
+                "either password or otp required", "login");
+    check_error(ctx, WA_TOKEN_LOGIN, "login-otp-type", ring, WA_ERR_CORRUPT,
+                "otp_type not valid with password", "login");
     check_error(ctx, WA_TOKEN_LOGIN, "proxy-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type proxy, expected login");
+                "wrong token type proxy", "login");
 
     /* Test decoding of a proxy token. */
     result = check_decode(ctx, WA_TOKEN_PROXY, "proxy-ok", ring, 9);
@@ -455,13 +471,13 @@ main(void)
 
     /* Test decoding error cases for proxy tokens. */
     check_error(ctx, WA_TOKEN_PROXY, "proxy-expired", ring,
-                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632", "proxy");
     check_error(ctx, WA_TOKEN_PROXY, "proxy-missing", ring, WA_ERR_CORRUPT,
-                "decoding subject");
+                "decoding subject", "proxy");
     check_error(ctx, WA_TOKEN_PROXY, "proxy-type", ring, WA_ERR_CORRUPT,
-                "unknown proxy type foo in proxy token");
+                "unknown proxy type foo", "proxy");
     check_error(ctx, WA_TOKEN_PROXY, "req-id", ring, WA_ERR_CORRUPT,
-                "wrong token type req, expected proxy");
+                "wrong token type req", "proxy");
 
     /* Test decoding of several types of request tokens. */
     result = check_decode(ctx, WA_TOKEN_REQUEST, "req-id", ring, 12);
@@ -547,16 +563,34 @@ main(void)
 
     /* Test decoding error cases for request tokens. */
     check_error(ctx, WA_TOKEN_REQUEST, "req-auth-type", ring,
-                WA_ERR_CORRUPT, "unknown auth type foo in request token");
+                WA_ERR_CORRUPT, "unknown auth type foo", "req");
     check_error(ctx, WA_TOKEN_REQUEST, "req-bad-command", ring,
-                WA_ERR_CORRUPT,
-                "type not valid with command in request token");
+                WA_ERR_CORRUPT, "type not valid with command", "req");
     check_error(ctx, WA_TOKEN_REQUEST, "req-proxy-type", ring, WA_ERR_CORRUPT,
-                "unknown proxy type foo in request token");
+                "unknown proxy type foo", "req");
     check_error(ctx, WA_TOKEN_REQUEST, "req-type", ring, WA_ERR_CORRUPT,
-                "unknown requested token type foo in request token");
+                "unknown requested token type foo", "req");
     check_error(ctx, WA_TOKEN_REQUEST, "wkproxy-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type webkdc-proxy, expected req");
+                "wrong token type webkdc-proxy", "req");
+
+    /* Test decoding of several webkdc-factor tokens. */
+    result = check_decode(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-ok", ring, 5);
+    if (result != NULL) {
+        wkfactor = &result->token.webkdc_factor;
+        is_string("testuser", wkfactor->subject, "...subject");
+        is_string("d", wkfactor->factors, "...factors");
+        is_int(1308777901, wkfactor->creation, "...creation");
+        is_int(2147483600, wkfactor->expiration, "...expiration");
+    }
+
+    /* Test decoding error cases for webkdc-factor tokens. */
+    check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-expired", ring,
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632",
+                "webkdc-factor");
+    check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-missing", ring,
+                WA_ERR_CORRUPT, "decoding subject", "webkdc-factor");
+    check_error(ctx, WA_TOKEN_WEBKDC_FACTOR, "wkfactor-none", ring,
+                WA_ERR_CORRUPT, "decoding factors", "webkdc-factor");
 
     /* Test decoding of several webkdc-proxy tokens. */
     result = check_decode(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-ok", ring, 9);
@@ -591,12 +625,11 @@ main(void)
 
     /* Test decoding error cases for webkdc-proxy tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-expired", ring,
-                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632", "webkdc-proxy");
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "wkproxy-type", ring,
-                WA_ERR_CORRUPT,
-                "unknown proxy type foo in webkdc-proxy token");
+                WA_ERR_CORRUPT, "unknown proxy type foo", "webkdc-proxy");
     check_error(ctx, WA_TOKEN_WEBKDC_PROXY, "app-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type app, expected webkdc-proxy");
+                "wrong token type app", "webkdc-proxy");
 
     /* Test decoding of a webkdc-service token. */
     result = check_decode(ctx, WA_TOKEN_WEBKDC_SERVICE, "wkservice-ok",
@@ -614,9 +647,10 @@ main(void)
 
     /* Test decoding error cases for webkdc-service tokens. */
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "wkservice-expired", ring,
-                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632");
+                WA_ERR_TOKEN_EXPIRED, "expired at 1308871632",
+                "webkdc-service");
     check_error(ctx, WA_TOKEN_WEBKDC_SERVICE, "app-ok", ring, WA_ERR_CORRUPT,
-                "wrong token type app, expected webkdc-service");
+                "wrong token type app", "webkdc-service");
 
     /*
      * Now test for the generic decoding function.  We'll run each of the
@@ -685,7 +719,7 @@ main(void)
 
     /* And test basic error handling with generic decoding. */
     check_error(ctx, WA_TOKEN_ANY, "app-bad-hmac", ring, WA_ERR_BAD_HMAC,
-                "HMAC check failed while decrypting token");
+                NULL, NULL);
 
     /* Test decoding of a raw app token. */
     result = check_decode_raw(ctx, WA_TOKEN_APP, "app-raw", ring, 9);

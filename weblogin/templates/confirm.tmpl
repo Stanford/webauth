@@ -22,10 +22,11 @@ login_cancel           : a cancel URL was specified
 cancel_url             : the specified cancel URL
 show_remuser           : show REMOTE_USER login preferences
 remuser                : set if REMOTE_USER is desired
+remember_login         : set if single sign-on cookies should be generated
 warn_expire            : show warning for upcoming password expiration
-expire_date            : the date and time of password expiration
-expire_time_left       : the amount of time left until password expiration
+expire_timestamp       : timestamp for password expiration
 pwchange_url           : URL for the password change form
+device_expiring        : timestamp of when a device factor will expire
 ST                     : Original service token
 RT                     : Original request token
 
@@ -39,7 +40,8 @@ in this work against any person or entity, or prevent any person or
 entity from copying, publishing, distributing or creating derivative
 works of this work.
 -->
-  [% END %]
+  [% END -%]
+  [% USE date(format = '%Y-%m-%d %l:%M %p') -%]
 
   <body>
     <h1 align="center">WebAuth Confirm</h1>
@@ -50,9 +52,13 @@ works of this work.
             <td colspan="2">
               <div class="errortext">
                 Warning: Your password will expire in
-                [% expire_time_left FILTER html %], on
-                [% expire_date FILTER html %].  Please change your password
-                before this happens.
+                [% PERL -%]
+                    use Time::Duration;
+                    my $timestamp = $stash->get('expire_timestamp');
+                    print Time::Duration::duration($timestamp - time);
+                [% END -%]
+                at [% date.format(expire_timestamp) %].  Please change your
+                password before this happens.
                 <form action="[% pwchange_url FILTER html %]"
                       method="post" target="_blank"
                       enctype="application/x-www-form-urlencoded">
@@ -63,9 +69,22 @@ works of this work.
                          value="[% username FILTER html %]">
                   <input type="hidden" name="CPT"
                          value="[% CPT FILTER html %]">
+                  <input type="hidden" name="remember_login"
+                         value="[% remember_login FILTER html %]">
                   <input type="submit" name="Submit"
                          value="Change Password">
                 </form>
+              </div>
+            </td>
+          </tr>
+        [% END %]
+        [% IF device_expiring %]
+          <tr>
+            <td colspan="2">
+              <div class="errortext">
+                Warning: Your device long-lived multifactor token will expire
+                at [% date.format(device_expiring) %].  This will require you
+                to log in via multifactor again to renew the token.
               </div>
             </td>
           </tr>
@@ -79,7 +98,6 @@ works of this work.
                   logins you have made to WebAuth-protected
                   resources.</strong></p>
                 <ul>
-                  [% USE date(format = '%Y-%m-%d %l:%M %p') %]
                   [% FOREACH login IN history %]
                     [% IF login.hostname %]
                       <li>
@@ -155,6 +173,8 @@ works of this work.
         <input type="hidden" name="rm" value="edit_authz_identity">
         <input type="hidden" name="ST" value="[% ST FILTER html %]">
         <input type="hidden" name="RT" value="[% RT FILTER html %]">
+        <input type="hidden" name="remember_login"
+               value="[% remember_login FILTER html %]">
         <table>
           <tr>
             <td><strong>Identity:</strong></td>

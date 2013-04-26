@@ -75,6 +75,13 @@ Templates
       login_cancel      If set, application provided a cancel URL
       cancel_url        The cancel URL (return URL plus cancel token)
 
+      remember_login    If not set, delete SSO cookies at end of login
+
+      warn_expire       If set, show warning for upcoming password expiration
+      expire_timestamp  Epoch seconds for time password will expire
+      pwchange_url      URL for the password change form
+      device_expiring   Epoch seconds for time device factor will expire
+
       show_remuser      If set, show the REMOTE_USER cookie configuration
       remuser           If set, the REMOTE_USER cookie is set
       script_name       Relative URL to which cookie change should be posted
@@ -225,26 +232,6 @@ Configuration
 
       Default: not set.
 
-  $EXPIRING_PW_PORT
-
-      The remctl port of the server used for authentication to the
-      kadmin-remctl interface.  Usually this should be left as the default
-      and not be set, in which case WebLogin will use the default remctl
-      port.
-
-      Default: not set.
-
-  $EXPIRING_PW_PRINC
-
-      The principal of the server used for authentication to the
-      kadmin-remctl interface.  Usually this should be left as the default
-      and not be set, in which case the host principal for the server set
-      in $EXPIRING_PW_SERVER will be used.  However, if your remctl server
-      is using a different Kerberos principal than the default, you may
-      need to set this.
-
-      Default: not set.
-
   $EXPIRING_PW_RESEND_PASSWORD
 
       Whether or not to require the user to retype their password after
@@ -257,22 +244,6 @@ Configuration
       password.
 
       Default: true (require the users to resend password).
-
-  $EXPIRING_PW_SERVER
-
-      A server that implements the kadmin-remctl interface for querying
-      the time a principal has until password expiration (via the
-      check_expire command).
-
-      Default: not set.
-
-  $EXPIRING_PW_TGT
-
-      The TGT file used to query against the kadmin-remctl interface used
-      in $EXPIRING_PW_SERVER.  The TGT should be maintained by a process
-      outside of WebLogin.
-
-      Default: not set.
 
   $EXPIRING_PW_URL
 
@@ -312,6 +283,32 @@ Configuration
 
       Default: "../conf/webkdc/keyring" (which works for the default
       installation paths inside the Apache configuration directory).
+
+  $LOGIN_STATE_UNSERIALIZE
+
+      If using the multifactor callout services "userinfo" and "validate",
+      this can be assigned a function reference to unserialize the
+      login-state value returned from those calls.  This function should
+      be customized to match the serialization implemented within the
+      "userinfo" and "validate" handlers.  Once unserialized, the object
+      can be used within the WebLogin templates.
+
+      An example deserialization function is provided that returns a
+      native perl object serialized by Storable::nfreeze, and encoded with
+      base64:
+
+      $LOGIN_STATE_UNSERIALIZE = sub {
+          use Storable qw( thaw );
+          use MIME::Base64 qw( decode_base64 );
+          my ($login_state) = @_;
+          if ( ! eval {
+               $login_state = Storable::thaw(decode_base64($login_state));
+               } )
+          { warn ("Unable to deserialize object. ", $@); }
+          return $login_state;
+      };
+
+      Default: not set.
 
   $LOGIN_URL
 
@@ -394,6 +391,34 @@ Configuration
       outside of WebLogin.
 
       Default: not set.
+
+  $REMEMBER_FALLBACK
+
+      The fallback position for whether or not to store webkdc-proxy
+      tokens and any webkdc-factor tokens in cookies following a
+      successful login; in other words, the fallback position for whether
+      to do single sign-on.  This value is used if the remember_login form
+      parameter is not set.
+
+      This is not necessarily the default value; the template may send the
+      parameter by default (and, in fact, the default template does).
+      Rather, it's whatever happens if no value is sent.  Assuming the
+      form uses a checkbox, it's the behavior that should happen if the
+      checkbox is not checked.
+
+      The value should be either 'yes' or 'no'.
+
+      Default: no (default template sends yes via a checkbox that's
+      selected by default)
+
+  $FACTOR_WARNING
+
+      The seconds until we start to warn a user that their long-lived
+      device factor is about to expire.  This will force the
+      confirmation page, and so should be kept small for any sites
+      that have the confirmation page disabled by default.
+
+      Default: 172800 (2 days).
 
   $RATE_LIMIT_INTERVAL
 
