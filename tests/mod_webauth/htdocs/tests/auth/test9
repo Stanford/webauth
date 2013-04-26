@@ -30,7 +30,7 @@ if ($prev) {
 }
 push (@extended, $value);
 push (@extended,
-      "Click <a href=\"/tests-new/auth/test9?prev=$wtl\">here</a> to re-run "
+      "Click <a href=\"/tests/auth/test9?prev=$wtl\">here</a> to re-run "
       ."the test when you have waited 10 seconds.");
 
 # Set information for the tests.
