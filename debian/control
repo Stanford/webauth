@@ -97,7 +97,7 @@ Description: Perl library for WebAuth authentication
  does token encoding and decoding and other lower-level parts of the
  WebAuth protocol.
 
-Package: libwebauth9
+Package: libwebauth10
 Section: libs
 Architecture: any
 Multi-Arch: same
@@ -118,7 +118,7 @@ Section: libdevel
 Priority: extra
 Architecture: any
 Multi-Arch: same
-Depends: ${misc:Depends}, libwebauth9 (= ${binary:Version})
+Depends: ${misc:Depends}, libwebauth10 (= ${binary:Version})
 Suggests: libkrb5-dev, libapr1-dev
 Description: Development files for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
