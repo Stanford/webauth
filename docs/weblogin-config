@@ -394,13 +394,22 @@ Configuration
 
   $REMEMBER_FALLBACK
 
-      The fallback position for whether or not to remember a device as
-      it newly logs in, if we have not gotten a remember_login
-      parameter from the client.  This is not necessarily the default
-      value we wish, but the opposite of the value that the
-      remember_login value as sent by the client.
+      The fallback position for whether or not to store webkdc-proxy
+      tokens and any webkdc-factor tokens in cookies following a
+      successful login; in other words, the fallback position for whether
+      to do single sign-on.  This value is used if the remember_login form
+      parameter is not set.
 
-      Default: no (default template sends yes)
+      This is not necessarily the default value; the template may send the
+      parameter by default (and, in fact, the default template does).
+      Rather, it's whatever happens if no value is sent.  Assuming the
+      form uses a checkbox, it's the behavior that should happen if the
+      checkbox is not checked.
+
+      The value should be either 'yes' or 'no'.
+
+      Default: no (default template sends yes via a checkbox that's
+      selected by default)
 
   $FACTOR_WARNING
 
