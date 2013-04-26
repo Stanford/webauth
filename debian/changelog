@@ -61,6 +61,8 @@ webauth (4.5.0-1) experimental; urgency=low
       <getTokenRequest> call.  This was never used and is conceptually
       useless.
     - undef arguments to Perl XS functions are now properly diagnosed.
+  * Fix some incorrect URLs in the webauth-tests package that were left
+    over from the test suite rewrite.
   * Use an uppercase realm name in the token.acl example in README.Debian
     for libapache2-mod-webkdc.  Nearly all Kerberos realms will be
     uppercase and the realm is case-sensitive.  Thanks to Lisandro Damián
