@@ -1,4 +1,4 @@
-webauth-weblogin (4.5.0-1) unstable; urgency=low
+webauth-weblogin (4.5.0-1) experimental; urgency=low
 
   Creating single sign-on cookies is no longer the default in the WebLogin
   code; instead, it is controlled by a form parameter on the login form.
