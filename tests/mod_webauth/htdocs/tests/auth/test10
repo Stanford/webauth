@@ -28,7 +28,7 @@ if ($prev) {
 }
 
 push (@extended,
-      'Click <a href="/tests/auth/test10?prev=$wtl">here</a> to re-run the '
+      "Click <a href=\"/tests/auth/test10?prev=$wtl\">here</a> to re-run the "
       .'test. If you wait for less then 20 seconds, you\'ll get taken back '
       .'to this page. If you wait for more then 20 seconds, you should end '
       .'up back at the webkdc login page.');
@@ -36,7 +36,7 @@ push (@extended,
 # Set information for the tests.
 my %settings = (
     test_number   => 10,
-    test_desc     => 'testing WebAuthVarPrefix',
+    test_desc     => 'testing inactive-expire',
     extended_desc => \@extended,
     extra_title   => 'Performing Last Used tests',
     extra_tests   => last_used_test(),
