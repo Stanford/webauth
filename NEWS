@@ -10,6 +10,20 @@ WebAuth 4.5.0 (2013-04-26)
     caution in the documentation explaining that this will not work well
     with authorization identities in most environments.
 
+    WebLogin now supports login form templates that allow the user (or the
+    template) to indicate whether single sign-on cookies (and any
+    persistent factor cookies) should be retained after authentication.
+    The fallback, if the HTML form doesn't send a value, is controlled by
+    the new $REMEMBER_FALLBACK configuration option.  The default is to
+    not do single sign-on, but the default login template sets the form
+    parameter to enable single sign-on.  This will require template
+    updates when upgrading.  If configured not to set single sign-on
+    cookies, WebLogin will only retain single sign-on cookies and
+    persistent factor cookies long enough to complete the login process
+    and will then discard them, reducing the risk of theft of
+    authentication tokens when someone walks away from an untrusted
+    computer.
+
     Fix password change handling in WebLogin, which has been broken since
     4.4.0 due to code changes for handling account lockout.  Also fix
     reporting of the reason for a rejected password change, which has been
@@ -42,14 +56,6 @@ WebAuth 4.5.0 (2013-04-26)
     the old (and now deprecated) expire_date variable since it allows the
     time information to be localized.  See the example confirm.tmpl file
     to see how to format this using Perl's Time::Duration module.
-
-    WebLogin now supports login form templates that allow the user (or the
-    template) to say that this authentication is from an untrusted
-    computer.  If that form element is set, WebLogin will only retain
-    single sign-on cookies and persistent factor cookies long enough to
-    complete the login process and will then discard them, reducing the
-    risk of theft of authentication tokens when someone walks away from an
-    untrusted computer.
 
     The WebKDC and WebLogin now support persistent cookies that add
     additional authentication factors to a successful authentication.
