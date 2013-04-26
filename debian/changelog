@@ -1,5 +1,66 @@
-webauth (4.4.3-2) UNRELEASED; urgency=low
+webauth (4.5.0-1) UNRELEASED; urgency=low
 
+  * New upstream release.
+    - WebLogin now supports indicating, on the login form template,
+      whether to create single sign-on cookies.  The default form sends a
+      parameter saying to do so, but the default behavior is to not create
+      the cookies.  This will require a template change for most WebLogin
+      deployments.
+    - Revert change in WebAuthForceLogin interpretation introduced in
+      WebAuth 4.4.0.  It once again requires authentication with a login
+      token.  Document that it will not work well with authorization
+      identities set after authentication.
+    - Fix password change handling in WebLogin, broken since 4.4.0.
+    - Fix reporting of password rejection reasons, broken since 4.3.0.
+    - mod_webauth and mod_webkdc now produce much better error logs.
+    - Initial multifactor no longer satisfies a requirement for random
+      session multifactor, correcting a long-standing bug.
+    - New WebAuthLdapOperationalAttribute directive for mod_webauthldap
+      that allows inclusion of operational attributes in the environment.
+    - WebLogin no longer supports obtaining the password expiration from a
+      kadmin-remctl backend via a direct remctl call.  Instead, it uses
+      the value from the WebKDC, which comes from the user information
+      service.
+    - The WebLogin confirmation page supports a new expire_timestamp
+      variable, which contains the password expiration in seconds since
+      UNIX epoch.  This should be used instead of the (deprecated)
+      expire_date variable since it isn't preformatted and can therefore
+      be localized.  See the sample confirm.tmpl template for how to
+      format the date for display.
+    - New support for persistent cookies containing additional factors,
+      controlled by the user information service.
+    - The WebKDC now passes the user's current factors to the user
+      information service as an additional parameter to the userinfo
+      call, which can be used to change behavior based on whether the user
+      has persistent factors set.
+    - The user information service can now return a specific set of
+      required factors instead of just indicating multifactor is required.
+    - The user information service can return a message for display in
+      the multifactor authentication page in WebLogin (and that has been
+      added to the default templates).
+    - The user information service can, in both the userinfo and validate
+      calls, return an opaque data structure to WebLogin, and WebLogin can
+      send an opaque data structre back in the validate call.  This allows
+      for multistep multifactor interactions outside of WebAuth's
+      knowledge, such as resynchronization of hardware tokens.
+    - The user information service can add factors to a user's successful
+      interactive authentication.
+    - WebLogin and the multifactor page template now receive a list of the
+      factors a user needs but doesn't yet have, instead of just a
+      complete list of the desired factors.
+    - WebLogin can now tell the WebKDC and, in turn, the user information
+      service what type of OTP authentication was used, if it knows.
+    - The user information service can indicate the expiration time of
+      factors resulting from an OTP authentication.
+    - Errors in contacting the user information service are now logged
+      even if the WebKDC is configured to ignore those errors.
+    - Multiple changes to the libwebauth API, most notably revisions to
+      the webkdc_login and userinfo APIs and a new opaque factors data
+      type.
+    - mod_webkdc no longer supports obtaining proxy tokens via a
+      <getTokenRequest> call.  This was never used and is conceptually
+      useless.
+    - undef arguments to Perl XS functions are now properly diagnosed.
   * Use an uppercase realm name in the token.acl example in README.Debian
     for libapache2-mod-webkdc.  Nearly all Kerberos realms will be
     uppercase and the realm is case-sensitive.  Thanks to Lisandro Damián
