@@ -4,6 +4,10 @@
 # module build (and probably the other interpretors as well).
 export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
 
+# The additional flags to pass to Build.PL, picked up by the upstream
+# build system.
+export WEBAUTH_PERL_FLAGS := --installdirs vendor --create_packlist 0
+
 ifndef PERL
     PERL = /usr/bin/perl
 endif
@@ -15,11 +19,6 @@ override_dh_auto_configure:
 	dh_auto_configure --parallel -- --libdir=/usr/lib \
 	    --libexecdir=/usr/lib --enable-webkdc --enable-perl \
 	    --with-apxs=/usr/bin/apxs2 --enable-reduced-depends
-
-override_dh_auto_build:
-	dh_auto_build --parallel
-	cd perl && $(PERL) Makefile.PL INSTALLDIRS=vendor
-	cd perl && $(MAKE) OPTIMIZE="$(CFLAGS)"
 
 override_dh_auto_install:
 	dh_auto_install

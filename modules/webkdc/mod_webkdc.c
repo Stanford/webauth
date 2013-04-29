@@ -2,7 +2,7 @@
  * Core Apache WebKDC module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -20,10 +20,13 @@
 #include <modules/webkdc/mod_webkdc.h>
 #include <util/macros.h>
 #include <webauth/basic.h>
+#include <webauth/factors.h>
 #include <webauth/keys.h>
 #include <webauth/krb5.h>
 #include <webauth/tokens.h>
 #include <webauth/webkdc.h>
+
+APLOG_USE_MODULE(webkdc);
 
 
 /*
@@ -511,27 +514,6 @@ make_token(MWK_REQ_CTXT *rc, struct webauth_token *data, const char **token,
     return MWK_OK;
 }
 
-static enum mwk_status
-make_token_raw(MWK_REQ_CTXT *rc, struct webauth_token *data,
-               const void **token, size_t *length, const char *mwk_func)
-{
-    int status;
-    struct webauth_keyring *ring;
-
-    if (rc->sconf->ring == NULL)
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "no keyring", mwk_func, true);
-    ring = rc->sconf->ring;
-    status = webauth_token_encode_raw(rc->ctx, data, ring, token, length);
-    if (status != WA_ERR_NONE) {
-        mwk_log_webauth_error(rc->ctx, rc->r->server, status, mwk_func,
-                              "webauth_token_create", NULL);
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
-                                 "token create failed", mwk_func, false);
-    }
-    return MWK_OK;
-}
-
 
 static enum mwk_status
 make_token_with_key(MWK_REQ_CTXT *rc, const void *key, size_t key_len,
@@ -573,8 +555,6 @@ create_service_token_from_req(MWK_REQ_CTXT *rc,
     time_t expiration;
     struct webauth_token token;
     struct webauth_key *key;
-
-    ms = MWK_ERROR;
 
     /* only create service tokens from krb5 creds */
     if (strcmp(req_cred->type, "krb5") != 0) {
@@ -706,8 +686,6 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     struct webauth_token token;
     void *sad;
 
-    ms = MWK_ERROR;
-
     /* make sure auth_type is not NULL */
     if (auth_type == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
@@ -808,103 +786,6 @@ create_id_token_from_req(MWK_REQ_CTXT *rc,
     return ms;
 }
 
-/*
- */
-static enum mwk_status
-create_proxy_token_from_req(MWK_REQ_CTXT *rc,
-                               const char *proxy_type,
-                               MWK_REQUESTER_CREDENTIAL *req_cred,
-                               MWK_SUBJECT_CREDENTIAL *sub_cred,
-                               MWK_RETURNED_TOKEN *rtoken)
-{
-    static const char *mwk_func = "create_proxy_token_from_req";
-    size_t wkdc_len;
-    enum mwk_status ms;
-    struct webauth_token_webkdc_proxy *sub_pt;
-    struct webauth_token pt, token;
-    const void *wkdc_token;
-
-    ms = MWK_ERROR;
-
-    /* make sure proxy_type is not NULL */
-    if (proxy_type == NULL) {
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 "proxy type is NULL",
-                                 mwk_func, true);
-    }
-
-    /* only create proxy tokens from service creds */
-    if (strcmp(req_cred->type, "service") != 0) {
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 "can only create proxy-tokens with "
-                                 "<requesterCredential> of type service",
-                                 mwk_func, true);
-    }
-
-    /* make sure we have a subject cred with a type='proxy' */
-    if (strcmp(sub_cred->type, "proxy") != 0) {
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
-                                 "can only create proxy-tokens with "
-                                 "<subjectCredential> of type proxy",
-                                 mwk_func, true);
-    }
-
-    /* check access */
-    if (!mwk_has_proxy_access(rc, req_cred->subject, proxy_type)) {
-        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
-                                 "not authorized to get a proxy token",
-                                 mwk_func, true);
-    }
-
-    /* make sure we are creating a proxy-token that has
-       the same type as the proxy-token we are using to create it */
-    sub_pt = find_proxy_token(rc, sub_cred, proxy_type, mwk_func, 1);
-    if (sub_pt == NULL)
-        return MWK_ERROR;
-
-    /* check access again */
-    if (!mwk_can_use_proxy_token(rc, req_cred->subject,
-                                 sub_pt->proxy_subject)) {
-        return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
-                                 "not authorized to use proxy token",
-                                 mwk_func, true);
-    }
-
-    /* create the webkdc-proxy-token first, using existing proxy-token */
-    memset(&pt, 0, sizeof(pt));
-    pt.type = WA_TOKEN_WEBKDC_PROXY;
-    pt.token.webkdc_proxy = *sub_pt;
-    pt.token.webkdc_proxy.creation = 0;
-    ms = make_token_raw(rc, &pt, &wkdc_token, &wkdc_len, mwk_func);
-    if (!ms)
-        return MWK_ERROR;
-
-    /* now create the proxy-token */
-    memset(&token, 0, sizeof(token));
-    token.type = WA_TOKEN_PROXY;
-    token.token.proxy.subject = sub_pt->subject;
-    token.token.proxy.type = sub_pt->proxy_type;
-    token.token.proxy.webkdc_proxy = wkdc_token;
-    token.token.proxy.webkdc_proxy_len = wkdc_len;
-    token.token.proxy.expiration = sub_pt->expiration;
-    if (sub_pt->initial_factors != NULL)
-        token.token.proxy.initial_factors = sub_pt->initial_factors;
-    if (sub_pt->loa > 0)
-        token.token.proxy.loa = sub_pt->loa;
-
-    /* FIXME: Hardcoded for now, needs to come from the proxy token origin. */
-    token.token.proxy.session_factors = "u";
-
-    ms = make_token_with_key(rc, req_cred->u.st.session_key,
-                             req_cred->u.st.session_key_len, &token,
-                             &rtoken->token_data, mwk_func);
-
-    rtoken->subject = sub_pt->subject;
-    rtoken->info =
-        apr_pstrcat(rc->r->pool, " type=proxy pt=", proxy_type, NULL);
-
-    return ms;
-}
 
 /*
  */
@@ -1044,9 +925,8 @@ create_cred_token_from_req(MWK_REQ_CTXT *rc,
  * logs all errors and generates errorResponse if need be.
  */
 static enum mwk_status
-parse_request_token(MWK_REQ_CTXT *rc,
-                    char *token,
-                    struct webauth_token_webkdc_service *st,
+parse_request_token(MWK_REQ_CTXT *rc, const char *token,
+                    const struct webauth_token_webkdc_service *st,
                     struct webauth_token_request **rt)
 {
     int status;
@@ -1093,6 +973,7 @@ parse_request_token(MWK_REQ_CTXT *rc,
     return MWK_OK;
 }
 
+
 static enum mwk_status
 handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                         const char **req_subject_out,
@@ -1102,7 +983,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     static const char *mwk_func="handle_getTokensRequest";
     const char *mid = NULL;
     char *request_token;
-    struct webauth_token_request *req_token;
+    struct webauth_token_request *req_token = NULL;
     MWK_REQUESTER_CREDENTIAL req_cred;
     MWK_SUBJECT_CREDENTIAL sub_cred;
     int req_cred_parsed = 0;
@@ -1246,23 +1127,6 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
             if (!create_id_token_from_req(rc, at, &req_cred, &sub_cred,
                                           &rtokens[num_tokens], NULL)) {
-                return MWK_ERROR;
-            }
-        } else if (strcmp(tt, "proxy") == 0) {
-            apr_xml_elem *proxy_type;
-            const char *pt;
-
-            proxy_type = get_element(rc, token, "proxyType", 1, mwk_func);
-
-            if (proxy_type == NULL)
-                return MWK_ERROR;
-
-            pt = get_elem_text(rc, proxy_type, mwk_func);
-            if (pt == NULL)
-                return MWK_ERROR;
-
-            if (!create_proxy_token_from_req(rc, pt, &req_cred, &sub_cred,
-                                             &rtokens[num_tokens])) {
                 return MWK_ERROR;
             }
         } else if (strcmp(tt, "cred") == 0) {
@@ -1438,7 +1302,8 @@ get_subject(MWK_REQ_CTXT *rc, struct webauth_krb5 *kc,
  */
 static enum mwk_status
 parse_service_token(MWK_REQ_CTXT *rc, apr_xml_elem *e,
-                    struct webauth_webkdc_login_request *request)
+                    struct webauth_webkdc_login_request *request,
+                    struct webauth_token_webkdc_service **service)
 {
     static const char *mwk_func = "parse_service_token";
     int status;
@@ -1482,7 +1347,8 @@ parse_service_token(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         }
         return MWK_ERROR;
     }
-    request->service = &data->token.webkdc_service;
+    request->service = token;
+    *service = &data->token.webkdc_service;
     return MWK_OK;
 }
 
@@ -1500,53 +1366,44 @@ parse_subject_credentials(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     apr_xml_elem *child;
     apr_xml_attr *a;
     char *data;
-    struct webauth_token *token;
-    struct webauth_token_webkdc_proxy *wkproxy;
+    apr_array_header_t *wkproxies, *wkfactors, *logins;
+    struct webauth_webkdc_proxy_data *pd;
+    size_t size;
 
-    if (request->creds == NULL)
-        request->creds = apr_array_make(rc->r->pool, 2,
-                                        sizeof(struct webauth_token *));
-
-    /*
-     * Just quietly ignore invalid webkdc-proxy tokens for right now.
-     *
-     * FIXME: Restore a facility for telling WebLogin to discard uninteresting
-     * webkdc-proxy tokens.
-     *
-     * FIXME: We're calling functions that get generic tokens and collapse
-     * them into the appropriate type, and then allocating a generic token and
-     * copying it back.  This is silly.  Restructure all this code.
-     */
+    size = sizeof(struct webauth_webkdc_proxy_data);
+    wkproxies = apr_array_make(rc->r->pool, 1, size);
+    wkfactors = apr_array_make(rc->r->pool, 1, sizeof(const char *));
+    logins    = apr_array_make(rc->r->pool, 1, sizeof(const char *));
     for (child = e->first_child; child != NULL; child = child->next) {
         if (strcmp(child->name, "proxyToken") == 0) {
             data = get_elem_text(rc, child, mwk_func);
             if (data == NULL)
                 return MWK_ERROR;
-            token = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token));
-            token->type = WA_TOKEN_WEBKDC_PROXY;
-            wkproxy = &token->token.webkdc_proxy;
-            if (!parse_webkdc_proxy_token(rc, data, wkproxy))
-                continue;
+            pd = &APR_ARRAY_PUSH(wkproxies, struct webauth_webkdc_proxy_data);
+            pd->token = data;
             for (a = child->attr; a != NULL; a = a->next)
                 if (strcmp(a->name, "source") == 0) {
-                    wkproxy->session_factors = a->value;
+                    pd->source = a->value;
                     break;
                 }
-            APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
         } else if (strcmp(child->name, "loginToken") == 0) {
             data = get_elem_text(rc, child, mwk_func);
             if (data == NULL)
                 return MWK_ERROR;
-            token = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token));
-            token->type = WA_TOKEN_LOGIN;
-            if (!parse_login_token(rc, data, &token->token.login))
+            APR_ARRAY_PUSH(logins, const char *) = data;
+        } else if (strcmp(child->name, "factorToken") == 0) {
+            data = get_elem_text(rc, child, mwk_func);
+            if (data == NULL)
                 return MWK_ERROR;
-            APR_ARRAY_PUSH(request->creds, struct webauth_token *) = token;
+            APR_ARRAY_PUSH(wkfactors, const char *) = data;
         } else {
             unknown_element(rc, mwk_func, e->name, child->name);
             return MWK_ERROR;
         }
     }
+    request->wkproxies = wkproxies;
+    request->wkfactors = wkfactors;
+    request->logins    = logins;
     return MWK_OK;
 }
 
@@ -1603,7 +1460,8 @@ parse_requestInfo(MWK_REQ_CTXT *rc, apr_xml_elem *e,
  * array is NULL, prints out nothing.
  */
 static void
-print_xml_array(MWK_REQ_CTXT *rc, const char *tag, apr_array_header_t *array)
+print_xml_array(MWK_REQ_CTXT *rc, const char *tag,
+                const apr_array_header_t *array)
 {
     int i;
     const char *string;
@@ -1626,13 +1484,12 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 {
     apr_xml_elem *child;
     static const char *mwk_func="handle_requestTokenRequest";
-    char *request_token = NULL;
+    void *ls_data;
     int i, status;
-    const char *req_token_info;
-    const char *login_type = NULL;
     struct webauth_webkdc_login_request request;
     struct webauth_webkdc_login_response *response;
-    struct webauth_token *cred;
+    struct webauth_token_webkdc_service *service = NULL;
+    struct webauth_token_request *req = NULL;
 
     /*
      * FIXME: These should be set to NULL, not <unknown>.  Chase down all the
@@ -1641,21 +1498,35 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     *subject_out = "<unknown>";
     *req_subject_out = "<unkknown>";
 
-    req_token_info = "";
     memset(&request, 0, sizeof(request));
+    request.client_ip = rc->r->useragent_ip;
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "requesterCredential") == 0) {
-            if (!parse_service_token(rc, child, &request))
+            if (!parse_service_token(rc, child, &request, &service))
                 return MWK_ERROR;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
             if (!parse_subject_credentials(rc, child, &request))
                 return MWK_ERROR;
         } else if (strcmp(child->name, "requestToken") == 0) {
-            request_token = get_elem_text(rc, child, mwk_func);
-            if (request_token == NULL)
-                return MWK_ERROR;
+            request.request = get_elem_text(rc, child, mwk_func);
+            if (request.request == NULL)
+                return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
+                                         "invalid <requestToken>", mwk_func,
+                                         true);
+        } else if (strcmp(child->name, "authzSubject") == 0) {
+            request.authz_subject = get_elem_text(rc, child, mwk_func);
+            if (request.authz_subject == NULL)
+                return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
+                                         "invalid <authzSubject>", mwk_func,
+                                         true);
+        } else if (strcmp(child->name, "loginState") == 0) {
+            request.login_state = get_elem_text(rc, child, mwk_func);
+            if (request.login_state == NULL)
+                return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
+                                         "invalid <loginState>", mwk_func,
+                                         true);
         } else if (strcmp(child->name, "requestInfo") == 0) {
             if (!parse_requestInfo(rc, child, &request))
                 return MWK_ERROR;
@@ -1666,125 +1537,84 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* make sure we found requesterCredential */
-    if (request.service == NULL) {
+    if (request.service == NULL || service == NULL)
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requesterCredential>",
                                  mwk_func, true);
-    }
-    if (request.service != NULL)
-        *req_subject_out = request.service->subject;
+    *req_subject_out = service->subject;
 
     /*
      * Make sure we found <subjectCredential>.  Note that the array may be
      * legitimately empty if the user has no proxy credentials and it's their
      * first visit to WebLogin.
      */
-    if (request.creds == NULL)
+    if (request.wkproxies == NULL)
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <subjectCredential>",
                                  mwk_func, true);
 
     /* make sure we found requestToken */
-    if (request_token == NULL) {
+    if (request.request == NULL)
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <requestToken>",
                                  mwk_func, true);
-    }
-    if (!parse_request_token(rc, request_token, request.service,
-                             &request.request))
+    if (!parse_request_token(rc, request.request, service, &req))
         return MWK_ERROR;
 
     /*
      * Based on the type of token requested, check that the requesting WAS is
      * permitted to get that type of token.
      */
-    if (strcmp(request.request->type, "id") == 0) {
-        if (!mwk_has_id_access(rc, request.service->subject)) {
+    if (strcmp(req->type, "id") == 0) {
+        if (!mwk_has_id_access(rc, service->subject))
             return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                      "not authorized to get an id token",
                                      mwk_func, true);
-        }
-    } else if (strcmp(request.request->type, "proxy") == 0) {
-        if (!mwk_has_proxy_access(rc, request.service->subject,
-                                  request.request->proxy_type)) {
+    } else if (strcmp(req->type, "proxy") == 0) {
+        if (!mwk_has_proxy_access(rc, service->subject, req->proxy_type))
             return set_errorResponse(rc, WA_PEC_UNAUTHORIZED,
                                  "not authorized to get a proxy token",
                                  mwk_func, true);
-        }
+    }
+
+    /* need to base64 decode loginState */
+    if (request.login_state != NULL) {
+        ls_data = apr_palloc(rc->r->pool,
+                             apr_base64_decode_len(request.login_state));
+        apr_base64_decode(ls_data, request.login_state);
+        request.login_state = ls_data;
     }
 
     /*
      * Call into libwebauth to process the login information.  This will take
-     * the accumulated data in the request and attempt to fulfill it.  On an
-     * internal error, this function will return a status other than
-     * WA_ERR_NONE.  Otherwise, it may set the login_error and login_message
-     * in the response.  We handle that below when we generate the XML
-     * response.
+     * the accumulated data in the request and attempt to fulfill it.  On
+     * error, it will return a WebAuth status code and also fill in the
+     * login_error and login_message fields.
+     *
+     * Some error messages still return a full <requestTokenResponse> so that
+     * we can carry additional information.  The rest send an <errorResponse>.
      */
     status = webauth_webkdc_login(rc->ctx, &request, &response,
                                   rc->sconf->ring);
-    if (status != WA_ERR_NONE)
-        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+    if (status != WA_ERR_NONE
+        && status != WA_PEC_AUTH_REJECTED
+        && status != WA_PEC_LOA_UNAVAILABLE
+        && status != WA_PEC_LOGIN_REJECTED
+        && status != WA_PEC_MULTIFACTOR_REQUIRED
+        && status != WA_PEC_MULTIFACTOR_UNAVAILABLE
+        && status != WA_PEC_PROXY_TOKEN_REQUIRED)
+        return set_errorResponse(rc, status,
                                  webauth_error_message(rc->ctx, status),
                                  mwk_func, true);
-
-    /* Accumulate logging information about what we were asked to do. */
-    for (i = 0; i < request.creds->nelts; i++) {
-        cred = APR_ARRAY_IDX(request.creds, i, struct webauth_token *);
-        if (cred->type != WA_TOKEN_LOGIN)
-            continue;
-        if (cred->token.login.password != NULL) {
-            if (login_type == NULL)
-                login_type = "password";
-            else if (strcmp(login_type, "otp") == 0)
-                login_type = "password,otp";
-        } else if (cred->token.login.otp != NULL) {
-            if (login_type == NULL)
-                login_type = "otp";
-            else if (strcmp(login_type, "password") == 0)
-                login_type = "password,otp";
-        }
-    }
-    if (strcmp(request.request->type, "id") == 0)
-        req_token_info = apr_pstrcat(rc->r->pool, " sa=", request.request->auth,
-                                     NULL);
-    else if (strcmp(request.request->type, "proxy") == 0)
-        req_token_info = apr_pstrcat(rc->r->pool, " pt=",
-                                     request.request->proxy_type, NULL);
-    if (request.request->initial_factors != NULL)
-        req_token_info = apr_pstrcat(rc->r->pool, req_token_info, " wifactors=",
-                                     request.request->initial_factors, NULL);
-    if (request.request->session_factors != NULL)
-        req_token_info = apr_pstrcat(rc->r->pool, req_token_info, " wsfactors=",
-                                     request.request->session_factors, NULL);
-    if (request.request->loa > 0)
-        req_token_info = apr_psprintf(rc->r->pool, "%s wloa=%lu",
-                                      req_token_info, request.request->loa);
-    if (response->subject != NULL)
-        *subject_out = response->subject;
-
-    /*
-     * If we saw an error other than proxy token required, multifactor
-     * required, LoA unavailable, or authentication rejected, abort and send
-     * the error message.
-     */
-    if (response->login_error != 0
-        && response->login_error != WA_PEC_PROXY_TOKEN_REQUIRED
-        && response->login_error != WA_PEC_MULTIFACTOR_REQUIRED
-        && response->login_error != WA_PEC_MULTIFACTOR_UNAVAILABLE
-        && response->login_error != WA_PEC_LOA_UNAVAILABLE
-        && response->login_error != WA_PEC_AUTH_REJECTED)
-        return set_errorResponse(rc, response->login_error,
-                                 response->login_message, mwk_func, true);
 
     /* Send the XML response. */
     ap_rvputs(rc->r, "<requestTokenResponse>", NULL);
 
-    if (response->login_error != 0) {
-        ap_rprintf(rc->r, "<loginErrorCode>%d</loginErrorCode>",
-                   response->login_error);
+    if (status != WA_ERR_NONE) {
+        ap_rprintf(rc->r, "<loginErrorCode>%d</loginErrorCode>", status);
         ap_rprintf(rc->r, "<loginErrorMessage>%s</loginErrorMessage>",
-                   apr_xml_quote_string(rc->r->pool, response->login_message,
+                   apr_xml_quote_string(rc->r->pool,
+                                        webauth_error_message(rc->ctx, status),
                                         false));
     }
 
@@ -1792,10 +1622,26 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         ap_rprintf(rc->r, "<userMessage><![CDATA[%s]]></userMessage>",
                    response->user_message);
 
+    if (response->login_state != NULL) {
+        char *out_login_state =
+            apr_palloc(rc->r->pool,
+                       apr_base64_encode_len(strlen(response->login_state)));
+        apr_base64_encode(out_login_state, response->login_state,
+                          strlen(response->login_state));
+        ap_rvputs(rc->r,
+                  "<loginState>", out_login_state , "</loginState>",
+                  NULL);
+    }
+
     if (response->factors_configured != NULL) {
+        apr_array_header_t *wanted, *configured;
+
+        wanted = webauth_factors_array(rc->ctx, response->factors_wanted);
+        configured = webauth_factors_array(rc->ctx,
+                                           response->factors_configured);
         ap_rvputs(rc->r, "<multifactorRequired>", NULL);
-        print_xml_array(rc, "factor", response->factors_wanted);
-        print_xml_array(rc, "configuredFactor", response->factors_configured);
+        print_xml_array(rc, "factor", wanted);
+        print_xml_array(rc, "configuredFactor", configured);
         ap_rvputs(rc->r, "</multifactorRequired>", NULL);
     }
 
@@ -1811,6 +1657,20 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         }
         ap_rvputs(rc->r, "</proxyTokens>", NULL);
     }
+
+    if (response->factor_tokens != NULL) {
+        struct webauth_webkdc_factor_data *data;
+
+        ap_rvputs(rc->r, "<factorTokens>", NULL);
+        for (i = 0; i < response->factor_tokens->nelts; i++) {
+            data = &APR_ARRAY_IDX(response->factor_tokens, i,
+                                  struct webauth_webkdc_factor_data);
+            ap_rprintf(rc->r, "<factorToken expires='%lu'>%s</factorToken>",
+                       (unsigned long) data->expiration, data->token);
+        }
+        ap_rvputs(rc->r, "</factorTokens>", NULL);
+    }
+
     /* put out return-url */
     ap_rvputs(rc->r,"<returnUrl>",
               apr_xml_quote_string(rc->r->pool, response->return_url, 1),
@@ -1822,12 +1682,35 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
               apr_xml_quote_string(rc->r->pool, response->requester, 1),
               "</requesterSubject>", NULL);
 
-    /* subject */
+    /* subject (if present) */
     if (response->subject != NULL) {
         ap_rvputs(rc->r,
                   "<subject>",
                   apr_xml_quote_string(rc->r->pool, response->subject, 1),
                   "</subject>", NULL);
+    }
+
+    /* authzSubject (if present) */
+    if (response->authz_subject != NULL) {
+        ap_rvputs(rc->r,
+                  "<authzSubject>",
+                  apr_xml_quote_string(rc->r->pool, response->authz_subject,
+                                       1),
+                  "</authzSubject>", NULL);
+    }
+
+    /* permittedAuthzSubjects (if present) */
+    if (response->permitted_authz != NULL) {
+        const char *authz;
+
+        ap_rvputs(rc->r, "<permittedAuthzSubjects>", NULL);
+        for (i = 0; i < response->permitted_authz->nelts; i++) {
+            authz = APR_ARRAY_IDX(response->permitted_authz, i, const char *);
+            ap_rvputs(rc->r, "<authzSubject>",
+                      apr_xml_quote_string(rc->r->pool, authz, 1),
+                      "</authzSubject>", NULL);
+        }
+        ap_rvputs(rc->r, "</permittedAuthzSubjects>", NULL);
     }
 
     /* requestedToken, don't need to quote */
@@ -1886,33 +1769,6 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
     ap_rvputs(rc->r, "</requestTokenResponse>", NULL);
     ap_rflush(rc->r);
-    ap_log_error(APLOG_MARK, APLOG_NOTICE, 0, rc->r->server,
-                 "mod_webkdc: event=requestToken from=%s clientIp=%s "
-                 "server=%s url=%s user=%s rtt=%s%s%s%s%s%s%s%s%s%s",
-                 rc->r->useragent_ip,
-                 (request.remote_ip == NULL ? "" : request.remote_ip),
-                 response->requester, log_escape(rc, response->return_url),
-                 (response->subject == NULL ? "<unknown>" : response->subject),
-                 request.request->type,
-                 req_token_info,
-                 (request.request->options == NULL
-                  || *request.request->options == '\0') ? "" :
-                 apr_psprintf(rc->r->pool, " ro=%s", request.request->options),
-                 (login_type == NULL) ? "" : " login=",
-                 (login_type == NULL) ? "" : login_type,
-                 (response->initial_factors == NULL ? "" :
-                  apr_psprintf(rc->r->pool, " ifactors=%s",
-                               response->initial_factors)),
-                 (response->session_factors == NULL ? "" :
-                  apr_psprintf(rc->r->pool, " sfactors=%s",
-                               response->session_factors)),
-                 (response->loa == 0 ? "" :
-                  apr_psprintf(rc->r->pool, " loa=%lu", response->loa)),
-                 apr_psprintf(rc->r->pool, " lec=%d", response->login_error),
-                 response->login_message == NULL ? "" :
-                 apr_psprintf(rc->r->pool, " lem=%s",
-                              log_escape(rc, response->login_message))
-                 );
 
     return MWK_OK;
 }
@@ -1925,10 +1781,11 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     apr_xml_elem *child;
     static const char *mwk_func = "handle_webkdcProxyTokenRequest";
     enum mwk_status ms;
-    char *sc_data, *pd_data;
-    void *dpd_data, *tgt;
+    char *bsc_data = NULL;
+    char *bpd_data = NULL;
+    void *sc_data, *pd_data, *dpd_data, *tgt;
     const char *token_data;
-    size_t sc_blen, sc_len, pd_blen, pd_len, dpd_len, tgt_len;
+    size_t sc_len, pd_len, dpd_len, tgt_len;
     int status;
     char *client_principal, *proxy_subject, *server_principal;
     char *check_principal;
@@ -1937,17 +1794,14 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     struct webauth_token token;
 
     *subject_out = apr_pstrdup(rc->r->pool, "<unknown>");
-    sc_data = NULL;
-    pd_data = NULL;
-
     client_principal = NULL;
     ms = MWK_ERROR;
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
         if (strcmp(child->name, "proxyData") == 0) {
-            pd_data = get_elem_text(rc, child, mwk_func);
-            if (pd_data == NULL)
+            bpd_data = get_elem_text(rc, child, mwk_func);
+            if (bpd_data == NULL)
                 return MWK_ERROR;
         } else if (strcmp(child->name, "subjectCredential") == 0) {
             const char *at = get_attr_value(rc, child, "type",  1, mwk_func);
@@ -1961,8 +1815,8 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                 return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
                                          mwk_func, true);
             }
-            sc_data = get_elem_text(rc, child, mwk_func);
-            if (sc_data == NULL)
+            bsc_data = get_elem_text(rc, child, mwk_func);
+            if (bsc_data == NULL)
                 return MWK_ERROR;
         } else {
             unknown_element(rc, mwk_func, e->name, child->name);
@@ -1971,42 +1825,26 @@ handle_webkdcProxyTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     }
 
     /* make sure we found proxyData */
-    if (pd_data == NULL) {
+    if (bpd_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <proxyData>",
                                  mwk_func, true);
     }
 
     /* make sure we found subjectCredentials */
-    if (sc_data == NULL) {
+    if (bsc_data == NULL) {
         return set_errorResponse(rc, WA_PEC_INVALID_REQUEST,
                                  "missing <subjectCredential>",
                                  mwk_func, true);
     }
 
-    sc_blen = strlen(sc_data);
-    status = webauth_base64_decode(sc_data, sc_blen,
-                                   sc_data, &sc_len,
-                                   sc_blen);
-    if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
-                                              "webauth_base64_decode",
-                                              "subjectCredential");
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, true);
-    }
+    /* Decode the base64 encoding. */
+    sc_data = apr_palloc(rc->r->pool, apr_base64_decode_len(bsc_data));
+    sc_len = apr_base64_decode(sc_data, bsc_data);
+    pd_data = apr_palloc(rc->r->pool, apr_base64_decode_len(bpd_data));
+    pd_len = apr_base64_decode(pd_data, bpd_data);
 
-    pd_blen = strlen(pd_data);
-    status = webauth_base64_decode(pd_data, pd_blen,
-                                   pd_data, &pd_len,
-                                   pd_blen);
-    if (status != WA_ERR_NONE) {
-        char *msg = mwk_webauth_error_message(rc->ctx, rc->r, status,
-                        "webauth_base64_decode", "proxyData");
-        return set_errorResponse(rc, WA_PEC_INVALID_REQUEST, msg,
-                                 mwk_func, true);
-    }
-
+    /* Process the Kerberos authenticator and encrypted data. */
     kc = mwk_get_webauth_krb5_ctxt(rc->ctx, rc->r, mwk_func);
     /* mwk_get_webauth_krb5_ctxt already logged error */
     if (kc == NULL) {
@@ -2162,7 +2000,6 @@ handle_webkdcProxyTokenInfoRequest(MWK_REQ_CTXT *rc,
 
     pt_data = NULL;
     *subject_out = "<unknown>";
-    ms = MWK_ERROR;
 
     /* walk through each child element in <requestTokenRequest> */
     for (child = e->first_child; child; child = child->next) {
@@ -2372,7 +2209,13 @@ handler_hook(request_rec *r)
     const char *req_content_type;
     struct webauth_webkdc_config config;
 
+    /* Make sure that we weren't called inappropriately. */
+    if (strcmp(r->handler, "webkdc"))
+        return DECLINED;
+
+    /* Initialize our request context. */
     memset(&rc, 0, sizeof(rc));
+    rc.r = r;
     status = webauth_context_init_apr(&rc.ctx, r->pool);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
@@ -2380,14 +2223,20 @@ handler_hook(request_rec *r)
                      webauth_error_message(NULL, status));
         return DECLINED;
     }
+    webauth_log_callback(rc.ctx, WA_LOG_TRACE,  mwk_log_trace,   r);
+    webauth_log_callback(rc.ctx, WA_LOG_INFO,   mwk_log_info,    r);
+    webauth_log_callback(rc.ctx, WA_LOG_NOTICE, mwk_log_notice,  r);
+    webauth_log_callback(rc.ctx, WA_LOG_WARN,   mwk_log_warning, r);
 
-    rc.r = r;
+    /* Set up the WebKDC configuration. */
     rc.sconf = ap_get_module_config(r->server->module_config, &webkdc_module);
-    config.keytab_path = rc.sconf->keytab_path;
-    config.principal = rc.sconf->keytab_principal;
-    config.proxy_lifetime = rc.sconf->proxy_lifetime;
+    config.id_acl_path      = rc.sconf->identity_acl_path;
+    config.keytab_path      = rc.sconf->keytab_path;
+    config.principal        = rc.sconf->keytab_principal;
+    config.proxy_lifetime   = rc.sconf->proxy_lifetime;
+    config.login_time_limit = rc.sconf->login_time_limit;
     config.permitted_realms = rc.sconf->permitted_realms;
-    config.local_realms = rc.sconf->local_realms;
+    config.local_realms     = rc.sconf->local_realms;
     status = webauth_webkdc_config(rc.ctx, &config);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
@@ -2395,6 +2244,8 @@ handler_hook(request_rec *r)
                      webauth_error_message(rc.ctx, status));
         return DECLINED;
     }
+
+    /* Set up the user information service configuration. */
     if (rc.sconf->userinfo_config != NULL) {
         struct webauth_user_config *user = rc.sconf->userinfo_config;
 
@@ -2412,21 +2263,17 @@ handler_hook(request_rec *r)
         }
     }
 
-    if (strcmp(r->handler, "webkdc")) {
-        return DECLINED;
-    }
-
-    req_content_type = apr_table_get(r->headers_in, "content-type");
-
-    if (!req_content_type || strcmp(req_content_type, "text/xml")) {
-        return HTTP_BAD_REQUEST;
-    }
-
-    if (r->method_number != M_POST) {
+    /* Ensure the client sent POST with the right content type. */
+    if (r->method_number != M_POST)
         return HTTP_METHOD_NOT_ALLOWED;
-    }
+    req_content_type = apr_table_get(r->headers_in, "content-type");
+    if (!req_content_type || strcmp(req_content_type, "text/xml") != 0)
+        return HTTP_BAD_REQUEST;
 
+    /* Our response will also be text/xml. */
     ap_set_content_type(r, "text/xml");
+
+    /* All the real work happens in parse_request. */
     return parse_request(&rc);
 }
 
@@ -2451,7 +2298,7 @@ mod_webkdc_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
         webkdc_config_init(scheck, sconf, pconf);
     }
 
-    ap_add_version_component(pconf, "WebKDC/" PACKAGE_VERSION);
+    ap_add_version_component(pconf, "WebKDC/" VERSION);
 
     if (sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s,

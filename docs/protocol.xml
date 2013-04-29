@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='July' year='2012' />
+    <date month='April' year='2013' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -383,7 +383,7 @@
   ---------------------------------------------------------------
       UA                 WAS            WebKDC
   ---------------------------------------------------------------
-                         send K5 auth for webkdc-service token
+                         send Kerberos auth for webkdc-service token
   1.                     WAS ---------> WebKDC
 
                          return session key, webkdc-service token
@@ -732,11 +732,11 @@
         <t>Normally, the requested credential tokens will be Kerberos
         service tickets that the WAS can then use to talk to other
         services that use Kerberos authentication.  Since the webkdc-proxy
-        token is generally a Kerberos TGT, this works together well and
-        allows WebAuth to treat the UA's cookie jar as essentially a
-        Kerberos ticket cache.  However, this is not required by the
-        protocol and credential tokens may be any form of credential
-        supported by the WAS and WebKDC.</t>
+        token is generally a Kerberos TGT credential, this works together
+        well and allows WebAuth to treat the UA's cookie jar as
+        essentially a Kerberos ticket cache.  However, this is not
+        required by the protocol and credential tokens may be any form of
+        credential supported by the WAS and WebKDC.</t>
 
         <t>As with an id token, the WAS may choose not to put the
         credentials in an app token for subsequent use.  It may instead
@@ -952,8 +952,9 @@
 
               <t hangText='13'>The login token was invalid.</t>
 
-              <t hangText='14'>Login failed due to bad password or invalid
-              username.</t>
+              <t hangText='14'>Login failed due to bad password, invalid
+              username, invalid OTP code, or some other authentication
+              failure.</t>
 
               <t hangText='15'>A webkdc-proxy token of a certain type was
               required to fulfill the request but was not present in the
@@ -984,9 +985,9 @@
 
               <t hangText='22'>The user is not permitted to log in at this
               time for security reasons.  This may be due to such factors
-              as the originating IP address or repeated login failures.
-              This code indicates a temporary failure, not a permanent
-              login failure (which is indicated by code 14).</t>
+              as the originating IP address.  This code indicates a
+              temporary failure, not incorrect credentials (which is
+              indicated by error code 14).  Compare to error code 24.</t>
 
               <t hangText='23'>The WAS server requested a Level of
               Assurance in the authentication that cannot be obtained for
@@ -999,7 +1000,19 @@
               due to local policy, security limitations placed on the
               user, missing prerequisite actions that the user must take
               (such as training or a usage agreement), or some other local
-              factor.</t>
+              factor.  This code indicates that this specific
+              authentication is not allowed but another authentication by
+              the same user from the same host to a different site may be
+              permitted.  Error code 22 indicates that this user may not
+              authenticate at this time from that host, regardless of
+              their destination.</t>
+
+              <t hangText='25'>This authentication appears to be a
+              replay.</t>
+
+              <t hangText='26'>This authentication was rejected due to too
+              many failed authentication attempts for this user.  The
+              authentication should be retried later.</t>
             </list>
           </t>
         </section>
@@ -1020,44 +1033,97 @@
         requestToken command is used by the WebLogin component of the
         WebKDC to process a request token sent in a URL from a WAS.  The
         webkdcProxyToken command converts an existing credential (such as
-        a Kerberos TGT) into a webkdc-proxy token and can be used to
-        bootstrap WebAuth authentication from an existing Kerberos ticket
-        cache for improved single sign-on.  The webkdcProxyTokenInfo
-        command returns information about an existing webkdc-proxy
-        token.</t>
+        a Kerberos credential for the ticket-granting service) into a
+        webkdc-proxy token and can be used to bootstrap WebAuth
+        authentication from an existing Kerberos ticket cache for improved
+        single sign-on.  The webkdcProxyTokenInfo command returns
+        information about an existing webkdc-proxy token.</t>
 
         <section anchor='xmlgettokens' title='getTokens'>
           <t>The getTokens command is used to request tokens (service, id,
-          proxy, or credential).</t>
+          proxy, or credential).  It is used in two fundamentally
+          different ways: for a WebAuth Application Server to request a
+          webkdc-service token from the WebKDC, and for a WAS to use a
+          proxy token it acquired from the user to request cred or id
+          tokens.</t>
 
           <figure>
-            <preamble>The request message is:</preamble>
+            <preamble>
+              The request message for obtaining a service token is:
+            </preamble>
             <artwork><![CDATA[
   <getTokensRequest>
-    <requesterCredential type="service|krb5">
-       <!-- for type="service" -->
-       {base64-webkdc-service-token}
-       <!-- for type="krb5" -->
+    <requesterCredential type="krb5">
        {base64-krb5-mk-req-data}
     </requesterCredential>
 
-    <!-- not present when only requesting a webkdc-service token -->
+    <tokens>
+      <token type="service" id="{id-for-response}"/>
+    </tokens>
+  </getTokensRequest>
+]]></artwork>
+          </figure>
+
+          <figure>
+            <preamble>The response message is:</preamble>
+            <artwork><![CDATA[
+  <getTokensResponse>
+    <tokens>
+      <token id="{id-from-request}">
+        <tokenData>{base64}</tokenData>
+        <sessionKey>{base64-session-key}</sessionKey>
+        <expires>{expiration-time}</expires>
+      </token>
+    </tokens>
+  </getTokensResponse>
+]]></artwork>
+          </figure>
+
+          <t>The id attribute to the &lt;token> element in the request is
+          optional and is normally omitted, since the WAS is only
+          requesting one token.  If it is omitted in the request, it is
+          also omitted in the response.</t>
+
+          <t>If any errors occur, an &lt;errorResponse> message will be
+          returned instead.</t>
+
+          <t>The second form of this request is used by the WAS to obtain
+          additional credentials from a proxy token.  This is used when
+          the WAS may need Kerberos credentials on behalf of the user, and
+          therefore requested a proxy token instead of an id token in the
+          original authentication request to the WebKDC.  The
+          &lt;getTokensRequest> request message is used to obtain those
+          cred tokens plus an id token.</t>
+
+          <t>requesterCredentials of type "krb5" can only be used to obtain
+          a webkdc-service token.  They can't be used for obtaining any
+          other tokens, nor can a credential of type "service" be used to
+          request another webkdc-service token.  In all other cases, the
+          requesterCredentials are a webkdc-service token.</t>
+
+          <figure>
+            <preamble>
+              The request message for obtaining other tokens from a proxy
+              token is:
+            </preamble>
+            <artwork><![CDATA[
+  <getTokensRequest>
+    <requesterCredential type="service">
+       {base64-webkdc-service-token}
+    </requesterCredential>
+
     <subjectCredential type="proxy">
        <proxyToken>{base64-webkdc-proxy-token}</proxyToken>
        <!-- additional <proxyToken>...</proxyToken> here -->
     </subjectCredential>
 
-    <!-- present when requestCredential is of type="service" -->
     <requestToken>{base64-request-token}</requestToken>
 
     <tokens>
-      <token type="id|proxy|service|cred" id="{id-for-response}">
+      <token type="id|cred" id="{id-for-response}">
         <!-- for type="id" -->
         <!-- optional, default is krb5 -->
         <authenticator type="krb5|webkdc"/>
-
-        <!-- for type="proxy" -->
-        <proxyType>krb5</proxyType>
 
         <!-- for type="cred" -->
         <credentialType>krb5</credentialType>
@@ -1076,10 +1142,6 @@
     <tokens>
       <token id="{id-from-request}">
         <tokenData>{base64}</tokenData>
-
-        <!-- for type="service" -->
-        <sessionKey>{base64-session-key}</sessionKey>
-        <expires>{expiration-time}</expires>
       </token>
       <!-- additional <token>...</token> responses go here -->
     </tokens>
@@ -1087,25 +1149,16 @@
 ]]></artwork>
           </figure>
 
+          <t>Here, the credentials provided are a previously-requested
+          webkdc-service token instead of a Kerberos authenticator, and
+          the proxy token received from the user's browser is also
+          included.  In this form of the request, the WAS also includes a
+          request token, encrypted in the session key of the
+          webkdc-service token, to prove that it has possession of the
+          session key.</t>
+
           <t>If any errors occur, an &lt;errorResponse> message will be
           returned instead.</t>
-
-          <t>When the WAS is requesting a webkdc-service token and a
-          corresponding session key, it provides requesterCredentials of
-          type "krb5", does not include subjectCredential or requestToken,
-          and asks only for a single service token.  Otherwise, it
-          provides requesterCredentials of type "service", includes the
-          proxy token in subjectCredential and a request token, and asks
-          for one or more "id" or "cred" tokens.</t>
-
-          <t>requesterCredentials of type "krb5" can only be used to obtain
-          a webkdc-service token.  They can't be used for obtaining any
-          other tokens, nor can a credential of type "service" be used to
-          request another webkdc-service token.  In all other cases, the
-          requesterCredentials are a webkdc-service token.</t>
-
-          <t>subjectCredentials are required when requesting id, proxy, or
-          cred tokens.</t>
         </section>
 
         <section anchor='xmlrequesttoken' title='requestToken'>
@@ -1134,10 +1187,19 @@
 
       <!-- present if the user just authenticated -->
       <loginToken>...</loginToken>
+
+      <!-- a webkdc-factor token presented by the user -->
+      <factorToken>...</factorToken>
     </subjectCredential>
 
     <!-- request token from WAS -->
     <requestToken>{base64-request-token}</requestToken>
+
+    <!-- requested authorization identity (optional) -->
+    <authzSubject>...</authzSubject>
+
+    <!-- opaque state object for customization (optional) -->
+    <loginState>...</loginState>
 
     <!-- request info from front-end, for logging purposes -->
     <requestInfo>
@@ -1163,9 +1225,11 @@
     <loginErrorCode>{numeric}<loginErrorCode>
     <loginErrorMessage>{message}<loginErrorMessage>
 
-    <!-- userMessage will be set if loginErrorCode is 24 and is an
-         HTML message intended for the end user.  It will normally
-         be in a CDATA block to protect markup. -->
+    <!-- userMessage will be set if the User Information Service or
+         OTP Validation service sets a user-message in a response,
+         or if loginErrorCode is 24.  It is an HTML message intended
+         for the end user.  It will normally be in a CDATA block to
+         protect markup. -->
     <userMessage>{message}</userMessage>
 
     <!-- set in combination with a loginErrorCode of 19 if
@@ -1180,11 +1244,17 @@
            or site policy, omitting "m" -->
     </multifactorRequired>
 
-    <!-- any updated/new proxy tokens created, only passed back
-         if <loginToken> was present in <subjectCredential> -->
+    <!-- any updated/new proxy tokens created -->
     <proxyTokens>
       <proxyToken type="krb5|...">{base64-proxy-token}</proxyToken>
     </proxyTokens>
+
+    <!-- currently, only one factor token is permitted -->
+    <factorTokens>
+      <factorToken expires="{expiration-time}">
+        {base64-factor-token}
+      </factorToken>
+    </factorTokens>
 
     <!-- the url to return to the user to -->
     <returnUrl>...</returnUrl>
@@ -1194,6 +1264,19 @@
 
     <!-- subject from subjectCredential -->
     <subject>...</subject>
+
+    <!-- authorization identity if requested and permitted -->
+    <authzSubject>...</authzSubject>
+
+    <!-- opaque state object for customization (optional) -->
+    <loginState>...</loginState>
+
+    <!-- permitted authorization identities if this user may assert
+         an authorization identity to this destination -->
+    <permittedAuthzSubjects>
+      <authzSubject>...</authzSubject>
+      <!-- repeat for all permitted authorization identities -->
+    </permittedAuthzSubjects>
 
     <!-- requestedToken will either be an error, id, or proxy token.
          not set if <loginErrorCode> is set. -->
@@ -1238,9 +1321,10 @@
           be set.  The error codes used by &lt;loginErrorCode> are a
           subset of those used by &lt;errorCode>:
             <list style='hanging' hangIndent='4'>
-              <t hangText='14'>Login failed due to bad password or invalid
-              username.  The web front-end should re-prompt for the
-              username and password.</t>
+              <t hangText='14'>Login failed due to bad password, invalid
+              username, invalid OTP code, or similar error.  The web
+              front-end should re-prompt for the username and password or
+              OTP code.</t>
 
               <t hangText='15'>A webkdc-proxy token of a certain type was
               required and was not present in the request.  The web
@@ -1332,10 +1416,10 @@
 
         <section anchor='xmlwebkdcproxytoken' title='webkdcProxyToken'>
           <t>The webkdcProxyToken command is used to convert an existing
-          credential, such as a Kerberos TGT, into a webkdc-proxy
-          token.  It can be used to bootstrap WebAuth authentication from
-          an existing Kerberos ticket cache for improved single
-          sign-on.</t>
+          credential, such as a Kerberos TGT credential, into a
+          webkdc-proxy token.  It can be used to bootstrap WebAuth
+          authentication from an existing Kerberos ticket cache for
+          improved single sign-on.</t>
 
           <figure>
             <preamble>The request message is:</preamble>
@@ -1430,7 +1514,7 @@
         {base64-krb5-mk-req-data}
      </requesterCredential>
      <tokens>
-       <token type="service" id="0"/>
+       <token type="service"/>
      </tokens>
   </getTokensRequest>
 ]]></artwork>
@@ -1441,7 +1525,7 @@
             <artwork><![CDATA[
   <getTokensResponse>
     <tokens>
-      <token id="0">
+      <token>
         <sessionKey>{base64-session-key}</sessionKey>
         <expires>{expiration-time}</expires>
         <tokenData>{base64}</tokenData>
@@ -1453,7 +1537,7 @@
         </section>
 
         <section title='WAS Asking for a credential Token'>
-          <t>In this example, the WAS requests an K5 ticket using a
+          <t>In this example, the WAS requests an Kerberos ticket using a
           previously obtained webkdc-proxy token (presumably obtained from
           the UA via a redirect to the WebKDC with a request token).  The
           webkdc-proxy token's type MUST match the requested credential's
@@ -1535,9 +1619,10 @@
         uses.</t>
 
         <t>{token-attributes} is a sequence of name=value pairs, separated
-        by a ';' character.  Names are not allowed to contain either '='
-        or ';'.  Values MAY contain binary data, but MUST escape any ';'
-        in the data by adding an additional ';'.</t>
+        by a ';' character.  Names must be one or more ASCII alphanumeric
+        characters.  Values MAY contain arbitrary binary data, but MUST
+        escape any ';' in the data by adding an additional ';' before
+        it.</t>
 
         <figure>
           <preamble>For example, if we had the following names and
@@ -1656,12 +1741,19 @@
             <vspace blankLines='0'/>User's one-time password code, in a
             login token.</t>
 
+            <t hangText='ott (string)'>
+            <vspace blankLines='0'/>The type of OTP that the one-time
+            password code (in the otp attribute) is for.  This should be
+            an authentication factor, generally one of the oN factors.</t>
+
             <t hangText='p (string)'>
             <vspace blankLines='0'/>User's password, in a login token.</t>
 
             <t hangText='pd (binary)'>
             <vspace blankLines='0'/>Proxy data, such as an encoded
-            Kerberos ticket-granting ticket (TGT).</t>
+            Kerberos credential for the ticket-granting service (a
+            Kerberos TGT plus its supporting data such as the session
+            key).</t>
 
             <t hangText='ps (string)'>
             <vspace blankLines='0'/>Proxy subject, the subject from the
@@ -1693,11 +1785,12 @@
             <vspace blankLines='0'/>The authenticated subject.  In
             webkdc-service tokens, this is the server identity that
             authenticated to get the webkdc-service token.  In all other
-            tokens, it is the user who authenticated.  Server subjects
+            tokens, it is the user who authenticated.  Server subjects in
+            webkdc-service tokens (and only those, not other subjects)
             have the form "type:identifier".  Currently, the only defined
             type is "krb5" indicating that the server authenticated with
-            Kerberos, and in that case the identifier is the text form
-            of a fully qualified Kerberos principal.</t>
+            Kerberos, and in that case the identifier is the text form of
+            a fully qualified Kerberos principal.</t>
 
             <t hangText='sa (string)'>
             <vspace blankLines='0'/>Subject authenticator type in an id
@@ -1717,6 +1810,15 @@
             WAS for a successful authentication.  This is a list of factor
             codes separated by commas.  For the list of registered factor
             names, see <xref target='factors' />.</t>
+
+            <t hangText='sz (string)'>
+            <vspace blankLines='0'/>The authorization subject.  A user (if
+            permitted by the WebKDC) may assert an authorization subject in
+            addition to their authenticated identity.  If they do so, the
+            subject (s) will continue to hold their authenticated identity,
+            and this attribute will contain the asserted authorization
+            identity.  The WAS may choose whether or not to honor the
+            asserted authorization identity.</t>
 
             <t hangText='t (string)'>
             <vspace blankLines='0'/>The token type.  Currently recognized
@@ -1748,6 +1850,27 @@
             session by presenting a cookie containing a webkdc-proxy token
             (rather than, for example, providing a password or other
             credentials).</t>
+
+            <t hangText='d (device)'>
+            <vspace blankLines='0'/>The device or browser from which the
+            user authenticated is known to the local security
+            infrastructure, has previously been part of a successful
+            strong authentication, or otherwise is a relatively trusted
+            device as defined by local site policy.</t>
+
+            <t hangText='h (human)'>
+            <vspace blankLines='0'/>The identity of the user has been
+            additionally verified by a human.  This factor is normally not
+            requested directly by a WebAuth Application Server, but rather
+            is added via some site-specific mechanism by local support
+            staff in order to synthesize a multifactor authentication.
+            For example, a user may have lost their hardware token but
+            need to access a site that requires multifactor.  A WebKDC
+            could support some mechanism to add this authentication factor
+            and a multifactor factor to the user's next login after the
+            user verifies their identity with local support staff via some
+            off-line process and then goes through the login proces
+            immediately.</t>
 
             <t hangText='k (Kerberos)'>
             <vspace blankLines='0'/>Only used for session authentication
@@ -1813,6 +1936,16 @@
           </list>
         </t>
 
+        <t>An authentication factor of m will always satisfy a requirement
+        for an authentication factor of rm.</t>
+
+        <t>Implementations may automatically add the m (multifactor)
+        factor to the factors for an authentication if factors from more
+        than one different authentication method are present (two or more
+        from the set of h, o, p, and x, for example).  If an
+        implementation does this, the c, k, rm, and u factors must not be
+        considered when deciding whether to add an m factor.</t>
+
         <t>Sites may define and use their own factor codes, but they risk
         conflict with future standardized codes unless they coordinate
         that use with this list.</t>
@@ -1852,7 +1985,9 @@
           Encoding'>
           <t>A webkdc-proxy token is a proxy authentication token
           maintained by the WebKDC on behalf of another user, or on behalf
-          of itself.  Normally it contains a Kerberos TGT.</t>
+          of itself.  Normally it contains a Kerberos credential for the
+          ticket-granting service (a Kerberos TGT plus its supporting data
+          such as the session key).</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -1882,10 +2017,80 @@
           authentication or forwarded Kerberos ticket) have a ps attribute
           value of WEBKDC:remuser.</t>
 
-          <t>When a webkdc-proxy-token is used, the WebKDC checks that the
-          subject in the webkdc-service token accompanying the request is
-          authorized to used the webkdc-proxy token granted to the ps
-          subject or that the ps subject starts with "WEBKDC:".</t>
+          <t>When a webkdc-proxy-token is used in a &lt;getTokensRequest>
+          message, the WebKDC checks that the subject in the
+          webkdc-service token accompanying the request is authorized to
+          used the webkdc-proxy token granted to the ps subject.  When
+          used in a &lt;requestTokensRequest>, the WebKDC checks that the
+          ps subject starts with "WEBKDC:".</t>
+        </section>
+
+        <section anchor='tokenwebkdcfactor' title='webkdc-factor Token
+          Encoding'>
+          <t>A webkdc-factor token holds additional authentication factors
+          that are combined with the factors established with webkdc-proxy
+          tokens and login tokens.  A webkdc-factor token by itself is not
+          sufficient to authenticate a user, but when combined with other
+          tokens can contribute its factors to the authentication factors
+          in resulting webkdc-proxy, id, and proxy tokens.</t>
+
+          <t>The primary purpose of webkdc-factor tokens is to store
+          additional factors that have a different lifetime than the
+          user's authentication credentials.  For example, one might store
+          a webkdc-factor token as a long-lived cookie on a particular
+          browser that has been vetted in some way and treat subsequent
+          authentications where the browser can present that token as
+          having an additional authentication factor compared to
+          authentications from other browsers.</t>
+
+          <t>webkdc-factor tokens are presented by WebLogin (which would
+          normally get them from browser cookies) to the WebKDC as part of
+          the &lt;requestTokenRequest> message, and returned to WebLogin
+          (to store as browser cookies) as part of the
+          &lt;requestTokenResponse> message.</t>
+
+          <figure>
+            <preamble>Token format:</preamble>
+            <artwork>
+  t=webkdc-factor
+  s={username}
+  ia={factor-list}
+  ct={creation-date}
+  et={expiration-date}
+            </artwork>
+          </figure>
+
+          <t>All attributes are AES-encrypted in the WebKDC's private
+          key.</t>
+
+          <t>webkdc-factor tokens are only valid when presented in
+          conjunction with at least one valid webkdc-proxy or login token
+          for the same subject.  Its factors are added to both the initial
+          and session factors of a successful authentication.</t>
+
+          <t>Inside the WebKDC, multiple webkdc-factor tokens from
+          different sources may be merged into a single token.  If this is
+          done, the resulting token's creation and expiration dates should
+          be set to the oldest creation and expiration dates of all the
+          constituent tokens.  In particular, the creation date of the
+          resulting token should not be set to the time at which the
+          tokens were merged.  This permits discarding all webkdc-factor
+          tokens older than a particular date, which may be a useful
+          operation if a particular user experienced a security
+          compromise.</t>
+
+          <t>webkdc-factor tokens will contribute their factors to any
+          successful authentication until they have expired, even if the
+          credentials that result from that authentication will persist
+          beyond the expiration time of the webkdc-factor token.  For
+          example, one can use a webkdc-factor token that expires in one
+          minute as part of an authentication that results in a
+          webkdc-proxy token that expires in ten hours, and the
+          webkdc-factor token still contributes its factors.  The
+          expiration time should therefore be thought of as the time at
+          which the webkdc-factor token stops contributing factors to new
+          authentications, not the time at which those authentication
+          factors fully expire.</t>
         </section>
 
         <section anchor='tokenrequest' title='request Token Encoding'>
@@ -1978,6 +2183,8 @@
   s={username}
   # for sa=krb5
   sad={result-of-krb5-mk-req-for-webauth/hostname}
+  # for any sa
+  [sz={authorization-subject}]
   ct={creation-time}
   et={expiration-time}
   [ia={factor-list}]
@@ -1992,7 +2199,7 @@
           <t>If "at" is krb5, then "sad" (subject authenticator data) is a
           KRB_AP_REQ for the WAS service principal (as determined from the
           subject of the webkdc-service token) using the user's TGT from a
-          krb5 webkdc-procy token.</t>
+          krb5 webkdc-proxy token.</t>
 
           <t>If at is webkdc, we are trusting the webkdc and "s" contains
           the authenticated user's identity (generally as a Kerberos
@@ -2023,6 +2230,7 @@
   t=proxy
   pt=krb5|...
   s={username}
+  [sz={authorization-subject}]
   wt={webkdc-proxy-token}
   ct={creation-time}
   et={expiration-time}
@@ -2052,13 +2260,24 @@
           <t>wt is the webkdc-proxy token (in binary form).  It can be
           used by the WAS later to request credential tokens from the
           WebKDC.</t>
+
+          <t>Note that the authorization subject included in the proxy
+          token will not be reflected in any id tokens obtained via the
+          proxy token.  The id tokens will be based on the webkdc-proxy
+          token, which is for the authentication identity alone.
+          Therefore, a WebAuth Application Server that wants to use the
+          authorization identity in some way needs to note the
+          authorization subject from the proxy token and not rely on
+          getting it from any subsequent id token.  Similarly, any cred
+          tokens obtained from a proxy token will be for the
+          authentication identity, not the authorization identity.</t>
         </section>
 
         <section anchor='tokencred' title='credential Token Encoding'>
           <t>A credential token is an authentication credential for the
           user for some other service, used by the WAS for proxied
-          authentication.  It is normally a K5 service ticket generated by
-          the WebKDC from the user's TGT.</t>
+          authentication.  It is normally a Kerberos service ticket
+          generated by the WebKDC from the user's TGT.</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -2091,11 +2310,15 @@
   u={username}
   [p={password}]
   [otp={one-time-password-code}]
+  [ott={one-time-password-factor}]
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the WebKDC's private
-          key.  One of p or otp must be provided.</t>
+          <t>All attributes are AES-encrypted in the WebKDC's private key.
+          One of p or otp must be provided.  If otp is provided, ott may
+          also be provided (but is not required).  It should be a factor
+          code (generally one of the oN factors) indicating what type of
+          OTP this code is for.</t>
         </section>
 
         <section anchor='tokenapp' title='app Token Encoding'>
@@ -2110,6 +2333,7 @@
   et={expiration-time}
   [ct={creation-time}]
   [s={username}]
+  [sz={authorization-subject}]
   [k=session-key]
   [lt={last-use-time}]
   [ia={factor-list}]
@@ -2264,6 +2488,12 @@
       <t>webkdc-proxy token cookies will be named webauth_wpt_{type} where
       {type} is the type of the webkdc-proxy token (usually krb5).</t>
 
+      <t>webkdc-factor token cookies will be named webkdc_wft.  This means
+      that only a single factor token cookie can be set within a
+      particular browser.  If there are multiple sources of factors that
+      should be stored in webkdc-factor tokens, they must be merged into a
+      single token by the WebKDC.</t>
+
       <t>proxy token cookies will be named webauth_pt_{type} where {type}
       is the type of the proxy token (usually krb5).</t>
 
@@ -2365,12 +2595,55 @@
           <vspace blankLines='0'/>Add error code 24, representing a rejected
           authentication, and add optional element &lt;userMessage&gt; to
           &lt;requestTokenResponse&gt;.</t>
+
+          <t hangText='3.2.1 (2012-09-07, rra)'>
+          <vspace blankLines='0'/>Clarify references to a "Kerberos TGT",
+          which normally mean a Kerberos credential that includes the TGT
+          plus other supporting data such as the session key.  Replace
+          remaining K5 references with just Kerberos.</t>
+
+          <t hangText='3.3.0 (2012-11-20, rra)'>
+          <vspace blankLines='0'/>Add &lt;authzSubject&gt; to
+          &lt;requestTokenRequest&gt; and &lt;requestTokenResponse&gt; to
+          allow requesting and returning authorization identities.  Add
+          &lt;permittedAuthzSubjects&gt; to &lt;requestTokenResponse&gt;
+          to tell WebLogin what authorization identities the user may
+          assert.  Add the sz attribute to app, id, and proxy tokens to
+          hold the asserted authorization identity.  Clarify that attribute
+          names are alphanumeric.</t>
+
+          <t hangText='3.3.1 (2012-12-06, rra)'>
+          <vspace blankLines='0'/>Add error code 25, representing an
+          authentication that appears to be a replay, and error code 26,
+          indicating a rejected authentication due to too many failed
+          authentication attempts for this user.</t>
+
+          <t hangText='3.4.0 (2013-02-04, rra)'>
+          <vspace blankLines='0'/>Add the webkdc-factor token type, the
+          &lt;factorToken> element to the &lt;requestTokenRequest> API,
+          &lt;factorTokens> element to the &lt;requestTokenResponse> API,
+          and the d factor.</t>
+
+          <t hangText='3.5.0 (2013-04-02, rra)'>
+          <vspace blankLines='0'/>Clarify the two cases for a
+          &lt;getTokenRequest> and remove the ability to request proxy
+          tokens.  Clarify the proxy subject checking in the webkdc-proxy
+          token encoding description.  Include the expiration time of a
+          factor token in the &lt;requestTokenResponse&gt; response as an
+          attribute on the &lt;factorToken&gt; element.  Clarify that the
+          webkdc-factor expiration time reflects when it stops
+          contributing factors to new authentications, not when those
+          factors go away entirely.  Add the ott attribute to the login
+          token, which conveys the type of OTP that the code is for.  Add
+          the h factor.  Clarify that error code 14 can be used for a wide
+          variety of login failures.  Clarify differences between error
+          codes 22, 24, and 26.</t>
         </list>
       </t>
     </section>
 
     <section anchor='license' title='License'>
-      <t>Copyright 2006, 2008, 2009, 2010, 2011, 2012 The Board of
+      <t>Copyright 2006, 2008, 2009, 2010, 2011, 2012, 2013 The Board of
       Trustees of the Leland Stanford Junior University</t>
 
       <t>Copying and distribution of this file, with or without

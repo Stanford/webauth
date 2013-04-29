@@ -39,13 +39,13 @@ use WebAuth ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 # Constructor.  Takes a WebAuth context, a key type, a key size, and optional
 # key data and passes that off to WebAuth::key_create.  Note that subclasses
 # are not supported since the object is created by the XS module and will
 # always be a WebAuth::Keyring.
-sub new ($$$$;$) {
+sub new {
     my ($class, $ctx, $type, $size, $data) = @_;
     if ($class ne 'WebAuth::Key') {
         croak ('subclassing of WebAuth::Key is not supported');

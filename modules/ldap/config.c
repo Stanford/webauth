@@ -6,7 +6,7 @@
  *
  * Written by Russ Allbery <rra@stanford.edu>
  * Based on original code by Anton Ushakov
- * Copyright 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -22,6 +22,8 @@
 
 #include <modules/ldap/mod_webauthldap.h>
 #include <util/macros.h>
+
+APLOG_USE_MODULE(webauthldap);
 
 /*
  * For each directive, we have the directive name (CD_), a usage string (CU_),
@@ -43,6 +45,7 @@
     static const type DF_ ## name = def;
 
 DIRN(Attribute,              "additional LDAP attributes to retrieve")
+DIRN(OperationalAttribute,   "operational LDAP attributes to retrieve")
 DIRN(AuthorizationAttribute, "LDAP attribute for privilege groups")
 DIRD(Authrule,               "whether to display the authorization rule",
      bool, true)
@@ -61,6 +64,7 @@ DIRN(TktCache,               "Kerberos ticket cache for LDAP")
 
 enum {
     E_Attribute,
+    E_OperationalAttribute,
     E_AuthorizationAttribute,
     E_Authrule,
     E_Base,
@@ -73,7 +77,7 @@ enum {
     E_Privgroup,
     E_Separator,
     E_SSL,
-    E_TktCache
+    E_TktCache,
 };
 
 /*
@@ -197,6 +201,7 @@ mwl_dir_config_merge(apr_pool_t *pool, void *basev, void *overv)
 
     /* FIXME: Should probably remove duplicates. */
     MERGE_ARRAY(attribs);
+    MERGE_ARRAY(oper_attribs);
     MERGE_ARRAY(privgroups);
     return conf;
 }
@@ -315,7 +320,7 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
     struct server_config *sconf;
     struct dir_config *dconf = mconf;
     const char *err = NULL;
-    const char **attrib, **privgroup;
+    const char **attrib, **privgroup, **oper_attrib;
 
     sconf = ap_get_module_config(cmd->server->module_config,
                                  &webauthldap_module);
@@ -355,6 +360,13 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
                 = apr_array_make(cmd->pool, 5, sizeof(const char *));
         attrib = apr_array_push(dconf->attribs);
         *attrib = apr_pstrdup(cmd->pool, arg);
+        break;
+    case E_OperationalAttribute:
+        if (dconf->oper_attribs == NULL)
+            dconf->oper_attribs
+                = apr_array_make(cmd->pool, 5, sizeof(const char *));
+        oper_attrib = apr_array_push(dconf->oper_attribs);
+        *oper_attrib = apr_pstrdup(cmd->pool, arg);
         break;
     case E_Privgroup:
         if (dconf->privgroups == NULL)
@@ -465,6 +477,7 @@ const command_rec webauthldap_cmds[] = {
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   RSRC_CONF,  TktCache),
 
     DIRECTIVE(AP_INIT_ITERATE, cfg_str,   OR_AUTHCFG, Attribute),
+    DIRECTIVE(AP_INIT_ITERATE, cfg_str,   OR_AUTHCFG, OperationalAttribute),
     DIRECTIVE(AP_INIT_ITERATE, cfg_str,   OR_AUTHCFG, Privgroup),
 
     { NULL, { NULL }, NULL, OR_NONE, RAW_ARGS, NULL }

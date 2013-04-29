@@ -1,0 +1,17 @@
+error
+err_missinginput
+err_username
+err_password
+err_loginfailed
+err_forced
+err_rejected
+RT \S+
+ST \S+
+LC
+username \S+
+login_cancel
+cancel_url
+show_remuser 1
+remuser_url https://test.example.org/login
+remuser_failed
+script_name /login

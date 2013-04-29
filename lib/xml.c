@@ -6,7 +6,7 @@
  * library API; they're only used by other parts of the library.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -27,22 +27,22 @@
  * them all, and store it in the output variable.  Returns a status code.
  */
 int
-webauth_xml_content(struct webauth_context *ctx, apr_xml_elem *e,
-                    const char **output)
+wai_xml_content(struct webauth_context *ctx, apr_xml_elem *e,
+                const char **output)
 {
-    struct buffer *buf;
+    struct wai_buffer *buf;
     apr_text *text;
 
-    buf = webauth_buffer_new(ctx->pool);
+    buf = wai_buffer_new(ctx->pool);
     if (e->first_cdata.first != NULL)
         for (text = e->first_cdata.first; text != NULL; text = text->next) {
             if (text->text == NULL)
                 continue;
-            webauth_buffer_append(buf, text->text, strlen(text->text));
+            wai_buffer_append(buf, text->text, strlen(text->text));
         }
     if (buf->data == NULL || buf->data[0] == '\0') {
-        webauth_error_set(ctx, WA_ERR_REMOTE_FAILURE,
-                          "XML element <%s> does not contain data", e->name);
+        wai_error_set(ctx, WA_ERR_REMOTE_FAILURE,
+                      "XML element <%s> does not contain data", e->name);
         return WA_ERR_REMOTE_FAILURE;
     }
     *output = buf->data;

@@ -1,7 +1,7 @@
 # Perl representation of a WebAuth login token.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012
+# Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,13 +33,14 @@ use base qw(WebAuth::Token);
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '1.00';
+our $VERSION = '1.02';
 
 # Accessor methods.
-sub username ($;$) { my $t = shift; $t->_attr ('username', @_) }
-sub password ($;$) { my $t = shift; $t->_attr ('password', @_) }
-sub otp      ($;$) { my $t = shift; $t->_attr ('otp',      @_) }
-sub creation ($;$) { my $t = shift; $t->_attr ('creation', @_) }
+sub username    { my $t = shift; $t->_attr ('username',    @_) }
+sub password    { my $t = shift; $t->_attr ('password',    @_) }
+sub otp         { my $t = shift; $t->_attr ('otp',         @_) }
+sub otp_type    { my $t = shift; $t->_attr ('otp_type',    @_) }
+sub creation    { my $t = shift; $t->_attr ('creation',    @_) }
 
 1;
 
@@ -109,11 +110,16 @@ principal name.
 Get or set the password for this user.  Either this or the otp() attribute
 will be set.
 
-
 =item otp ([OTP])
 
 Get or set the one-time password code for this user.  Either this or the
 password() attribute will be set.
+
+=item otp_type ([TYPE])
+
+Get or set the one-time password type.  This should be a WebAuth factor
+code corresponding to the type of one-time password that this login token
+represents.  It may be left unset if the caller doesn't know.
 
 =item creation ([TIMESTAMP])
 

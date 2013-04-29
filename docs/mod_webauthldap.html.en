@@ -16,11 +16,11 @@
 <body>
 <div id="page-header">
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
-<p class="apache">Apache HTTP Server Version 2.2</p>
+<p class="apache">Apache HTTP Server Version 2.4</p>
 <img alt="" src="../images/feather.gif" /></div>
 <div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.2</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.4</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauthldap</h1>
 <div class="toplang">
@@ -53,6 +53,7 @@ GSS-API Kerberos via SASL.</p>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapfilter">WebAuthLdapFilter</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldaphost">WebAuthLdapHost</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapkeytab">WebAuthLdapKeytab</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthldapoperationalattribute">WebAuthLdapOperationalAttribute</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapport">WebAuthLdapPort</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapprivgroup">WebAuthLdapPrivgroup</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthldapseparator">WebAuthLdapSeparator</a></li>
@@ -61,15 +62,15 @@ GSS-API Kerberos via SASL.</p>
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="../images/down.gif" /> Generic Minimal Config File</li>
-<li><img alt="" src="../images/down.gif" /> Using WebAuthLdap Authorization</li>
-<li><img alt="" src="../images/down.gif" /> Ad hoc attributes lookup</li>
-<li><img alt="" src="../images/down.gif" /> WebAuth 2.x backward compatibility</li>
-<li><img alt="" src="../images/down.gif" /> Manual License</li>
-</ul><ul class="seealso"><li><a href="#comments_section">Comments</a></li></ul></div>
+<li><img alt="" src="../images/down.gif" /> <a href="#s1">Generic Minimal Config File</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s2">Using WebAuthLdap Authorization</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s3">Ad hoc attributes lookup</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s4">WebAuth 2.x backward compatibility</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#s5">Manual License</a></li>
+</ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Generic Minimal Config File</h2>
+<h2><a name="s1">Generic Minimal Config File</a></h2>
 
 <p>The following example shows the minimum config file required to
 configure this module.</p>
@@ -85,7 +86,7 @@ WebAuthLdapTktCache /tmp/webauthldap.tkt
 </pre></div>
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Using WebAuthLdap Authorization</h2>
+<h2><a name="s2">Using WebAuthLdap Authorization</a></h2>
 
 <p>To restrict access to particular privilege group(s) place the
 <code>require privgroup &lt;group name&gt;</code> directives in a
@@ -119,7 +120,7 @@ mod_access will logs messages complaining that it doesn't recognize the
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Ad hoc attributes lookup</h2>
+<h2><a name="s3">Ad hoc attributes lookup</a></h2>
 
 <p>By using the WebAuthLdapAttribute directive in a .htaccess file, a
 Location block or a Directory block, any attributes available to the
@@ -166,7 +167,7 @@ separator.</p>
 
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>WebAuth 2.x backward compatibility</h2>
+<h2><a name="s4">WebAuth 2.x backward compatibility</a></h2>
 
 <p>StanfordAuth as an AuthType is supported as a form of backward
 compatibility, to ease the transition from WebAuth v2.  When it is used,
@@ -203,7 +204,7 @@ require group stanford:stanford
 Stanford users, since WebAuth v2 was never publically released.</p>
 </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2>Manual License</h2>
+<h2><a name="s5">Manual License</a></h2>
 
 <p>Copyright 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The Board of
 Trustees of the Leland Stanford Junior University</p>
@@ -238,7 +239,8 @@ override this behavior, see
 <a href="#webauthldapseparator">WebAuthLdapSeparator</a>.</p>
 
 <p>The attributes can be any attribute found in your LDAP server that
-the server using this module has access to read.</p>
+the server using this module has access to read, except for operational
+attributes, like entryUUID.</p>
 
 <div class="example"><h3>Example</h3><p><code>
 &lt;Location /private/&gt;<br />
@@ -441,6 +443,33 @@ WebAuthLdapKeytab conf/webauth/ldapkeytab webauth/myservername
 
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthLdapOperationalAttribute" id="WebAuthLdapOperationalAttribute">WebAuthLdapOperationalAttribute</a> <a name="webauthldapoperationalattribute" id="webauthldapoperationalattribute">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>LDAP operational attribute to place in the environment</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLdapOperationalAttribute<em>oper_attribute</em>  [<em>oper_attribute</em>] ...</code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>none</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauthldap</td></tr>
+</table>
+<p>All attributes defined by this directive will be looked up additionally
+and their values will be inserted into the environment. This directive can
+also be used multiple times.</p>
+
+<p>Like<a href="#webauthldapattribute">WebAuthLdapAttribute</a>, the name
+of the enviornment variable is formed by prepending WEBAUTH_LDAP_ to the
+uppercased name. Multivalued attributes work exactly the same as well.</p>
+
+<div class="example"><h3>Example</h3><p><code>
+&lt;Location /private/&gt;<br />
+AuthType WebAuth<br />
+Require privgroup stanford:staff<br />
+WebAuthLdapOperationalAttribute entryUUID<br />
+&lt;/Location&gt;<br />
+</code></p></div>
+
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthLdapPort" id="WebAuthLdapPort">WebAuthLdapPort</a> <a name="webauthldapport" id="webauthldapport">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>LDAP server port</td></tr>
@@ -583,25 +612,8 @@ WebAuthLdapTktCache /tmp/webauthldap.tkt
 </div>
 <div class="bottomlang">
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauthldap.html" title="English">&nbsp;en&nbsp;</a></p>
-</div><div class="top"><a href="#page-header"><img src="../images/up.gif" alt="top" /></a></div><div class="section"><h2><a id="comments_section" name="comments_section">Comments</a></h2><div class="warning"><strong>Notice:</strong><br />This is not a Q&amp;A section. Comments placed here should be pointed towards suggestions on improving the documentation or server, and may be removed again by our moderators if they are either implemented or considered invalid/off-topic. Questions on how to manage the Apache HTTP Server should be directed at either our IRC channel, #httpd, on Freenode, or sent to our <a href="http://httpd.apache.org/lists.html">mailing lists</a>.</div>
-<script type="text/javascript"><!--//--><![CDATA[//><!--
-var comments_shortname = 'httpd';
-var comments_identifier = 'http://httpd.apache.org/docs/2.2/mod/mod_webauthldap.html';
-(function(w, d) {
-    if (w.location.hostname.toLowerCase() == "httpd.apache.org") {
-        d.write('<div id="comments_thread"><\/div>');
-        var s = d.createElement('script');
-        s.type = 'text/javascript';
-        s.async = true;
-        s.src = 'https://comments.apache.org/show_comments.lua?site=' + comments_shortname + '&page=' + comments_identifier;
-        (d.getElementsByTagName('head')[0] || d.getElementsByTagName('body')[0]).appendChild(s);
-    }
-    else { 
-        d.write('<div id="comments_thread">Comments are disabled for this page at the moment.<\/div>');
-    }
-})(window, document);
-//--><!]]></script></div><div id="footer">
-<p class="apache">Copyright 2012 The Apache Software Foundation.<br />Licensed under the <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License, Version 2.0</a>.</p>
+</div><div class="top"><a href="#page-header"><img src="../images/up.gif" alt="top" /></a></div>
+<div id="footer">
 <p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div><script type="text/javascript"><!--//--><![CDATA[//><!--
 if (typeof(prettyPrint) !== 'undefined') {
     prettyPrint();

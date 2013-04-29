@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # login.fcgi -- WebLogin login page for WebAuth.
 #
@@ -12,7 +12,7 @@
 # Written by Roland Schemers <schemers@stanford.edu>
 # Extensive updates by Russ Allbery <rra@stanford.edu>
 # Converted to CGI::Application by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2011, 2012
+# Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -24,49 +24,41 @@
 require 5.006;
 
 use strict;
+use warnings;
 
-use CGI::Fast ();
-use WebLogin ();
-use WebKDC::Config ();
+use CGI::Fast;
+use WebLogin;
 
 # Set to true in our signal handler to indicate that the script should exit
 # once it finishes processing the current request.
 our $EXITING = 0;
 
-# The names of the template pages that we use.  The beginning of the main
-# routine changes the values here to be Template Toolkit objects.
-our %PAGES = (confirm     => 'confirm.tmpl',
-              error       => 'error.tmpl',
-              login       => 'login.tmpl',
-              logout      => 'logout.tmpl',
-              multifactor => 'multifactor.tmpl',
-              pwchange    => 'pwchange.tmpl');
+# The names of the page templates, relative to the template path configured in
+# the WebLogin configuration file.  This is set in this driver so that a
+# modified driver script can use different template names, allowing multiple
+# login interfaces with different UIs.
+our %PAGES = (
+    confirm     => 'confirm.tmpl',
+    error       => 'error.tmpl',
+    login       => 'login.tmpl',
+    logout      => 'logout.tmpl',
+    multifactor => 'multifactor.tmpl',
+    pwchange    => 'pwchange.tmpl',
+);
 
-# If the WebKDC is localhost, disable LWP certificate verification.  The
-# WebKDC will have a certificate matching its public name, which will never
-# match localhost, and we should be able to trust the server when connecting
-# directly to localhost.
-if ($WebKDC::Config::URL =~ m,^https://localhost/,) {
-    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
-}
-
-##############################################################################
-# Main routine
-##############################################################################
+# Create the persistent WebLogin object.
+my $weblogin = WebLogin->new(PARAMS => { pages => \%PAGES });
 
 # The main loop.  If we're not running under FastCGI, CGI::Fast will detect
 # that and only run us through the loop once.  Otherwise, we live in this
-# processing loop until the FastCGI socket closes.
-while (my $q = CGI::Fast->new) {
-    $SIG{TERM} = sub { $EXITING = 1 };
-    my $weblogin = WebLogin->new (PARAMS => { pages => \%PAGES },
-                                  QUERY  => $q);
-    $weblogin->run;
-    $SIG{TERM} = 'DEFAULT';
-
-# Done on each pass through the FastCGI loop.  Restart the script if its
-# modification time has changed.
+# processing loop until the FastCGI socket closes, we get a signal to exit,
+# or the script modification time changes.
+while (my $q = CGI::Fast->new()) {
+    local $SIG{TERM} = sub { $EXITING = 1 };
+    $weblogin->query($q);
+    $weblogin->run();
 } continue {
-    exit if $EXITING;
-    exit if -M $ENV{SCRIPT_FILENAME} < 0;
+    if ($EXITING || -M $ENV{SCRIPT_FILENAME} < 0) {
+        exit;
+    }
 }

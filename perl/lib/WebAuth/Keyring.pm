@@ -39,12 +39,12 @@ use WebAuth ();
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '1.00';
+our $VERSION = '1.02';
 
 # Constructor.  Takes a WebAuth context and either a capacity or a key to wrap
 # a keyring around.  Note that subclasses are not supported since the object
 # is created by the XS module and will always be a WebAuth::Keyring.
-sub new ($$$) {
+sub new {
     my ($type, $ctx, $key_or_size) = @_;
     if ($type ne 'WebAuth::Keyring') {
         croak ('subclassing of WebAuth::Keyring is not supported');
@@ -55,11 +55,26 @@ sub new ($$$) {
     return $ctx->keyring_new ($key_or_size);
 }
 
+# Construct a keyring by decoding it from the serialization format.  Takes the
+# WebAuth context and the encoded data.  As above, subclasses are not
+# supported since the object is created by the XS module and will always be a
+# WebAuth::Keyring.
+sub decode {
+    my ($type, $ctx, $data) = @_;
+    if ($type ne 'WebAuth::Keyring') {
+        croak ('subclassing of WebAuth::Keyring is not supported');
+    }
+    unless (ref ($ctx) eq 'WebAuth') {
+        croak ('second argument must be a WebAuth object');
+    }
+    return $ctx->keyring_decode ($data);
+}
+
 # Construct a keyring by reading it from a file.  Takes the WebAuth context
 # and the name of the file to read.  As above, subclasses are not supported
 # since the object is created by the XS module and will always be a
 # WebAuth::Keyring.
-sub read ($$$) {
+sub read {
     my ($type, $ctx, $file) = @_;
     if ($type ne 'WebAuth::Keyring') {
         croak ('subclassing of WebAuth::Keyring is not supported');
@@ -133,6 +148,13 @@ are added to them.)
 
 This is a convenience wrapper around the WebAuth keyring_new() method.
 
+=item decode (WEBAUTH, FILE)
+
+Create a new WebAuth::Keyring object by decoding its contents from the
+provided serialized keyring data.
+
+This is a convenience wrapper around the WebAuth keyring_read() method.
+
 =item read (WEBAUTH, FILE)
 
 Create a new WebAuth::Keyring object by reading its contents from the
@@ -175,6 +197,12 @@ to use for encryption going forward.  If USAGE is WebAuth::WA_KEY_DECRYPT
 is false, this method will return the key most likely to have been used to
 encrypt something at the time HINT, where HINT is given in seconds since
 epoch.
+
+=item encode ()
+
+Encode the keyring in the same serialization format that is used when
+writing it to a file, readable by decode() or read(), and return the
+encoded form.
 
 =item entries ()
 

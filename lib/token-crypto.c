@@ -1,8 +1,14 @@
 /*
- * WebAuth token handling.
+ * WebAuth encryption and decryption token handling.
+ *
+ * This file contains all the low-level crypto functions for encoding tokens
+ * into their encrypted form or reversing that process.  Although these
+ * functions are intended for use with WebAuth tokens, they actually encrypt
+ * and decrypt opaque data into the encrypted format WebAuth uses, and don't
+ * care what they're encrypting.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2006, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -64,7 +70,7 @@ static unsigned char aes_ivec[AES_BLOCK_SIZE] = {
  * return the result of this function).
  */
 static int
-openssl_error(struct webauth_context *ctx, int status, const char *format, ...)
+openssl_error(struct webauth_context *ctx, int s, const char *format, ...)
 {
     va_list args;
     char *buf;
@@ -76,12 +82,12 @@ openssl_error(struct webauth_context *ctx, int status, const char *format, ...)
     va_end(args);
     err = ERR_get_error();
     if (err == 0)
-        webauth_error_set(ctx, status, "%s", buf);
+        wai_error_set(ctx, s, "%s", buf);
     else {
         ERR_error_string_n(err, errbuf, sizeof(errbuf));
-        webauth_error_set(ctx, status, "%s: %s", buf, errbuf);
+        wai_error_set(ctx, s, "%s: %s", buf, errbuf);
     }
-    return status;
+    return s;
 }
 
 
@@ -128,7 +134,7 @@ webauth_token_encrypt(struct webauth_context *ctx, const void *input,
 {
     const struct webauth_key *key;
     size_t elen, plen, i;
-    int status;
+    int s;
     unsigned char *result, *p, *hmac;
     AES_KEY aes_key;
     uint32_t hint;
@@ -138,15 +144,15 @@ webauth_token_encrypt(struct webauth_context *ctx, const void *input,
     *output_len = 0;
 
     /* Find the encryption key to use. */
-    status = webauth_keyring_best_key(ctx, ring, WA_KEY_ENCRYPT, 0, &key);
-    if (status != WA_ERR_NONE)
-        return status;
+    s = webauth_keyring_best_key(ctx, ring, WA_KEY_ENCRYPT, 0, &key);
+    if (s != WA_ERR_NONE)
+        return s;
 
     /* Create our encryption key. */
-    status = AES_set_encrypt_key(key->data, key->length * 8, &aes_key);
-    if (status != 0) {
-        status = WA_ERR_BAD_KEY;
-        return openssl_error(ctx, status, "error setting encryption key");
+    s = AES_set_encrypt_key(key->data, key->length * 8, &aes_key);
+    if (s != 0) {
+        s = WA_ERR_BAD_KEY;
+        return openssl_error(ctx, s, "cannot set encryption key");
     }
 
     /* {key-hint}{nonce}{hmac}{attr}{padding} */
@@ -160,10 +166,10 @@ webauth_token_encrypt(struct webauth_context *ctx, const void *input,
     p += T_HINT_S;
 
     /* {nonce} */
-    status = RAND_pseudo_bytes(p, T_NONCE_S);
-    if (status < 0) {
-        status = WA_ERR_RAND_FAILURE;
-        return openssl_error(ctx, status, "cannot generate random nonce");
+    s = RAND_pseudo_bytes(p, T_NONCE_S);
+    if (s < 0) {
+        s = WA_ERR_RAND_FAILURE;
+        return openssl_error(ctx, s, "cannot generate random nonce");
     }
     p += T_NONCE_S;
 
@@ -215,23 +221,23 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
               const struct webauth_key *key)
 {
     unsigned char computed_hmac[T_HMAC_S];
-    size_t plen, i;
-    int status;
+    size_t needed, plen, i;
+    int s;
     unsigned char *hmac;
     AES_KEY aes_key;
 
     /* Basic sanity check. */
-    if (length < T_HINT_S + T_NONCE_S + T_HMAC_S + AES_BLOCK_SIZE) {
-        webauth_error_set(ctx, WA_ERR_CORRUPT,
-                          "token too short while decoding");
+    needed = T_HINT_S + T_NONCE_S + T_HMAC_S;
+    if (length < needed + needed % AES_BLOCK_SIZE) {
+        wai_error_set(ctx, WA_ERR_CORRUPT, "token too short");
         return WA_ERR_CORRUPT;
     }
 
     /* Create our decryption key. */
-    status = AES_set_decrypt_key(key->data, key->length * 8, &aes_key);
-    if (status != 0) {
-        status = WA_ERR_BAD_KEY;
-        return openssl_error(ctx, status, "error setting encryption key");
+    s = AES_set_decrypt_key(key->data, key->length * 8, &aes_key);
+    if (s != 0) {
+        s = WA_ERR_BAD_KEY;
+        return openssl_error(ctx, s, "cannot set encryption key");
     }
 
     /*
@@ -254,22 +260,19 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
     if (hmac == NULL)
         return openssl_error(ctx, WA_ERR_CORRUPT, "cannot compute HMAC");
     if (memcmp(output + T_HMAC_O, computed_hmac, T_HMAC_S) != 0) {
-        webauth_error_set(ctx, WA_ERR_BAD_HMAC,
-                          "HMAC check failed while decrypting token");
+        wai_error_set(ctx, WA_ERR_BAD_HMAC, NULL);
         return WA_ERR_BAD_HMAC;
     }
 
     /* Check padding length and data validity. */
     plen = output[length - 1];
     if (plen > AES_BLOCK_SIZE || plen > length) {
-        webauth_error_set(ctx, WA_ERR_CORRUPT,
-                          "token padding corrupt while decrypting token");
+        wai_error_set(ctx, WA_ERR_CORRUPT, "token padding corrupt");
         return WA_ERR_CORRUPT;
     }
     for (i = length - plen; i < length - 1; i++)
         if (output[i] != plen) {
-            webauth_error_set(ctx, WA_ERR_CORRUPT,
-                              "token padding corrupt while decrypting token");
+            wai_error_set(ctx, WA_ERR_CORRUPT, "token padding corrupt");
             return WA_ERR_CORRUPT;
         }
 
@@ -294,7 +297,7 @@ webauth_token_decrypt(struct webauth_context *ctx, const void *input,
                       const struct webauth_keyring *ring)
 {
     size_t dlen, i;
-    int status;
+    int s;
     const struct webauth_key *key;
     const unsigned char *inbuf = input;
     unsigned char *outbuf;
@@ -306,8 +309,7 @@ webauth_token_decrypt(struct webauth_context *ctx, const void *input,
 
     /* Sanity-check our keyring. */
     if (ring->entries->nelts == 0) {
-        webauth_error_set(ctx, WA_ERR_BAD_KEY,
-                          "empty keyring when decoding token");
+        wai_error_set(ctx, WA_ERR_BAD_KEY, "empty keyring");
         return WA_ERR_BAD_KEY;
     }
 
@@ -327,7 +329,7 @@ webauth_token_decrypt(struct webauth_context *ctx, const void *input,
     if (ring->entries->nelts == 1) {
         entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
         key = entry->key;
-        status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen, key);
+        s = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen, key);
     } else {
         uint32_t hint_buf;
         time_t h;
@@ -335,32 +337,32 @@ webauth_token_decrypt(struct webauth_context *ctx, const void *input,
         /* First, try the hint. */
         memcpy(&hint_buf, inbuf, sizeof(hint_buf));
         h = ntohl(hint_buf);
-        status = webauth_keyring_best_key(ctx, ring, WA_KEY_DECRYPT, h, &key);
-        if (status == WA_ERR_NONE)
-            status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen, key);
+        s = webauth_keyring_best_key(ctx, ring, WA_KEY_DECRYPT, h, &key);
+        if (s == WA_ERR_NONE)
+            s = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen, key);
         else
-            status = WA_ERR_BAD_HMAC;
+            s = WA_ERR_BAD_HMAC;
 
         /*
          * Now, as long as we didn't decode successfully, try each key in the
          * keyring in turn.  If the input is dirty, we have to replace the
          * input with our temporary buffer and try again.
          */
-        if (status == WA_ERR_BAD_HMAC)
+        if (s == WA_ERR_BAD_HMAC)
             for (i = 0; i < (size_t) ring->entries->nelts; i++) {
                 entry = &APR_ARRAY_IDX(ring->entries, i,
                                        struct webauth_keyring_entry);
                 if (entry->key == key)
                     continue;
-                status = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen,
-                                       entry->key);
-                if (status != WA_ERR_BAD_HMAC)
+                s = decrypt_token(ctx, inbuf, input_len, outbuf, &dlen,
+                                  entry->key);
+                if (s != WA_ERR_BAD_HMAC)
                     break;
             }
     }
-    if (status == WA_ERR_NONE) {
+    if (s == WA_ERR_NONE) {
         *output = outbuf;
         *output_len = dlen;
     }
-    return status;
+    return s;
 }

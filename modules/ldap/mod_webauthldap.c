@@ -2,7 +2,7 @@
  * Core WebAuth LDAP Apache module code.
  *
  * Written by Anton Ushakov
- * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -35,7 +35,7 @@
 #include <modules/ldap/mod_webauthldap.h>
 #include <util/macros.h>
 
-module AP_MODULE_DECLARE_DATA webauthldap_module;
+APLOG_USE_MODULE(webauthldap);
 
 
 /**
@@ -166,7 +166,7 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
     krb5_get_init_creds_opt *opts;
     krb5_keytab keytab;
     krb5_ccache cc;
-    krb5_principal princ;
+    krb5_principal princ = NULL;
     krb5_error_code code;
     char *kt, *cc_path;
 
@@ -199,7 +199,8 @@ webauthldap_get_ticket(MWAL_LDAP_CTXT* lc)
 
     if (code != 0) {
         krb5_kt_close(ctx, keytab);
-        krb5_free_principal(ctx, princ);
+        if (princ != NULL)
+            krb5_free_principal(ctx, princ);
         return code;
     }
 
@@ -262,7 +263,7 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
     int i;
     char** attrib;
     char *p, *privgroup;
-    apr_array_header_t* attribs;
+    apr_array_header_t* attribs, *oper_attribs;
 
     if (lc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server, "%s %s",
@@ -294,6 +295,21 @@ webauthldap_init(MWAL_LDAP_CTXT* lc)
             ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server,
                          "webauthldap(%s): conf attribute to put into env: %s",
                          lc->r->user, *attrib);
+        }
+    }
+
+    if (lc->dconf->oper_attribs) {
+        oper_attribs = apr_array_copy(lc->r->pool, lc->dconf->oper_attribs);
+
+        for (i = 0; ((attrib = apr_array_pop(oper_attribs)) != NULL); i++) {
+            for (p = *attrib; *p != '\0'; p++)
+                *p = toupper(*p);
+            apr_table_set(lc->envvars, *attrib, *attrib);
+
+            if (lc->sconf->debug)
+                ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server,
+                             "webauthldap(%s): oper attribute to put into env: %s",
+                             lc->r->user, *attrib);
         }
     }
 
@@ -710,8 +726,8 @@ webauthldap_dosearch(MWAL_LDAP_CTXT* lc)
             }
             if (lc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_INFO, 0, lc->r->server,
-                             "webauthldap(%s): search returned %d entries",
-                             lc->r->user, lc->numEntries);
+                             "webauthldap(%s): search returned %lu entries",
+                             lc->r->user, (unsigned long) lc->numEntries);
         }
         ldap_msgfree(res);
     }
@@ -828,7 +844,8 @@ webauthldap_setenv(MWAL_LDAP_CTXT* lc, const char *key, const char *val)
         }
 
         /* now set WEBAUTH_LDAP_BLAH2 WEBAUTH_LDAP_BLAH3 and so on */
-        for (i=2; i<MAX_ENV_VALUES; i++) {
+        i = 2;
+        while (1) {
             numbered_key = apr_psprintf(lc->r->pool, "%s%d", key, i);
             if (apr_table_get(lc->r->subprocess_env, numbered_key) == NULL) {
                 if (lc->sconf->debug)
@@ -838,6 +855,7 @@ webauthldap_setenv(MWAL_LDAP_CTXT* lc, const char *key, const char *val)
                 apr_table_set(lc->r->subprocess_env, numbered_key, val);
                 break;
             }
+            i++;
         }
     }
 }
@@ -1174,6 +1192,7 @@ auth_checker_hook(request_rec * r)
     /* if we have attributes to set or privgroups to check, we need to keep
        going */
     if (!apr_is_empty_array((const apr_array_header_t *)lc->dconf->attribs) ||
+        !apr_is_empty_array((const apr_array_header_t *)lc->dconf->oper_attribs) ||
         !apr_is_empty_array((const apr_array_header_t *)lc->dconf->privgroups))
         needs_further_handling = 1;
     else if (reqs_arr) {
@@ -1297,6 +1316,34 @@ auth_checker_hook(request_rec * r)
     /* Perform any additional privgroup checks and set those env vars, too */
 
     apr_table_do(webauthldap_exportprivgroup, lc, lc->privgroups, NULL);
+
+    /*
+     * If configured to look for operational attributes, query LDAP again for
+     * all operational attributes and export them into the environment.
+     */
+     if (lc->dconf->oper_attribs != NULL) {
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
+                "webauthldap: looking up operational attributes");
+
+        lc->attrs = apr_pcalloc(lc->r->pool, (sizeof(char*) * 2));
+        lc->attrs[0] = LDAP_ALL_OPERATIONAL_ATTRIBUTES;
+        lc->attrs[1] = NULL;
+
+        if (webauthldap_dosearch(lc) != 0) {
+            apr_thread_mutex_unlock(lc->sconf->totalmutex); /* error: unlock */
+            return DECLINED;
+        }
+
+        /* Cool, we got the oper attrs, now set the envvars */
+        for (i = 0; i<  lc->numEntries; i++)
+            apr_table_do(webauthldap_exportattrib, lc, lc->entries[i], NULL);
+        apr_table_do(webauthldap_attribnotfound, lc, lc->envvars, NULL);
+
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
+                "webauthldap: finished looking up params");
+     }
 
     webauthldap_returnconn(lc);
     apr_thread_mutex_unlock(lc->sconf->totalmutex); /**** FINAL UNLOCKING! ****/
@@ -1503,6 +1550,31 @@ fixups_hook(request_rec *r)
         return DECLINED;
     }
     apr_table_do(webauthldap_exportprivgroup, lc, lc->privgroups, NULL);
+
+    /*
+     * If configured to look for operational attributes, query LDAP again for
+     * all operational attributes and export them into the environment.
+     */
+     if (lc->dconf->oper_attribs != NULL) {
+        if (lc->sconf->debug)
+            ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
+                "webauthldap: looking up operational attributes");
+
+        lc->attrs = apr_pcalloc(lc->r->pool, (sizeof(char*) * 2));
+        lc->attrs[0] = (char *) LDAP_ALL_OPERATIONAL_ATTRIBUTES;
+        lc->attrs[1] = NULL;
+
+        if (webauthldap_dosearch(lc) != 0) {
+            apr_thread_mutex_unlock(lc->sconf->totalmutex); /* error: unlock */
+            return DECLINED;
+        }
+
+        /* Cool, we got the oper attrs, now set the envvars */
+        for (i = 0; i<  lc->numEntries; i++)
+            apr_table_do(webauthldap_exportattrib, lc, lc->entries[i], NULL);
+        apr_table_do(webauthldap_attribnotfound, lc, lc->envvars, NULL);
+     }
+
     webauthldap_returnconn(lc);
     apr_thread_mutex_unlock(lc->sconf->totalmutex); /**** FINAL UNLOCKING! ****/
 

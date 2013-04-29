@@ -1,46 +1,42 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2011
+# Copyright 2011, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+use WebAuth::Tests qw(build_page);
 
-require 'util.pl';
-
-print "Content-type: text/html\n\n";
-print "<html>\n";
-
-test_title(13, "lazy session support");
-
-if ($REMOTE_USER) {
-    print <<"EOS";
-<p>
-  You are accessing a page with optional authentication as the user
-  $REMOTE_USER.  If you are seeing this page after login, you have run
-  this test successfully and it has passed.  If you are seeing this
-  page without logging in, something has gone wrong.
-</p>
-EOS
+# Text for the page.  Varies based on whether or not remote user is set.
+my @extended;
+my $remote_user = $ENV{REMOTE_USER};
+if ($remote_user) {
+    push (@extended,
+          "You are accessing a page with optional authentication as the "
+          ."user $remote_user.  If you are seeing this page after login, "
+          ."you have run this test successfully and it has passed.  If you "
+          ."are seeing this page without logging in, something has gone "
+          ."wrong.");
 } else {
-    print <<"EOS";
-<p>
-  You are accessing a page with optional authentication and are not
-  authenticated.  This part of the test succeeded.  To see if your
-  identity is displayed properly after logging in, follow the
-  <a href="/tests/auth/test13login">login</a> link.  You should then
-  authenticate and be returned to this page, but with an identity
-  set.
-</p>
-EOS
+    push (@extended,
+          'You are accessing a page with optional authentication and are not '
+          .'authenticated.  This part of the test succeeded.  To see if your '
+          .'identity is displayed properly after logging in, follow the '
+          .'<a href="/tests/auth/test13login">login</a> link.  You should '
+          .'then authenticate and be returned to this page, but with an '
+          .'identity set.');
 }
 
-&return_links;
+# Set information for the tests.
+my %settings = (
+    test_number   => 13,
+    test_desc     => 'lazy session support',
+    extended_desc => \@extended,
+);
 
-&dump_stuff;
-
-print "</html>";
+print "Content-type: text/html\n\n";
+print build_page(\%settings);

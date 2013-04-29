@@ -5,7 +5,7 @@
 # contains the bootstrap and export code and the documentation.
 #
 # Written by Roland Schemers
-# Copyright 2003, 2005, 2008, 2009, 2011, 2012
+# Copyright 2003, 2005, 2008, 2009, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,7 +28,8 @@
 
 package WebAuth;
 
-use 5.006;
+use 5.008;
+
 use strict;
 use warnings;
 
@@ -39,77 +40,80 @@ use base qw(Exporter DynaLoader);
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '3.02';
+    $VERSION = '3.07';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 BEGIN {
-    my @constants = qw(WA_ERR_NONE
-                       WA_ERR_NO_ROOM
-                       WA_ERR_CORRUPT
-                       WA_ERR_NO_MEM
-                       WA_ERR_BAD_HMAC
-                       WA_ERR_RAND_FAILURE
-                       WA_ERR_BAD_KEY
-                       WA_ERR_KEYRING_OPENWRITE
-                       WA_ERR_KEYRING_WRITE
-                       WA_ERR_KEYRING_OPENREAD
-                       WA_ERR_KEYRING_READ
-                       WA_ERR_KEYRING_VERISON
-                       WA_ERR_NOT_FOUND
-                       WA_ERR_KRB5
-                       WA_ERR_INVALID_CONTEXT
-                       WA_ERR_LOGIN_FAILED
-                       WA_ERR_TOKEN_EXPIRED
-                       WA_ERR_TOKEN_STALE
-                       WA_ERR_CREDS_EXPIRED
-                       WA_ERR_USER_REJECTED
-                       WA_ERR_APR
-                       WA_ERR_UNIMPLEMENTED
-                       WA_ERR_INVALID
-                       WA_ERR_REMOTE_FAILURE
+    my @constants = qw(
+        WA_PEC_SERVICE_TOKEN_EXPIRED
+        WA_PEC_SERVICE_TOKEN_INVALID
+        WA_PEC_PROXY_TOKEN_EXPIRED
+        WA_PEC_PROXY_TOKEN_INVALID
+        WA_PEC_INVALID_REQUEST
+        WA_PEC_UNAUTHORIZED
+        WA_PEC_SERVER_FAILURE
+        WA_PEC_REQUEST_TOKEN_STALE
+        WA_PEC_REQUEST_TOKEN_INVALID
+        WA_PEC_GET_CRED_FAILURE
+        WA_PEC_REQUESTER_KRB5_CRED_INVALID
+        WA_PEC_LOGIN_TOKEN_STALE
+        WA_PEC_LOGIN_TOKEN_INVALID
+        WA_PEC_LOGIN_FAILED
+        WA_PEC_PROXY_TOKEN_REQUIRED
+        WA_PEC_LOGIN_CANCELED
+        WA_PEC_LOGIN_FORCED
+        WA_PEC_USER_REJECTED
+        WA_PEC_CREDS_EXPIRED
+        WA_PEC_MULTIFACTOR_REQUIRED
+        WA_PEC_MULTIFACTOR_UNAVAILABLE
+        WA_PEC_LOGIN_REJECTED
+        WA_PEC_LOA_UNAVAILABLE
+        WA_PEC_AUTH_REJECTED
+        WA_PEC_AUTH_REPLAY
+        WA_PEC_AUTH_LOCKOUT
 
-                       WA_PEC_SERVICE_TOKEN_EXPIRED
-                       WA_PEC_SERVICE_TOKEN_INVALID
-                       WA_PEC_PROXY_TOKEN_EXPIRED
-                       WA_PEC_PROXY_TOKEN_INVALID
-                       WA_PEC_INVALID_REQUEST
-                       WA_PEC_UNAUTHORIZED
-                       WA_PEC_SERVER_FAILURE
-                       WA_PEC_REQUEST_TOKEN_STALE
-                       WA_PEC_REQUEST_TOKEN_INVALID
-                       WA_PEC_GET_CRED_FAILURE
-                       WA_PEC_REQUESTER_KRB5_CRED_INVALID
-                       WA_PEC_LOGIN_TOKEN_STALE
-                       WA_PEC_LOGIN_TOKEN_INVALID
-                       WA_PEC_LOGIN_FAILED
-                       WA_PEC_PROXY_TOKEN_REQUIRED
-                       WA_PEC_LOGIN_CANCELED
-                       WA_PEC_LOGIN_FORCED
-                       WA_PEC_USER_REJECTED
-                       WA_PEC_CREDS_EXPIRED
-                       WA_PEC_MULTIFACTOR_REQUIRED
-                       WA_PEC_MULTIFACTOR_UNAVAILABLE
-                       WA_PEC_LOGIN_REJECTED
-                       WA_PEC_LOA_UNAVAILABLE
-                       WA_PEC_AUTH_REJECTED
+        WA_ERR_APR
+        WA_ERR_BAD_HMAC
+        WA_ERR_BAD_KEY
+        WA_ERR_CORRUPT
+        WA_ERR_FILE_NOT_FOUND
+        WA_ERR_FILE_OPENREAD
+        WA_ERR_FILE_OPENWRITE
+        WA_ERR_FILE_READ
+        WA_ERR_FILE_VERSION
+        WA_ERR_FILE_WRITE
+        WA_ERR_INVALID
+        WA_ERR_INVALID_CONTEXT
+        WA_ERR_KRB5
+        WA_ERR_NONE
+        WA_ERR_NOT_FOUND
+        WA_ERR_NO_MEM
+        WA_ERR_NO_ROOM
+        WA_ERR_RAND_FAILURE
+        WA_ERR_REMOTE_FAILURE
+        WA_ERR_TOKEN_EXPIRED
+        WA_ERR_TOKEN_REJECTED
+        WA_ERR_TOKEN_STALE
+        WA_ERR_UNIMPLEMENTED
 
-                       WA_KEY_AES
+        WA_KEY_AES
 
-                       WA_AES_128
-                       WA_AES_192
-                       WA_AES_256
+        WA_AES_128
+        WA_AES_192
+        WA_AES_256
 
-                       WA_KEY_DECRYPT
-                       WA_KEY_ENCRYPT
+        WA_KEY_DECRYPT
+        WA_KEY_ENCRYPT
 
-                       WA_KRB5_CANON_NONE
-                       WA_KRB5_CANON_LOCAL
-                       WA_KRB5_CANON_STRIP);
+        WA_KRB5_CANON_NONE
+        WA_KRB5_CANON_LOCAL
+        WA_KRB5_CANON_STRIP
+    );
 
-    our %EXPORT_TAGS = ('const' => [ @constants ]);
-    our @EXPORT_OK = (@{ $EXPORT_TAGS{'const'} });
-    our @EXPORT = ();
+    %EXPORT_TAGS = ('const' => [ @constants ]);
+    @EXPORT_OK = (@{ $EXPORT_TAGS{'const'} });
+    @EXPORT = ();
 }
 
 # Our C code also creates WebAuth::Token::* objects and throws
@@ -135,7 +139,7 @@ __END__
 
 =for stopwords
 WebAuth API keyring keyrings KEYRING CTX ATTRS login Allbery const
-Kerberos TGT SPRINC Canonicalization Kerberos-related decrypt
+Kerberos TGT SPRINC Canonicalization Kerberos-related decrypt decrypted
 
 =head1 NAME
 
@@ -220,38 +224,6 @@ methods will throw a WebAuth::Exception object.
 
 =over 4
 
-=item attrs_decode (INPUT)
-
-Given a string representing a set of attributes encoded in the attribute
-format used inside WebAuth tokens, decode that string into a hash where
-the keys are the attributes and the values are their corresponding values.
-Attribute strings that contain the same attribute multiple times are not
-supported and will produce undefined results.  (Such strings are not valid
-in WebAuth tokens.)
-
-=item attrs_encode (ATTRS)
-
-Given ATTRS, which must be a reference to a hash, take the hash members as
-attribute and value pairs and encode them into the attribute format used
-inside WebAuth tokens.  The values in the ATTRS hash are converted to
-strings if they are not already.  Nested complex data structures, such as
-references to other arrays or hashes, are not supported and will produce
-undefined results.
-
-=item base64_decode (INPUT)
-
-Decode INPUT as a base64 string and return the result.
-
-This function is deprecated; use decode_base64() from L<MIME::Base64>
-instead.
-
-=item base64_encode (INPUT);
-
-Encode INPUT into base64 and return the result.
-
-This function is deprecated; use encode_base64() from L<MIME::Base64>
-instead.
-
 =item error_message (STATUS)
 
 Returns an error message string corresponding to STATUS, which should be
@@ -259,17 +231,6 @@ one of the WA_ERR_* values.  It's rare to need to use this method, since
 generally any error return from the WebAuth C API is converted into a
 WebAuth::Exception and thrown instead, and the WebAuth::Exception object
 will contain a more detailed error message.
-
-=item hex_decode (INPUT)
-
-Interpret INPUT as a sequence of hexadecimal numbers, with two characters
-per number, and convert each number into the corresponding byte, returning
-the result.
-
-=item hex_encode (INPUT)
-
-For each byte in INPUT, encode it in two hexadecimal digits, and return
-the resulting string.
 
 =item key_create (TYPE, SIZE[, KEY_MATERIAL])
 
@@ -309,6 +270,14 @@ memory access errors or other serious bugs.  Be careful not to retain a
 copy of a WebAuth::Keyring object after the WebAuth object that created it
 has been destroyed.
 
+=item keyring_decode (DATA)
+
+Create a new WebAuth::Keyring object by decoding DATA, which should be a
+keyring in its serialization format (as read from a file written by
+WebAuth::Keyring->write or encoded with WebAuth::Keyring->encode).  All the
+caveats about the lifetime of the WebAuth::Keyring object mentioned for
+keyring_new() also apply here.
+
 =item keyring_read (FILE)
 
 Create a new WebAuth::Keyring object by reading its contents from the
@@ -334,39 +303,34 @@ Callers will normally want to check via isa() whether the returned token
 is of the type that the caller expected.  Not performing that check can
 lead to security issues.
 
+=item token_decrypt (INPUT, KEYRING)
+
+Decrypt the input string, which should be raw encrypted token data (not
+base64-encoded), using the provided keyring and return the decrypted data.
+
+This provides access to the low-level token decryption routine and should
+not normally be used.  It's primarily available to aid in constructing
+test suites.  token_decode() should normally be used instead.
+
+=item token_encrypt (INPUT, KEYRING)
+
+Encrypt the input string, which should be raw token attribute data, using
+the provided keyring and return the encrypted data.  The encryption key
+used will be the one returned by the best_key() method of WebAuth::Keyring
+on that KEYRING.
+
+This provides access to the low-level token encryption routine and should
+not normally be used.  It's primarily available to aid in constructing
+test suites.  A WebAuth::Token subclass and its encode() method should
+normally be used instead.
+
 =back
 
 =head1 CONSTANTS
 
-The following API constants for the WebAuth library are available.
-WebAuth error codes used in WebAuth::Exception for API call failures.
-
-    WA_ERR_NONE
-    WA_ERR_NO_ROOM
-    WA_ERR_CORRUPT
-    WA_ERR_NO_MEM
-    WA_ERR_BAD_HMAC
-    WA_ERR_RAND_FAILURE
-    WA_ERR_BAD_KEY
-    WA_ERR_KEYRING_OPENWRITE
-    WA_ERR_KEYRING_WRITE
-    WA_ERR_KEYRING_OPENREAD
-    WA_ERR_KEYRING_READ
-    WA_ERR_KEYRING_VERISON
-    WA_ERR_NOT_FOUND
-    WA_ERR_KRB5
-    WA_ERR_INVALID_CONTEXT
-    WA_ERR_LOGIN_FAILED
-    WA_ERR_TOKEN_EXPIRED
-    WA_ERR_TOKEN_STALE
-    WA_ERR_CREDS_EXPIRED
-    WA_ERR_USER_REJECTED
-    WA_ERR_APR
-    WA_ERR_UNIMPLEMENTED
-    WA_ERR_INVALID
-    WA_ERR_REMOTE_FAILURE
-
-WebAuth protocol error codes used for login errors:
+This module also provides a variety of API constants for the WebAuth
+library.  WebAuth API status codes used both for API calls and for login
+errors and error tokens:
 
     WA_PEC_SERVICE_TOKEN_EXPIRED
     WA_PEC_SERVICE_TOKEN_INVALID
@@ -392,6 +356,34 @@ WebAuth protocol error codes used for login errors:
     WA_PEC_LOGIN_REJECTED
     WA_PEC_LOA_UNAVAILABLE
     WA_PEC_AUTH_REJECTED
+    WA_PEC_AUTH_REPLAY
+    WA_PEC_AUTH_LOCKOUT
+
+Status codes used only for API calls:
+
+    WA_ERR_NONE
+    WA_ERR_NO_ROOM
+    WA_ERR_CORRUPT
+    WA_ERR_NO_MEM
+    WA_ERR_BAD_HMAC
+    WA_ERR_RAND_FAILURE
+    WA_ERR_BAD_KEY
+    WA_ERR_FILE_OPENWRITE
+    WA_ERR_FILE_WRITE
+    WA_ERR_FILE_OPENREAD
+    WA_ERR_FILE_READ
+    WA_ERR_FILE_VERSION
+    WA_ERR_NOT_FOUND
+    WA_ERR_KRB5
+    WA_ERR_INVALID_CONTEXT
+    WA_ERR_TOKEN_EXPIRED
+    WA_ERR_TOKEN_STALE
+    WA_ERR_APR
+    WA_ERR_UNIMPLEMENTED
+    WA_ERR_INVALID
+    WA_ERR_REMOTE_FAILURE
+    WA_ERR_FILE_NOT_FOUND
+    WA_ERR_TOKEN_REJECTED
 
 Key types for key_create() and C<< WebAuth::Key->new >>:
 

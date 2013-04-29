@@ -27,37 +27,56 @@ package WebKDC::Config;
 use strict;
 use warnings;
 
+# This version should be increased on any code change to this module.  Always
+# use two digits for the minor version with a leading zero if necessary so
+# that it will sort properly.
+our $VERSION;
+BEGIN {
+    $VERSION = '1.00';
+}
+
 my $conf = $ENV{WEBKDC_CONFIG} || '/etc/webkdc/webkdc.conf';
 
 our $KEYRING_PATH = "../conf/webkdc/keyring";
 our $TEMPLATE_PATH = "/usr/local/share/weblogin/generic/templates";
 our $TEMPLATE_COMPILE_PATH = "/usr/local/share/weblogin/generic/templates/ttc";
 our $URL = "https://localhost/webkdc-service/";
+
 our $BYPASS_CONFIRM;
 our $DEFAULT_REALM;
-our $REMUSER_ENABLED;
-our $REMUSER_EXPIRES = 60 * 60 * 8;
-our @REMUSER_REALMS;
-our $REMUSER_REDIRECT;
+our $FATAL_PAGE;
+our $LOGIN_URL;
 our @SHIBBOLETH_IDPS;
 our $TOKEN_ACL;
 our $WEBKDC_PRINCIPAL;
-our $LOGIN_URL;
-our $FATAL_PAGE = '';
 
-our $EXPIRING_PW_SERVER;
+our @MEMCACHED_SERVERS;
+our $RATE_LIMIT_THRESHOLD;
+our $RATE_LIMIT_INTERVAL = 5 * 60;
+our $REPLAY_TIMEOUT;
+
 our $EXPIRING_PW_WARNING;
 our $EXPIRING_PW_URL;
-our $EXPIRING_PW_TGT;
-our $EXPIRING_PW_PRINC = '';
-our $EXPIRING_PW_PORT = 0;
 our $EXPIRING_PW_RESEND_PASSWORD = 1;
+
+our $REMEMBER_FALLBACK = 'no';
 
 our $MULTIFACTOR_COMMAND;
 our $MULTIFACTOR_TGT;
 our $MULTIFACTOR_SERVER;
 our $MULTIFACTOR_PORT = 0;
 our $MULTIFACTOR_PRINC = '';
+
+our $REMUSER_ENABLED;
+our $REMUSER_EXPIRES = 60 * 60 * 8;
+our @REMUSER_REALMS;
+our @REMUSER_PERMITTED_REALMS;
+our @REMUSER_LOCAL_REALMS;
+our $REMUSER_REDIRECT;
+
+our $LOGIN_STATE_UNSERIALIZE;
+
+our $FACTOR_WARNING  = 60 * 60 * 24 * 2;
 
 # Obsolete variables supported for backward compatibility.
 our $HONOR_REMOTE_USER;
@@ -83,6 +102,12 @@ if (@REALMS and not @REMUSER_REALMS) {
 }
 if (defined ($REALM)) {
     push (@REMUSER_REALMS, $REALM);
+}
+if (@REMUSER_REALMS and not @REMUSER_PERMITTED_REALMS) {
+    @REMUSER_PERMITTED_REALMS = @REMUSER_REALMS;
+}
+if (@REMUSER_REALMS and not @REMUSER_LOCAL_REALMS) {
+    @REMUSER_LOCAL_REALMS = @REMUSER_REALMS;
 }
 
 1;

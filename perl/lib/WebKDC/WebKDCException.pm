@@ -24,6 +24,8 @@
 
 package WebKDC::WebKDCException;
 
+use 5.008;
+
 use strict;
 use warnings;
 
@@ -35,7 +37,7 @@ use overload '""' => \&to_string;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.04';
+    $VERSION = '1.05';
 }
 
 # Export the error codes.  This list MUST be kept in sync and follow the same
@@ -56,17 +58,19 @@ BEGIN {
                  WK_ERR_MULTIFACTOR_UNAVAILABLE
                  WK_ERR_LOGIN_REJECTED
                  WK_ERR_LOA_UNAVAILABLE
-                 WK_ERR_AUTH_REJECTED);
+                 WK_ERR_AUTH_REJECTED
+                 WK_ERR_AUTH_REPLAY
+                 WK_ERR_AUTH_LOCKOUT);
 }
 
-# This hash maps the error code names, used when stringifying.
+# This hash maps the error codes to names, used when stringifying.
 our %ERROR_NAMES;
 {
     my $i = 0;
     %ERROR_NAMES = map {
         my $n = $_;
         $n =~ s/^WK_(?:ERR_)?//;
-        $n => $i++;
+        $i++ => $n;
     } @EXPORT;
 }
 
@@ -85,6 +89,8 @@ sub WK_ERR_MULTIFACTOR_UNAVAILABLE () { 10 }
 sub WK_ERR_LOGIN_REJECTED          () { 11 }
 sub WK_ERR_LOA_UNAVAILABLE         () { 12 }
 sub WK_ERR_AUTH_REJECTED           () { 13 }
+sub WK_ERR_AUTH_REPLAY             () { 14 }
+sub WK_ERR_AUTH_LOCKOUT            () { 15 }
 
 # Create a new WebKDC::WebKDCException object and initialize the status,
 # message, protocol error, and data.
@@ -130,7 +136,7 @@ __END__
 
 =for stopwords
 WebKDC username login WebAuth WebKdcPermittedRealms multifactor logins
-errorCode Allbery
+errorCode Allbery WebLogin
 
 =head1 NAME
 
@@ -258,6 +264,26 @@ for the user's authentication that is higher than this user can provide,
 either because of insufficient proof of identity available to the system
 or due to an insufficiently strong configured authentication method.
 
+=item WK_ERR_AUTH_REJECTED
+
+This user is not permitted to authenticate to the desired destination
+WebAuth Application Server at this time.  This may be due to local policy,
+security limitations placed on the user, missing prerequisite actions that
+the user must take (such as training or a usage agreement), or some other
+local factor.
+
+=item WK_ERR_AUTH_REPLAY
+
+This authentication attempt appears to be a replay.  Replays may be
+rejected as a security measure to protect against people who walked away
+with a browser open and left the WebLogin form submission in the browser
+cache.
+
+=item WK_ERR_AUTH_LOCKOUT
+
+This account has been locked out due to too many unsuccessful login
+attempts.  The login should be retried later.
+
 =back
 
 =head1 CLASS METHODS
@@ -299,8 +325,12 @@ will be one of the WK_ERR_* codes.
 =item verbose_message ()
 
 This method returns a verbose error message, which consists of the status
-code, message, and any error code.  The verbose_message method is also
-called if the exception is used as a string.
+code, message, and any error code.
+
+=item to_string ()
+
+This method is called if the exception is used as a string.  It is a
+wrapper around the verbose_message method.
 
 =back
 

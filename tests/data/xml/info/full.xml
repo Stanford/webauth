@@ -5,7 +5,15 @@
     <factor>o</factor>
     <factor>o3</factor>
   </factors>
-  <multifactor-required />
+  <required-factors>
+    <factor>p</factor>
+    <factor>m</factor>
+    <factor>o</factor>
+    <factor>o3</factor>
+  </required-factors>
+  <persistent-factors>
+    <valid-threshold>1365630519</valid-threshold>
+  </persistent-factors>
   <login-history>
     <host name="example.com" timestamp="1335373919">127.0.0.2</host>
     <host name="www.example.com">127.0.0.3</host>

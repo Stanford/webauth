@@ -2,7 +2,7 @@
  * Handling of keys and keyrings.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -16,7 +16,6 @@
 #include <openssl/rand.h>
 
 #include <lib/internal.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 
@@ -37,20 +36,20 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
                    struct webauth_key **output)
 {
     struct webauth_key *key;
-    int status;
+    int s;
     unsigned long err;
     char errbuf[BUFSIZ];
 
     /* Return NULL on invalid key types and sizes. */
     if (type != WA_KEY_AES) {
-        status = WA_ERR_INVALID;
-        webauth_error_set(ctx, status, "unsupported key type %d", type);
-        return status;
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "unsupported key type %d", type);
+        return s;
     }
     if (size != WA_AES_128 && size != WA_AES_192 && size != WA_AES_256) {
-        status = WA_ERR_INVALID;
-        webauth_error_set(ctx, status, "unsupported key size %d", size);
-        return status;
+        s = WA_ERR_INVALID;
+        wai_error_set(ctx, s, "unsupported key size %d", size);
+        return s;
     }
 
     /* Create the basic key structure. */
@@ -63,18 +62,17 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
     if (key_material != NULL)
         memcpy(key->data, key_material, size);
     else {
-        status = RAND_bytes(key->data, size);
-        if (status < 1) {
-            status = WA_ERR_RAND_FAILURE;
+        s = RAND_bytes(key->data, size);
+        if (s < 1) {
+            s = WA_ERR_RAND_FAILURE;
             err = ERR_get_error();
             if (err == 0)
-                webauth_error_set(ctx, status, "cannot generate random key");
+                wai_error_set(ctx, s, "cannot generate key");
             else {
                 ERR_error_string_n(err, errbuf, sizeof(errbuf));
-                webauth_error_set(ctx, status,
-                                  "cannot generate random key: %s", errbuf);
+                wai_error_set(ctx, s, "cannot generate key: %s", errbuf);
             }
-            return status;
+            return s;
         }
     }
     *output = key;

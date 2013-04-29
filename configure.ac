@@ -1,13 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012
+dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013
 dnl    The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [4.3.3], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.5.0], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -18,9 +18,11 @@ AM_MAINTAINER_MODE
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
 AM_PROG_CC_C_O
+AM_PROG_AR
 AC_PROG_INSTALL
 LT_INIT
 RRA_LD_VERSION_SCRIPT
+AC_PROG_MKDIR_P
 
 dnl Store information about the time the package was configured and the person
 dnl who configured it into another variable.
@@ -59,13 +61,17 @@ AC_ARG_ENABLE([mod_webauthldap],
 AM_CONDITIONAL([BUILD_WEBAUTHLDAP], [test x"$build_webauthldap" = xtrue])
 
 dnl Allow the user to indicate that the Perl modules should not be built.
+PERL_LDFLAGS=
 AC_ARG_ENABLE([perl],
     [AC_HELP_STRING([--enable-perl], [Build Perl bindings])],
     [AS_IF([test x"$enableval" = xyes], [build_perl=true],
         [build_perl=false])],
     [build_perl="$build_webkdc"])
 AM_CONDITIONAL([BUILD_PERL], [test x"$build_perl" = xtrue])
-AS_IF([test x"$build_perl" = xtrue], [AC_PATH_PROG([PERL], [perl])])
+AS_IF([test x"$build_perl" = xtrue],
+    [AC_PATH_PROG([PERL], [perl])
+     PERL_LDFLAGS=`$PERL -MConfig -e 'print $Config{lddlflags}'`])
+AC_SUBST([PERL_LDFLAGS])
 
 dnl Used for the test suite.
 AC_ARG_VAR([PATH_REMCTLD], [Path to remctld for the test suite])
@@ -121,7 +127,7 @@ AC_CHECK_LIB([keyutils], [keyctl_search],
         [Define to 1 if you have the `keyutils' library (-lkeyutils).])])
 
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([strings.h sys/bittypes.h sys/select.h syslog.h])
+AC_CHECK_HEADERS([sys/bittypes.h sys/select.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
 AC_CHECK_FUNCS([setrlimit])
 RRA_C_C99_VAMACROS
@@ -133,7 +139,7 @@ AC_TYPE_INTPTR_T
 AC_CHECK_TYPES([ssize_t], [], [],
     [#include <sys/types.h>])
 RRA_FUNC_SNPRINTF
-AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy])
+AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy strndup])
 
 dnl Used to determine whether to add our GCC-specific warning suppression
 dnl flags to the language binding builds.
@@ -147,13 +153,11 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
     [DEPEND_LIBS="$APR_LDFLAGS $APR_LIBS $APRUTIL_LDFLAGS $APRUTIL_LIBS"
      DEPEND_LIBS="$DEPEND_LIBS $REMCTL_LDFLAGS $REMCTL_LIBS"
      DEPEND_LIBS="$DEPEND_LIBS $KRB5_LDFLAGS $KRB5_LIBS"
-     DEPEND_LIBS="$CRYPTO_LDFLAGS $CRYPTO_LIBS $KEYUTILS_LIBS"])
+     DEPEND_LIBS="$DEPEND_LIBS $CRYPTO_LDFLAGS $CRYPTO_LIBS $KEYUTILS_LIBS"])
 AC_SUBST([DEPEND_LIBS])
 
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
 AC_CONFIG_HEADERS([config.h config-mod.h])
-AS_IF([test x"$build_perl" = xtrue],
-    [AC_CONFIG_FILES([perl/Makefile.PL perl/t/lib/RRA/TAP/Automake.pm])])
 AC_CONFIG_COMMANDS([include/webauth/defines.h],
     [${srcdir}/include/mkheader ${srcdir}/${filename}.in ${filename}],
     [filename=include/webauth/defines.h])

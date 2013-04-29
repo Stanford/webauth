@@ -1,7 +1,7 @@
 # Interact with the WebAuth WebKDC service.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011, 2012
+# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,9 +33,9 @@ use LWP::UserAgent;
 use WebAuth qw(3.00 :const);
 use WebAuth::Keyring ();
 use WebKDC::Config;
-use WebKDC::WebRequest;
-use WebKDC::WebResponse;
-use WebKDC::WebKDCException;
+use WebKDC::WebRequest 1.03;
+use WebKDC::WebResponse 1.03;
+use WebKDC::WebKDCException 1.05;
 use WebKDC::XmlDoc;
 use WebKDC::XmlElement;
 
@@ -44,7 +44,7 @@ use WebKDC::XmlElement;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '2.04';
+    $VERSION = '2.06';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
@@ -79,19 +79,21 @@ our %pec_mapping = (
     &WA_PEC_LOGIN_REJECTED              => WK_ERR_LOGIN_REJECTED,
     &WA_PEC_LOA_UNAVAILABLE             => WK_ERR_LOA_UNAVAILABLE,
     &WA_PEC_AUTH_REJECTED               => WK_ERR_AUTH_REJECTED,
+    &WA_PEC_AUTH_REPLAY                 => WK_ERR_AUTH_REPLAY,
+    &WA_PEC_AUTH_LOCKOUT                => WK_ERR_AUTH_LOCKOUT,
 );
 
 # Get a keyring from the configured WebLogin keyring path.  This used to
 # cache, but we have to tie the lifetime to the WebAuth context, so it's not
 # easy to cache.
-sub get_keyring ($) {
+sub get_keyring {
     my ($wa) = @_;
     return WebAuth::Keyring->read ($wa, $WebKDC::Config::KEYRING_PATH);
 }
 
 # Throw a WebKDCException with the given error code and error message and
 # optional protocol error code and data
-sub throw ($$;$$) {
+sub throw {
     my ($code, $error, $pec, $data) = @_;
     die WebKDC::WebKDCException->new ($code, $error, $pec, $data);
 }
@@ -116,7 +118,7 @@ sub get_child_value {
 #
 # Returns the status code, the exception (if any), the token (on success), and
 # the subject (on success).
-sub make_proxy_token_request ($$) {
+sub make_proxy_token_request {
     my ($req, $tgt) = @_;
     my ($token, $subject);
     ($token, $subject) = eval { WebKDC::proxy_token_request ($req, $tgt) };
@@ -132,7 +134,7 @@ sub make_proxy_token_request ($$) {
 
 # Takes a WebKDC::WebRequest and WebKDC::WebResponse.  Fills in the response
 # on success.  Returns a status code and the exception as a list.
-sub make_request_token_request ($$) {
+sub make_request_token_request {
     my ($req, $resp) = @_;
     eval { WebKDC::request_token_request($req, $resp) };
     my $e = $@;
@@ -147,7 +149,7 @@ sub make_request_token_request ($$) {
 
 # Takes the Kerberos request and the exported TGT and makes a
 # <webkdcProxyTokenRequest> call.  Throws an exception on failure.
-sub proxy_token_request ($$) {
+sub proxy_token_request {
     my ($req, $tgt) = @_;
 
     # Build the XML request.
@@ -196,11 +198,13 @@ sub proxy_token_request ($$) {
 
 # Takes a WebKDC::WebRequest and WebKDC::WebResponse.  Fills in the response
 # on success.  Throws an exception on failure.
-sub request_token_request ($$) {
+sub request_token_request {
     my ($wreq, $wresp) = @_;
     my ($user, $pass, $otp) = ($wreq->user, $wreq->pass, $wreq->otp);
+    my $otp_type = $wreq->otp_type;
     my $request_token = $wreq->request_token;
     my $service_token = $wreq->service_token;
+    my $factor_token = $wreq->factor_token;
     my $proxy_cookies = $wreq->proxy_cookies_rich;
 
     my $webkdc_doc = WebKDC::XmlDoc->new;
@@ -221,6 +225,7 @@ sub request_token_request ($$) {
         $login_token->creation (time);
         if (defined $otp) {
             $login_token->otp ($otp);
+            $login_token->otp_type ($otp_type);
         } else {
             $login_token->password ($pass);
         }
@@ -237,10 +242,21 @@ sub request_token_request ($$) {
                                 $token)->end;
         }
     }
+    if (defined $factor_token) {
+        $webkdc_doc->start ('factorToken', undef, $factor_token)->end;
+    }
     $webkdc_doc->end('subjectCredential');
 
-    # Add the request token and request information.
-    $webkdc_doc->start ('requestToken',  undef, $request_token)->end;
+    # Add the request token, authorization identity, and request information.
+    $webkdc_doc->start ('requestToken', undef, $request_token)->end;
+    if ($wreq->authz_subject) {
+        $webkdc_doc->start ('authzSubject', undef, $wreq->authz_subject)->end;
+    }
+
+    if ($wreq->login_state) {
+        $webkdc_doc->start ('loginState', undef, $wreq->login_state)->end;
+    }
+
     if ($wreq->local_ip_addr || $wreq->remote_user) {
         $webkdc_doc->start('requestInfo');
         if ($wreq->local_ip_addr) {
@@ -289,7 +305,7 @@ sub request_token_request ($$) {
             my $proxy_cookies = $wreq->proxy_cookies;
             if (defined $proxy_cookies) {
                 while (my ($name, $token) = each %{$proxy_cookies}) {
-                    $wresp->proxy_cookie ($name, '');
+                    $wresp->cookie ($name, '');
                 }
             }
         }
@@ -300,26 +316,42 @@ sub request_token_request ($$) {
         my $return_url = get_child_value ($root, 'returnUrl', 0);
         my $requester_sub = get_child_value ($root, 'requesterSubject', 0);
         my $subject = get_child_value ($root, 'subject', 1);
+        my $authz_subject = get_child_value ($root, 'authzSubject', 1);
         my $returned_token = get_child_value ($root, 'requestedToken', 1);
         my $returned_token_type
             = get_child_value ($root, 'requestedTokenType', 1);
         my $app_state = get_child_value ($root, 'appState', 1);
         my $login_canceled_token
             = get_child_value ($root, 'loginCanceledToken', 1);
-        my $proxy_tokens = $root->find_child ('proxyTokens');
         my $error_code = get_child_value ($root, 'loginErrorCode', 1);
         my $error_message = get_child_value ($root, 'loginErrorMessage', 1);
         my $user_message = get_child_value ($root, 'userMessage', 1);
+        my $pass_expires = get_child_value ($root, 'passwordExpires', 1);
+        my $login_state = get_child_value ($root, 'loginState', 1);
 
+        # Expand each of the proxy tokens, which contain a type and value.
+        my $proxy_tokens = $root->find_child ('proxyTokens');
         if (defined $proxy_tokens) {
             for my $token (@{ $proxy_tokens->children }) {
                 my $type = $token->attr ('type');
                 my $cname = "webauth_wpt_$type";
                 my $cvalue  = $token->content || '';
-                $wresp->proxy_cookie ($cname, $cvalue);
+                $wresp->cookie ($cname, $cvalue);
             }
         }
 
+        # Expand the single potential factor token, adding it to the other
+        # cookies.
+        my $factor_tokens = $root->find_child ('factorTokens');
+        if (defined $factor_tokens) {
+            my ($token) = @{ $factor_tokens->children };
+            my $expires = $token->attr ('expires');
+            my $cvalue  = $token->content || '';
+            $wresp->cookie ('webauth_wft', $cvalue, $expires);
+        }
+
+        # Expand any multifactor factors required by the WAS or available
+        # for the user that would satisfy a requirement.
         my $multifactor = $root->find_child ('multifactorRequired');
         if (defined $multifactor) {
             for my $mf_setting (@{$multifactor->children}) {
@@ -332,6 +364,18 @@ sub request_token_request ($$) {
             }
         }
 
+        my $permitted_authz = $root->find_child ('permittedAuthzSubjects');
+        if (defined $permitted_authz) {
+            my @authz;
+            for my $authz (@{ $permitted_authz->children }) {
+                if ($authz->name eq 'authzSubject') {
+                    push (@authz, $authz->content);
+                }
+            }
+            $wresp->permitted_authz (@authz);
+        }
+
+        # Expand the entries of a possible suspicious login history.
         my $login_history = $root->find_child ('loginHistory');
         if (defined $login_history) {
             for my $login (@{ $login_history->children }) {
@@ -351,6 +395,11 @@ sub request_token_request ($$) {
         $wresp->login_canceled_token ($login_canceled_token)
             if defined $login_canceled_token;
         $wresp->subject ($subject) if defined $subject;
+        $wresp->authz_subject ($authz_subject) if defined $authz_subject;
+        $wresp->password_expiration ($pass_expires)
+            if defined $pass_expires;
+        $wresp->user_message ($user_message) if defined $user_message;
+        $wresp->login_state ($login_state) if defined $login_state;
 
         if ($error_code) {
             my $wk_err = $pec_mapping{$error_code}
@@ -371,7 +420,8 @@ __END__
 
 =for stopwords
 WebAuth webkdc-proxy authenticator WebKDC WebKDC's WebLogin AUTH TGT
-Allbery
+Allbery PEC keyring WebKDCException requestTokenRequest
+webkdcProxyTokenRequest
 
 =head1 NAME
 
@@ -432,6 +482,41 @@ The return value is a list of the status and the exception object, if any.
 The status will be WK_SUCCESS on success and some other WK_ERR_* status
 code on failure.  See L<WebKDC::WebKDCException> for the other status
 codes.
+
+=item throw (ERROR_CODE, ERROR_MSG, PEC, DATA)
+
+Throw a WebKDCException with the given error code and message.  This can
+also take an optional protocol error code and data.
+
+=item request_token_request (REQUEST, RESPONSE)
+
+Makes a requestTokenRequest call to the WebKDC, using data from the given
+WebKDC::WebRequest object.  This will create the XML to communicate with
+the WebKDC, pass it along, then parse the response.
+
+There is no return value.  Instead, data is parsed from the WebKDC's
+response and placed into the WebKDC::WebResponse object passed to the
+function.  On an error, we throw an exception with a specific error code.
+
+=item proxy_token_request (REQUEST, TGT)
+
+Makes a webkdcProxyTokenRequest call to the WebKDC, using the given
+WebKDC::WebRequest and TGT passed.  This will create the XML to
+communicate with the WebKDC, pass it along, then parse the response.
+
+The return value is a list of the returned proxy token and subject.  On
+any failure, we throw an exception with a specific error code.
+
+=item get_keyring (WA)
+
+Returns a keyring object from the configured WebLogin keyring path.
+
+=item get_child_value (ELEMENT, NAME, OPT)
+
+Gets and returns the content of a child for the given element.  NAME is
+the name of the child to search for.  If there is no child of that name,
+throw an exception of type WK_ERR_UNRECOVERABLE_ERROR.  If OPT is set
+and there was no child of the given name, instead just return undef.
 
 =back
 

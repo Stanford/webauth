@@ -2,7 +2,7 @@
  * Management of service tokens and WebKDC queries.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -21,6 +21,9 @@
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
+#include <webauth/was.h>
+
+APLOG_USE_MODULE(webauth);
 
 /* Earlier versions of cURL don't have CURLOPT_WRITEDATA. */
 #ifndef CURLOPT_WRITEDATA
@@ -88,231 +91,82 @@ new_service_token(apr_pool_t *pool,
 
 
 static MWA_SERVICE_TOKEN *
+new_service_token_from_cache(apr_pool_t *pool,
+                             struct webauth_was_token_cache *cache)
+{
+    MWA_SERVICE_TOKEN *token;
+
+    token = apr_pcalloc(pool, sizeof(MWA_SERVICE_TOKEN));
+    token->pool = pool;
+    token->expires = cache->expires;
+    token->created = cache->created;
+
+    token->token = apr_pstrdup(pool, cache->token);
+
+    token->next_renewal_attempt = cache->next_renewal;
+    token->last_renewal_attempt = cache->last_renewal;
+    token->key.type = cache->key_type;
+
+    token->key.data = apr_pmemdup(pool, cache->key_data, cache->key_data_len);
+    token->key.length = cache->key_data_len;
+    return token;
+}
+
+
+static MWA_SERVICE_TOKEN *
 read_service_token_cache(server_rec *server, struct server_config *sconf,
                          apr_pool_t *pool)
 {
+    struct webauth_was_token_cache cache;
     MWA_SERVICE_TOKEN *token;
-    apr_file_t *cache;
-    apr_finfo_t finfo;
-    char *buffer;
-    apr_status_t astatus;
     int status;
-    size_t tlen, klen;
-    size_t num_read;
-    int s_expires, s_token, s_lra, s_kt, s_key, s_nra, s_created;
-    time_t expires, lra, nra, created;
-    uint32_t key_type;
-    char *tok;
-    void *key;
 
-    WEBAUTH_ATTR_LIST *alist;
-    static const char *mwa_func = "mwa_read_service_token_cache";
-
-    /* check file */
-    astatus = apr_file_open(&cache, sconf->st_cache_path,
-                            APR_READ|APR_FILE_NOCLEANUP,
-                            APR_UREAD|APR_UWRITE,
-                            pool);
-
-    if (astatus != APR_SUCCESS) {
-        if (!APR_STATUS_IS_ENOENT(astatus)) {
-            mwa_log_apr_error(server, astatus, mwa_func, "apr_file_open",
-                              sconf->st_cache_path, NULL);
-        }
+    memset(&cache, 0, sizeof(cache));
+    status = webauth_was_token_cache_read(sconf->ctx, sconf->st_cache_path,
+                                          &cache);
+    if (status == WA_ERR_FILE_NOT_FOUND)
         return NULL;
-    }
-
-    astatus = apr_file_info_get(&finfo, APR_FINFO_NORM, cache);
-    if (astatus != APR_SUCCESS) {
-        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_info_get",
-                          sconf->st_cache_path, NULL);
-        apr_file_close(cache);
-        return NULL;
-    }
-
-    buffer = apr_palloc(pool, finfo.size);
-
-    astatus = apr_file_read_full(cache, buffer, finfo.size, &num_read);
-    apr_file_close(cache);
-
-    if (astatus != APR_SUCCESS) {
-        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_read_full",
-                          sconf->st_cache_path, NULL);
-        return NULL;
-    }
-
-    if (finfo.size == 0) {
-        ap_log_error(APLOG_MARK, APLOG_WARNING, 0, server,
-                     "mod_webauth: %s: service token cache is zero length: %s",
-                     mwa_func, sconf->st_cache_path);
-        return NULL;
-    }
-
-    status = webauth_attrs_decode(buffer, finfo.size, &alist);
-
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(server, status, "mwa_func",
-                              "webauth_attrs_decode",
-                              sconf->st_cache_path);
-        return NULL;
-    }
-
-    s_expires = webauth_attr_list_get_time(alist, "expires", &expires,
-                                           WA_F_FMT_STR);
-
-    s_created = webauth_attr_list_get_time(alist, "created", &created,
-                                           WA_F_FMT_STR);
-
-    s_token = webauth_attr_list_get_str(alist, "token", &tok, &tlen,
-                                        WA_F_NONE);
-    s_lra = webauth_attr_list_get_time(alist, "last_renewal_attempt",
-                                       &lra, WA_F_FMT_STR);
-    s_nra = webauth_attr_list_get_time(alist, "next_renewal_attempt",
-                                       &nra, WA_F_FMT_STR);
-    s_kt = webauth_attr_list_get_uint32(alist, "key_type", &key_type,
-                                        WA_F_FMT_STR);
-    s_key = webauth_attr_list_get(alist, "key", &key, &klen, WA_F_FMT_HEX);
-
-    if ((s_expires != WA_ERR_NONE) || (s_token != WA_ERR_NONE) ||
-        (s_lra != WA_ERR_NONE) || (s_kt != WA_ERR_NONE) ||
-        (s_nra != WA_ERR_NONE) || (s_created != WA_ERR_NONE) ||
-        (s_key != WA_ERR_NONE)) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
-                     "mod_webauth: %s: attr_list_get failed for: %s%s%s%s%s%s%s",
-                     mwa_func,
-                     (s_expires != WA_ERR_NONE) ? "expires" : "",
-                     (s_created != WA_ERR_NONE) ? "created" : "",
-                     (s_token != WA_ERR_NONE) ? "token" : "",
-                     (s_lra != WA_ERR_NONE) ? "last_renewal_attempt" : "",
-                     (s_nra != WA_ERR_NONE) ? "next_renewal_attempt" : "",
-                     (s_kt != WA_ERR_NONE) ? "key_type" : "",
-                     (s_key != WA_ERR_NONE) ? "key" : "");
+                     "mod_webauth: cannot read service token cache %s: %s",
+                     sconf->st_cache_path,
+                     webauth_error_message(sconf->ctx, status));
         return NULL;
     }
-
-    token = new_service_token(pool, key_type, key, klen, tok, tlen, expires,
-                              created, lra, nra);
-    webauth_attr_list_free(alist);
+    token = new_service_token_from_cache(pool, &cache);
     return token;
 }
 
 
 static int
 write_service_token_cache(server_rec *server, struct server_config *sconf,
-                          apr_pool_t *pool, MWA_SERVICE_TOKEN *token)
+                          MWA_SERVICE_TOKEN *token)
 {
-    apr_file_t *cache;
-    char *buffer;
-    apr_status_t astatus;
-    int status, ok;
-    size_t buff_len, ebuff_len;
-    size_t bytes_written;
-    char *templ;
-    WEBAUTH_ATTR_LIST *alist;
-    static const char *mwa_func = "write_service_token_cache";
+    struct webauth_was_token_cache cache;
+    int status;
 
-    /* store new cache in a temp file, and move over if everything ok */
-    templ = apr_pstrcat(pool, sconf->st_cache_path, "XXXXXX", NULL);
-    astatus = apr_file_mktemp(&cache, templ,
-                              APR_WRITE|APR_CREATE|
-                              APR_TRUNCATE |APR_FILE_NOCLEANUP,
-                              pool);
+    /* Convert to the data structure that the library expects. */
+    memset(&cache, 0, sizeof(cache));
+    cache.token = token->token;
+    cache.key_type = token->key.type;
+    cache.key_data = token->key.data;
+    cache.key_data_len = token->key.length;
+    cache.created = token->created;
+    cache.expires = token->expires;
+    cache.last_renewal = token->last_renewal_attempt;
+    cache.next_renewal = token->next_renewal_attempt;
 
-    if (astatus != APR_SUCCESS) {
-        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_mktemp",
-                          templ, NULL);
-        return 0;
-    }
-
-    ok = 0;
-
-    alist = webauth_attr_list_new(10);
-
-    webauth_attr_list_add_str(alist, "token", (char *) token->token, 0,
-                              WA_F_NONE);
-
-    webauth_attr_list_add_uint32(alist, "key_type",
-                                 token->key.type, WA_F_FMT_STR);
-
-    webauth_attr_list_add_time(alist, "expires",
-                                 token->expires, WA_F_FMT_STR);
-
-    webauth_attr_list_add_time(alist, "created",
-                                 token->created, WA_F_FMT_STR);
-
-    webauth_attr_list_add_time(alist, "last_renewal_attempt",
-                                 token->last_renewal_attempt, WA_F_FMT_STR);
-
-    webauth_attr_list_add_time(alist, "next_renewal_attempt",
-                                 token->next_renewal_attempt, WA_F_FMT_STR);
-
-    webauth_attr_list_add(alist, "key", token->key.data,
-                          token->key.length, WA_F_FMT_HEX);
-
-    buff_len = webauth_attrs_encoded_length(alist);
-    buffer = apr_palloc(pool, buff_len);
-
-    status = webauth_attrs_encode(alist, buffer, &ebuff_len, buff_len);
-    webauth_attr_list_free(alist);
-
+    /* Cache that data. */
+    status = webauth_was_token_cache_write(sconf->ctx, &cache,
+                                           sconf->st_cache_path);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
-                     "mod_webauth: %s: webauth_attrs_encode failed: %s (%d)",
-                     mwa_func, webauth_error_message(NULL, status), status);
-        goto cleanup;
+                     "mod_webauth: cannot write service token cache %s: %s",
+                     sconf->st_cache_path,
+                     webauth_error_message(sconf->ctx, status));
+        return 0;
     }
-
-    astatus = apr_file_write_full(cache, buffer, ebuff_len, &bytes_written);
-
-    if (status != APR_SUCCESS) {
-        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_write_file",
-                      templ, NULL);
-        goto cleanup;
-    }
-
-    ok = 1;
-
- cleanup:
-
-    /* always close */
-    astatus = apr_file_close(cache);
-
-    if (astatus != APR_SUCCESS) {
-        ok = 0;
-        mwa_log_apr_error(server, astatus, mwa_func, "apr_file_close",
-                      templ, NULL);
-    }
-
-    /* if we are ok, set perms on the temp file */
-    if (ok) {
-        astatus = apr_file_perms_set(templ, APR_UREAD|APR_UWRITE);
-
-        if (astatus != APR_SUCCESS && astatus != APR_ENOTIMPL) {
-            mwa_log_apr_error(server, astatus, mwa_func, "apr_file_perms_set",
-                          templ, NULL);
-            /* not ok anymore */
-            ok = 0;
-        }
-    }
-
-    /* if we are ok at this point, rename, otherwise remove */
-    if (ok) {
-        astatus = apr_file_rename(templ, sconf->st_cache_path, pool);
-        if (astatus != APR_SUCCESS) {
-            mwa_log_apr_error(server, astatus, mwa_func, "apr_file_rename",
-                              templ, sconf->st_cache_path);
-            ok = 0;
-        }
-    } else {
-        /* not ok, nuke it */
-        astatus = apr_file_remove(templ, pool);
-        if (astatus != APR_SUCCESS) {
-            mwa_log_apr_error(server, astatus, mwa_func, "apr_file_rename",
-                              templ, sconf->st_cache_path);
-        }
-    }
-
-    return ok;
+    return 1;
 }
 
 
@@ -713,8 +567,9 @@ set_app_state(struct webauth_context *ctx, server_rec *server,
     app.token.app.expiration = token->expires;
     status = webauth_token_encode_raw(ctx, &app, sconf->ring, &as, &length);
     if (status != WA_ERR_NONE)
-        mwa_log_webauth_error(server, status, "set_app_state",
-                              "webauth_token_encode", NULL);
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server,
+                     "mod_webauth: cannot encode state token: %s",
+                     webauth_error_message(ctx, status));
     else {
         token->app_state = as;
         token->app_state_len = length;
@@ -831,8 +686,7 @@ mwa_get_service_token(server_rec *server, struct server_config *sconf,
             sconf->service_token->last_renewal_attempt = curr;
             sconf->service_token->next_renewal_attempt =
                 curr+TOKEN_RETRY_INTERVAL;
-            write_service_token_cache(server, sconf, pool,
-                                      sconf->service_token);
+            write_service_token_cache(server, sconf, sconf->service_token);
         }
     } else {
 
@@ -843,7 +697,7 @@ mwa_get_service_token(server_rec *server, struct server_config *sconf,
         }
 
         /* got a new one, lets right it out*/
-        write_service_token_cache(server, sconf, pool, token);
+        write_service_token_cache(server, sconf, token);
         set_app_state(ctx, server, sconf, token);
         set_service_token(token, sconf);
         goto done;
@@ -876,8 +730,8 @@ make_request_token(MWA_REQ_CTXT *rc, MWA_SERVICE_TOKEN *st, const char *cmd)
     req.token.request.command = cmd;
     status = webauth_token_encode(rc->ctx, &req, ring, &token);
     if (status != WA_ERR_NONE) {
-        mwa_log_webauth_error(rc->r->server, status, mwa_func,
-                              "webauth_token_encode_request", NULL);
+        mwa_log_webauth_error(rc, status, mwa_func,
+                              "webauth_token_encode", NULL);
         return NULL;
     }
     return token;

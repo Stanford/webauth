@@ -34,30 +34,30 @@
 
 package WebAuth::Exception;
 
-require 5.006;
+use 5.006;
+
 use strict;
 use warnings;
 
-use WebAuth qw(3.02);
-
-use base qw(Exporter);
 use overload '""' => \&to_string, 'cmp' => \&spaceship;
+
+use WebAuth qw(3.02);
 
 # This version should be increased on any code change to this module.  Always
 # use two digits for the minor version with a leading zero if necessary so
 # that it will sort properly.
-our $VERSION = '3.02';
+our $VERSION = '3.04';
 
 # There is intentionally no constructor.  This object is thrown by the WebAuth
 # C API.
 
 # Basic accessors.
-sub detail_message () { my $self = shift; return $self->{'detail'}  }
-sub error_message ()  { my $self = shift; return $self->{'message'} }
-sub status ()         { my $self = shift; return $self->{'status'}  }
+sub detail_message { my $self = shift; return $self->{'detail'}  }
+sub error_message  { my $self = shift; return $self->{'message'} }
+sub status         { my $self = shift; return $self->{'status'}  }
 
 # A full verbose message with all the information from the exception.
-sub verbose_message () {
+sub verbose_message {
     my ($self) = @_;
     my $status = $self->{'status'};
     my $file = $self->{'file'};
@@ -75,7 +75,7 @@ sub verbose_message () {
 }
 
 # The string conversion of this exception is the full verbose message.
-sub to_string () {
+sub to_string {
     my ($self) = @_;
     return $self->verbose_message;
 }
@@ -160,9 +160,17 @@ Returns a verbose error message, which consists of all information
 available in the exception, including the status code, error message, line
 number and file, and any detail message in the exception.
 
-The result of this method is also used as the string value of the
-exception if the exception object is interpolated into a string or
-compared to a string.
+=item to_string ()
+
+This method is called if the exception is interpolated into a string.
+It is a wrapper around the verbose_message method.
+
+=item spaceship ([STRING], [SWAP])
+
+This method is called if the exception object is compared to a string
+via cmp.  It will compare the given string to the verbose error message
+and return the result.  If SWAP is set, it will reverse the order to
+compare the given string to the verbose error.
 
 =back
 

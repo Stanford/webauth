@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <lib/internal.h>
 #include <tests/tap/basic.h>
-#include <webauth.h>
 #include <webauth/basic.h>
 
 #define BUFSIZE 2048

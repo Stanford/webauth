@@ -1,0 +1,81 @@
+This directory contains encoded Kerberos credentials created with various
+versions of WebAuth to test stability of credential decoding.  The script
+tests/data/make-krb5-cred shows how to generate an encoded Kerberos
+credential from a ticket cache.
+
+These files are used primarily by tests/lib/krb5-cred-t.c.  If any of them
+are regenerated, that test suite will have to be changed to check for the
+updated values.
+
+The key properties of these credentials are as follows:
+
+ad-heimdal
+         Client: thoron@NT.STANFORD.EDU
+         Server: krbtgt/NT.STANFORD.EDU@NT.STANFORD.EDU
+       End Time: 1355559675
+          Renew: 1356074475
+    Forwardable: yes
+        Enctype: aes256-cts-hmac-sha1-96
+      Addresses: (none)
+
+addresses
+         Client: thoron@heimdal.stanford.edu
+         Server: krbtgt/heimdal.stanford.edu@heimdal.stanford.edu
+       End Time: 1355532627
+          Renew: 1356051022
+    Forwardable: yes
+        Enctype: aes256-cts-hmac-sha1-96
+      Addresses: 171.67.225.134 (IPv4)
+                 2607:f6d0:0:a200::65 (IPv6)
+
+basic
+         Client: thoron@heimdal.stanford.edu
+         Server: krbtgt/heimdal.stanford.edu@heimdal.stanford.edu
+       End Time: 1355447711
+          Renew: (none)
+    Forwardable: no
+        Enctype: aes256-cts-hmac-sha1-96
+      Addresses: (none)
+
+old-heimdal
+         Client: thoron@heimdal.stanford.edu
+         Server: krbtgt/heimdal.stanford.edu@heimdal.stanford.edu
+       End Time: 1355556533
+          Renew: 1356074930
+    Forwardable: yes
+        Enctype: aes256-cts-hmac-sha1-96
+      Addresses: (none)
+
+renewable
+         Client: thoron@heimdal.stanford.edu
+         Server: krbtgt/heimdal.stanford.edu@heimdal.stanford.edu
+       End Time: 1355529261
+          Renew: 1356047658
+    Forwardable: yes
+        Enctype: aes256-cts-hmac-sha1-96
+      Addresses: (none)
+
+service
+         Client: thoron@heimdal.stanford.edu
+         Server: host/example.stanford.edu@heimdal.stanford.edu
+       End Time: 1355529505
+          Renew: 1356047903
+    Forwardable: yes
+        Enctype: des3-cbc-sha1
+      Addresses: 171.67.24.175 (IPv4)
+
+Most of these credentials were generated from MIT Kerberos libraries but
+were issued by a Heimdal KDC.  The ad-heimdal credential was issued by
+Active Directory and generated from Heimdal libraries.  The old-heimdal
+credential was generated using the old (incorrect) Heimdal encoding that
+has the flag bits reversed.
+
+-----
+
+Copyright 2012
+    The Board of Trustees of the Leland Stanford Junior University
+
+Copying and distribution of this file, with or without modification, are
+permitted in any medium without royalty provided the copyright notice and
+this notice are preserved.  This file is offered as-is, without any
+warranty.

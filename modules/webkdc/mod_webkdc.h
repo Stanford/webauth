@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -19,7 +19,6 @@
 #include <apr_tables.h>
 #include <sys/types.h>
 
-#include <webauth.h>
 #include <webauth/tokens.h>
 
 struct webauth_context;
@@ -47,8 +46,6 @@ enum mwk_status {
     MWK_OK = 1
 };
 
-extern module webkdc_module;
-
 /* Command table provided by the configuration handling code. */
 extern const command_rec webkdc_cmds[];
 
@@ -58,6 +55,7 @@ extern const command_rec webkdc_cmds[];
  * variable that holds whether that directive is set in a particular scope.
  */
 struct config {
+    const char *identity_acl_path;
     const char *keyring_path;
     const char *keytab_path;
     const char *keytab_principal;
@@ -69,6 +67,7 @@ struct config {
     bool debug;
     bool keyring_auto_update;
     unsigned long key_lifetime;
+    unsigned long login_time_limit;
     unsigned long proxy_lifetime;
     unsigned long service_lifetime;
     unsigned long token_max_ttl;
@@ -82,6 +81,7 @@ struct config {
     bool debug_set;
     bool keyring_auto_update_set;
     bool key_lifetime_set;
+    bool login_time_limit_set;
     bool proxy_lifetime_set;
     bool token_max_ttl_set;
 
@@ -210,6 +210,15 @@ void *webkdc_config_merge(apr_pool_t *, void *, void *);
 void webkdc_config_init(server_rec *, struct config *, apr_pool_t *);
 
 
+/* logging.c */
+
+/* Logging functions used as context callbacks for library messages. */
+void mwk_log_trace(struct webauth_context *ctx, void *, const char *);
+void mwk_log_info(struct webauth_context *ctx, void *, const char *);
+void mwk_log_notice(struct webauth_context *ctx, void *, const char *);
+void mwk_log_warning(struct webauth_context *ctx, void *, const char *);
+
+
 /* util.c */
 
 /*
@@ -229,15 +238,6 @@ mwk_lock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
  */
 void
 mwk_unlock_mutex(MWK_REQ_CTXT *rc, enum mwk_mutex_type type);
-
-/*
- * get a string from an attr list, log an error if not present.
- * vlen is optional and can be set to NULL.
- */
-
-char *
-mwk_get_str_attr(WEBAUTH_ATTR_LIST *alist, const char *name,
-                 request_rec *r, const char *func, size_t *vlen);
 
 /*
  * get a WEBAUTH_KRB5_CTXT, log errors

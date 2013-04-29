@@ -1,3 +1,23 @@
+webauth-weblogin (4.5.0-1) experimental; urgency=low
+
+  Creating single sign-on cookies is no longer the default in the WebLogin
+  code; instead, it is controlled by a form parameter on the login form.
+  Sites wanting to maintain the previous behavior should either add a
+  checkbox (checked by default) to their login form similar to:
+
+      <input type="checkbox" name="remember_login" value="yes"
+             checked="checked">
+
+  with appropriate associated wording; or, if they don't want to change
+  the UI, should add the setting:
+
+      $REMEMBER_FALLBACK = 'yes';
+
+  to /etc/webkdc/webkdc.conf.  This setting controls the default if no
+  remember_login value is sent by the login HTML form.
+  
+ -- Russ Allbery <rra@debian.org>  Fri, 26 Apr 2013 13:31:11 -0700
+
 webauth-weblogin (3.7.0-1) unstable; urgency=low
 
   The default help.html page is in /usr/share/weblogin/generic/templates

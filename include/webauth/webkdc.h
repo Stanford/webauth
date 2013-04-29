@@ -6,7 +6,7 @@
  * in the shared library for ease of testing and custom development.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012
+ * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,6 +36,7 @@
 #include <sys/types.h>
 
 struct webauth_context;
+struct webauth_factors;
 struct webauth_keyring;
 
 /*
@@ -45,33 +46,63 @@ struct webauth_keyring;
  */
 struct webauth_webkdc_config {
     const char *keytab_path;    /* Path to WebKDC's Kerberos keytab. */
+    const char *id_acl_path;    /* Path to WebKDC's identity ACL file. */
     const char *principal;      /* WebKDC's Kerberos principal. */
     time_t proxy_lifetime;      /* Maximum webkdc-proxy token lifetime (s). */
-    WA_APR_ARRAY_HEADER_T *permitted_realms; /* Array of char * realms. */
-    WA_APR_ARRAY_HEADER_T *local_realms;     /* Array of char * realms. */
+    time_t login_time_limit;    /* Time limit for completing login process. */
+    const WA_APR_ARRAY_HEADER_T *permitted_realms; /* Array of char * realms */
+    const WA_APR_ARRAY_HEADER_T *local_realms;     /* Array of char * realms */
+};
+
+/*
+ * Holds an encoded webkdc-factor token along with some additional metadata
+ * about it that may be needed by consumers who can't decode the token (or
+ * don't want to).
+ */
+struct webauth_webkdc_factor_data {
+    time_t expiration;
+    const char *token;
 };
 
 /*
  * Holds an encoded webkdc-proxy token along with some additional metadata
  * about it that may be needed by consumers who can't decode the token (or
- * don't want to).
+ * don't want to), or that allows the WebLogin server to tell the WebKDC the
+ * source of the token (for session factors).
  */
 struct webauth_webkdc_proxy_data {
     const char *type;
     const char *token;
+    const char *source;
 };
 
 /*
  * Input for a <requestTokenRequest>, which is sent from the WebLogin server
  * to the WebKDC and represents a request by a user to authenticate to a WAS.
+ * All of the tokens are still encrypted strings.
+ *
  * This request may contain webkdc-proxy tokens, representing existing single
- * sign-on credentials, and a login token, representing a username and
- * authentication credential provided by the user in this session.
+ * sign-on credentials, webkdc-factor tokens, representing persistent factors,
+ * and login tokens, representing a username and authentication credential
+ * provided by the user in this session.
  */
 struct webauth_webkdc_login_request {
-    struct webauth_token_webkdc_service *service;
-    WA_APR_ARRAY_HEADER_T *creds;       /* Array of webauth_token pointers. */
-    struct webauth_token_request *request;
+    const char *service;        /* webkdc-service token for requester. */
+    const char *authz_subject;  /* Requested authorization identity. */
+    const char *login_state;    /* Opaque object for multifactor. */
+
+    /* User credentials. */
+    const WA_APR_ARRAY_HEADER_T *wkproxies; /* webauth_webkdc_proxy_data */
+    const WA_APR_ARRAY_HEADER_T *wkfactors; /* const char * */
+    const WA_APR_ARRAY_HEADER_T *logins;    /* const char * */
+
+    /* request token from WAS. */
+    const char *request;
+
+    /* IP address of host sending the command, usually WebLogin. */
+    const char *client_ip;
+
+    /* Information about the connection to the WebLogin server. */
     const char *remote_user;
     const char *local_ip;
     const char *local_port;
@@ -82,31 +113,29 @@ struct webauth_webkdc_login_request {
 /*
  * Result from a <requestTokenResponse>, which is sent by the WebKDC back to
  * the WebLogin server containing the results of an authentication request.
- * It was successful if the login_error is 0.
  *
  * The initial factors, session factors, and LoA information is not returned
  * to WebLogin, but is included for better logging in the WebKDC.
  */
 struct webauth_webkdc_login_response {
-    int login_error;
-    const char *login_message;
     const char *user_message;
-    WA_APR_ARRAY_HEADER_T *factors_wanted;     /* Array of char * factors. */
-    WA_APR_ARRAY_HEADER_T *factors_configured; /* Array of char * factors. */
-    WA_APR_ARRAY_HEADER_T *proxies; /* Array of webkdc_proxy_data structs. */
+    const char *login_state;
+    const struct webauth_factors *factors_wanted;
+    const struct webauth_factors *factors_configured;
+    const WA_APR_ARRAY_HEADER_T *proxies;         /* webkdc_proxy_data. */
+    const WA_APR_ARRAY_HEADER_T *factor_tokens;   /* webkdc_factor_data. */
     const char *return_url;
     const char *requester;
     const char *subject;
+    const char *authz_subject;  /* Authorization identity, if different. */
     const char *result;         /* Encrypted id or cred token. */
     const char *result_type;    /* Type of result token as a string. */
-    const char *initial_factors;
-    const char *session_factors;
-    unsigned long loa;
     const char *login_cancel;   /* Encrypted error token. */
     const void *app_state;
     size_t app_state_len;
-    WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
+    const WA_APR_ARRAY_HEADER_T *logins;        /* Array of webauth_login. */
     time_t password_expires;            /* Time of password expiration or 0. */
+    const WA_APR_ARRAY_HEADER_T *permitted_authz;  /* Allowable authz ids. */
 };    
 
 /*
@@ -163,13 +192,17 @@ struct webauth_login {
  * about a user, returned from the site-local user information middleware.
  */
 struct webauth_user_info {
-    WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
-    int multifactor_required;           /* Whether multifactor is forced. */
+    const struct webauth_factors *factors;
+    const struct webauth_factors *additional;
+    const struct webauth_factors *required;
+    time_t valid_threshold;             /* Cutoff for persistent validity. */
     int random_multifactor;             /* If random multifactor was done. */
     unsigned long max_loa;              /* Maximum level of assurance. */
     time_t password_expires;            /* Password expiration time or 0. */
-    WA_APR_ARRAY_HEADER_T *logins;      /* Array of struct webauth_login. */
+    const WA_APR_ARRAY_HEADER_T *logins;  /* Array of struct webauth_login. */
     const char *error;                  /* Error returned from userinfo. */
+    const char *user_message;           /* Message to pass along to a user. */
+    const char *login_state;            /* Opaque state object for WebLogin. */
 };
 
 /*
@@ -180,8 +213,14 @@ struct webauth_user_info {
  */
 struct webauth_user_validate {
     int success;                        /* Whether the validation succeeded. */
-    WA_APR_ARRAY_HEADER_T *factors;     /* Array of char * factor codes. */
+    const struct webauth_factors *factors;
+    time_t factors_expiration;          /* Expiration time of factors. */
+    const struct webauth_factors *persistent;
+    time_t persistent_expiration;       /* Expiration time of persistent. */
+    time_t valid_threshold;             /* Cutoff for persistent validity. */
     unsigned long loa;                  /* Level of assurance. */
+    const char *user_message;           /* Message to pass along to a user. */
+    const char *login_state;            /* Opaque state object for WebLogin. */
 };
 
 BEGIN_DECLS
@@ -193,18 +232,21 @@ BEGIN_DECLS
  * queries.  Returns a status code, which will be WA_ERR_NONE unless invalid
  * parameters were passed.
  */
-int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
+int webauth_user_config(struct webauth_context *,
+                        const struct webauth_user_config *)
     __attribute__((__nonnull__));
 
 /*
  * Obtain user information for a given user.  The IP address of the user (as a
  * string) is also provided.  If NULL, it defaults to 127.0.0.1.  The
- * timestamp of the query is assumed to be the current time.  The flag
- * indicates whether a site requested random multifactor and asks the user
- * information service to calculate whether multifactor is forced based on
- * that random multifactor chance.  Finally, the return URL should be
- * provided, which may be used to make decisions in the user information
- * service.
+ * timestamp of the query is assumed to be the current time.  The random_mf
+ * flag indicates whether a site requested random multifactor and asks the
+ * user information service to calculate whether multifactor is forced based
+ * on that random multifactor chance.  The return URL should be provided,
+ * which may be used to make decisions in the user information service.
+ * Finally, the factors is a comma-separated list of authentication factors
+ * that the user has already established in some way, which may be NULL if no
+ * factors have yet been established.
  *
  * webauth_user_config generally must be called before this function.
  * Depending on the method used, authentication credentials may also need to
@@ -215,8 +257,8 @@ int webauth_user_config(struct webauth_context *, struct webauth_user_config *)
  * error code and sets the info parameter to NULL.
  */
 int webauth_user_info(struct webauth_context *, const char *user,
-                      const char *ip, int, const char *url,
-                      struct webauth_user_info **)
+                      const char *ip, int random_mf, const char *url,
+                      const char *factors, struct webauth_user_info **)
     __attribute__((__nonnull__(1, 2, 5)));
 
 /*
@@ -234,9 +276,10 @@ int webauth_user_info(struct webauth_context *, const char *user,
  * means that the call completed, not that the validation was successful.
  */
 int webauth_user_validate(struct webauth_context *, const char *user,
-                          const char *ip, const char *code,
+                          const char *ip, const char *code, const char *type,
+                          const char *state,
                           struct webauth_user_validate **)
-    __attribute__((__nonnull__(1, 2, 4, 5)));
+    __attribute__((__nonnull__(1, 2, 4, 6)));
 
 /*
  * Configure the WebKDC services.  Takes the context and the configuration
@@ -246,7 +289,7 @@ int webauth_user_validate(struct webauth_context *, const char *user,
  * passed.
  */
 int webauth_webkdc_config(struct webauth_context *,
-                          struct webauth_webkdc_config *)
+                          const struct webauth_webkdc_config *)
     __attribute__((__nonnull__));
 
 /*
@@ -256,15 +299,15 @@ int webauth_webkdc_config(struct webauth_context *,
  * the input and output are the unencrypted struct representations; the caller
  * does the encryption or decryption and base64 conversion.
  *
- * Returns WA_ERR_NONE if the request was successfully processed, which
- * doesn't mean it succeeded; see the login_code attribute of the struct for
- * that.  Returns an error code if we were unable to process the struct even
- * to generate an error response.
+ * Returns WA_ERR_NONE if the authentication was successful.  Otherwise,
+ * returns a protocol status code.  The return status and WebAuth error
+ * message will be appropriate for a <requestTokenResponse> or <errorResponse>
+ * XML message.
  */
 int webauth_webkdc_login(struct webauth_context *,
-                         struct webauth_webkdc_login_request *,
+                         const struct webauth_webkdc_login_request *,
                          struct webauth_webkdc_login_response **,
-                         struct webauth_keyring *)
+                         const struct webauth_keyring *)
     __attribute__((__nonnull__));
 
 END_DECLS

@@ -279,11 +279,11 @@ CONFIGURATION
         m       Two separate authentication methods used (password and code)
         rm      User could have been prompted for multifactor but wasn't
 
-     Usually these are the factors that you'll want to require using the
-     WebAuth directives rather than the more specific authentication
-     factors.
+    Usually these are the factors that you'll want to require using the
+    WebAuth directives rather than the more specific authentication
+    factors.
 
-   WebAuthRequireInitialFactor
+   WebAuthRequireInitialFactor Directive
 
     When multifactor is configured with this directive, the user's
     authentication is good for the lifetime of their session, once they
@@ -323,7 +323,7 @@ CONFIGURATION
     using multifactor.  This is similar to WebAuthForceLogin, except more
     flexible.
 
-   WebAuthRequireLOA
+   WebAuthRequireLOA Directive
 
     Level of Assurance represents the confidence that WebAuth has in the
     identity of the user currently authenticating to it and can be used
@@ -340,15 +340,18 @@ CONFIGURATION
     changes for Stanford's specific circumstances.  See NIST Special
     Publication 800-63 at:
 
-        <http://csrc.nist.gov/publications/nistpubs/800-63/SP800-63V1_0_2.pdf>
+        <http://csrc.nist.gov/publications/nistpubs/800-63-1/SP-800-63-1.pdf>
 
     Level 1 requires almost no confidence in the asserted identity.  It
     can be achieved with password challenge and any multifactor method.
     Sponsored accounts are restricted to a maximum LOA of 1 since Stanford
     does not verify the identity of holders of sponsored accounts against
-    a government-issued photo ID or similar document.  Requiring an LOA of
-    1 is equivalent to requiring an initial factor of "m".  Using
-    "WebAuthRequireInitialFactor m" instead is simpler and recommended.
+    a government-issued photo ID or similar document.  Currently, an LOA
+    of 1 still requires using some form of multifactor authentication, but
+    this will probably be relaxed in the future.  At present, requiring
+    an LOA of 1 is equivalent to requiring an initial factor of "m",
+    but using "WebAuthRequireInitialFactor m" instead is simpler and
+    recommended since it's less ambiguous.
 
     An LOA of 2 requires a good degree of confidence that the identity as
     asserted is accurate.  This level can only be reached by using a

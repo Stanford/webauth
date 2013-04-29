@@ -58,6 +58,15 @@ Definitions
       whatever methods the user used to obtain their initial Kerberos
       ticket-granting ticket on their local system.
 
+  persistent factor
+      This is a factor stored in a separate cookie in the user's browser
+      that persists for longer than the expiration time of their single
+      sign-on credentials.  It is used, for example, to set a cookie in a
+      browser that has been vetted by some means (such as a previous
+      multifactor authentication) that will add an additional
+      authentication factor to subsequent authentications from that
+      browser.
+
   level of assurance
       This is a site-defined numeric value that is intended to encapsulate
       in one number a combination of the identity proofing of the user (how
@@ -202,6 +211,21 @@ User Information Service
       A flag that will be 0 if random multifactor was not requested and 1
       if it was requested.
 
+  url
+      The URL to which the user would go after successful authentication.
+      This is the return URL parameter from the WebAuth request token, so
+      it may not match the URL to which the user went to trigger the
+      authentication attempt.  This parameter will be ommitted if the
+      WebKDC has no URL information (usually not the case).  If there is
+      no URL information but factors (the next parameter) are present, it
+      will be the empty string.
+
+  factors
+      A comma-separated list of initial authentication factor codes that
+      the user has already established with the WebLogin server at the
+      time of the call.  This parameter was added in WebAuth 4.5.0; older
+      versions of the WebKDC will not send it.
+
   If the remctl command exits with a non-zero status, this will be taken
   as a fatal error and the user's authentication will be aborted.  The
   error can be reported on standard error.  If it exits with a zero
@@ -217,9 +241,28 @@ User Information Service
           <factor>o3</factor>
         </factors>
 
-        <!-- Present if multifactor authentication is required regardless
-             of whether it was requested by the destination site. -->
-        <multifactor-required />
+        <!-- Optional. List of additional factors to add to successful
+             logins. -->
+        <additional-factors>
+          <factor>h</factor>
+        </additional-factors>
+
+        <!-- Optional.  Present if specific factors should be required
+             regardless of whether they were requested by the destination
+             site. -->
+        <required-factors>
+          <factor>o3</factor>
+        </required-factors>
+
+        <!-- Optional.  Present if any persistent factors with a creation
+             date prior to the timestamp should be invalidated.  If the
+             WebKDC invalidates any factor information based on this
+             cutoff, it should then retry the userinfo call with a
+             modified factors parameter reflecting that change.  {time} is
+             seconds since epoch. -->
+        <persistent-factors>
+          <valid-threshold>{time}</valid-threshold>
+        </persistent-factors>
 
         <!-- Optional.  If present, contains possibly suspicious recent
              logins that the user should be notified of.  name and
@@ -231,14 +274,26 @@ User Information Service
           <host name="{host}" timestamp="{time}">{ip}</host>
         </login-history>
 
-        <!-- If present, indicates that the user will not be able to
-             assert a level of assurance higher than this number. -->
+        <!-- Optional.  If present, indicates that the user will not be
+             able to assert a level of assurance higher than this
+             number. -->
         <max-loa>{max-loa-value}</max-loa>
 
         <!-- Optional.  Contains the expiration time of the user's
              password in seconds since epoch, used to prompt the user
              to change their password. -->
         <password-expires>{expiration-time}</password-expires>
+
+        <!-- Optional.  May contain a message for the user to display on
+             the first load of the multifactor authentication page.
+        <user-message>{message-for-user}</user-message>
+
+        <!-- Optional.  May contain a string-serialized object that
+             will be returned on a subsequent request to the
+             validate service.  May be deserilized in WebLogin and
+             used to change WebLogin behavior, for example - display
+             a custom message to the user. -->
+        <login-state>{custom-state-object}</login-state>
       </authdata>
 
   {username} should match the user for which the information is being
@@ -251,16 +306,31 @@ User Information Service
   to include "m" (multifactor) in the list of factors.  Do not include
   "rm" (random multifactor); this is handled specially.
 
-  If the <multifactor-required /> tag is present, the user will be
-  required to do multifactor authentication even if the destination
-  WebAuth-protected site doesn't require it.  This is how random
-  multifactor should be implemented by the user information service.  If
-  the random multifactor flag is 1 and the user is selected, include this
-  tag.  The user information service should also remember that the user
-  was selected for random multifactor and continue to require it every
-  time the random multifactor flag is true until the user successfully
-  authenticates with multifactor, since otherwise the user may just
-  reload the login page until they get lucky again.
+  If <additional-factors> is present, those factors will be added to any
+  successful authentication.  This is primarily intended as a mechanism to
+  add the "h" (human-verified) factor temporarily for a user after local
+  support staff have confirmed their identity as a way of giving that user
+  a multifactor factor when they've lost their multifactor authentication
+  method.  However, it can be used for any scenario where the user
+  information service knows, via some external means, that a successful
+  authentication (either password or OTP) for that user should add some
+  additional factors besides the normal ones.
+
+  If <required-factors> is present, the WebKDC will add the factors
+  present to those required by the WebAuth-protected site.  This can be
+  used to force multifactor authentication even if the WebAuth-protected
+  site doesn't require it.  This is how random multifactor should be
+  implemented by the user information service.  If the random multifactor
+  flag is 1 and the user is selected, include a required factor (generally
+  the m factor) within this tag.  The user information service should also
+  remember that the user was selected for random multifactor and continue
+  to require it every time the random multifactor flag is true until the
+  user successfully authenticates with multifactor, since otherwise the
+  user may just reload the login page until they get lucky again.
+
+  For backward compatibility, the <multifactor-required /> tag, if present
+  without <required-factors>, is treated as equivalent to a required
+  factor of m.
 
   The optional <login-history> section provides information for the
   WebLogin server to show the user about recent logins.
@@ -275,6 +345,22 @@ User Information Service
   since epoch, when the user's password will expire.  It's used to display
   a warning and a prompt to the user to change their password on the
   WebLogin confirmation screen.
+
+  The optional <user-message> element may contain a message to provide
+  the user with any additional information from the userinfo service.  It
+  can be used to explain the reasoning for an unexpected multifactor
+  enforcement, or any other messaging specific to this step of the
+  authenication process.  It can be displayed on the first load of
+  WebLogin's OTP submission page.
+
+  The optional <login-state> element may contain a simple value or a string
+  serialized object that can be used to retain state for a subsequent call
+  to the validate service.  The object may be deserialized in WebLogin by
+  assigning a deserialization function to the WebLogin config variable
+  LOGIN_STATE_UNSERIALIZE.  An example function can be found within the
+  weblogin-config documentation.  Whether deserialized or not, the resulting
+  object can be accessed within the WebLogin templates by the name
+  "login_state".
 
   Alternately, the user information service may reject this
   authentication.  In this case, it should return the much simpler
@@ -318,20 +404,36 @@ OTP Validation
   code
       The OTP to validate.
 
+  type
+      The OTP type to validate.  This parameter may be omitted if the
+      WebKDC doesn't know what type of OTP the user is trying to use.
+
+  login-state
+      The state object returned from a previous call to the userinfo
+      or validate service.  It may be absent if no login-state exists.
+
   If the remctl command exits with a non-zero status, this will be taken
-  as a fatal error and the user's authentication will be aborted.  (This
-  should not be used for an invalid OTP; see below.)  The error can be
-  reported on standard error.  If it exits with a zero status, it must
+  as a fatal internal error and the user's authentication will be aborted.
+  (This should not be used for an invalid OTP; see below.)  The error can
+  be reported on standard error.  If it exits with a zero status, it must
   provide an XML document on standard output with something like the
   following contents:
 
       <authdata user="{username}">
         <success>yes|no</success>
         <factors>
+          <expiration>{expiration}</expiration>
           <factor>o</factor>
           <factor>o3</factor>
         </factors>
+        <persistent-factors>
+          <valid-threshold>{time}</valid-threshold>
+          <expiration>{expiration}</expiration>
+          <factor>d</factor>
+        <persistent-factors>
         <loa>{loa-value}</loa>
+        <user-message>{message-for-user}</user-message>
+        <login-state>{custom-state-object}</login-state>
       </authdata>
 
   {username} should match the user for which the information is being
@@ -339,17 +441,62 @@ OTP Validation
 
   The correctness of the OTP is given by the <success> attribute, which
   should have a value of "yes" if the OTP was correct and "no" if it was
-  not.  If correct, the <factors> attribute should be included, listing
-  all of the authentication factors that this successful authentication
+  not (or if the OTP login was rejected for some other reason; see below).
+
+  If correct, the <factors> attribute should be included, listing all of
+  the authentication factors that this successful authentication
   represents.  Normally, this will include "o" (some OTP) along with a
   specific numbered OTP factor if there are multiple types of OTP
-  available.
+  available.  {expiration} indicates when (in seconds since UNIX epoch)
+  this authentication should expire.  If you have no site-specific reason
+  to choose otherwise, ten hours from the current time is a reasonable
+  default.
+
+  If this authentication should result in setting a persistent factor
+  cookie in the authenticating browser, the factors that should go into
+  that persistent factor cookie should be listed in the
+  <persistent-factors> element.  Otherwise, that element should be
+  omitted.  (These will be set as persistent initial authentication
+  factors; setting persistent session authentication factors is not
+  currently supported.)  Here similarly the {expiration} value indicates
+  the time (in seconds since UNIX epoch) when the persistent factors
+  should expire.  The <invalid-before> element is optional; if present, it
+  indicates that the WebKDC should also discard all webkdc-factor tokens
+  with a creation date prior to the time given (in seconds since UNIX
+  epoch).
 
   If level of assurance is being used, the optional <loa> attribute should
   return the level of assurance this authentication indicates.  This
   should assume that the user also authenticated with a password, since
   the WebLogin server will only do OTP authentication after successful
   password authentication.
+
+  The optional <user-message> element may contain a message to provide
+  the user with any additional information about specific actions they
+  should take as a result of this OTP validation attempt, or an
+  an informational message about the state of this validation.
+
+  As explained above for the userinfo service, the optional <login-state>
+  element may contain a simple value or a string serialized object that can
+  be used to retain state for a subsequent call to the validate service.
+  The object's deserialization process and function are identical to the
+  userinfo case, however this object is most useful for repeated subsequent
+  calls to the validate service.  This allows the validate service to
+  maintain state for a series of user interactions, where stateful
+  interaction is required to implement a number of token-specific features,
+  for example - the reset of a PIN code, or the initialization of a hardware
+  token.
+
+  On failure, behavior depends on whether <user-message> is present.  If
+  it is not present, <success>no</success> indicates that the OTP code was
+  not correct.  This will be logged as a failed authentication and the
+  user will be prompted to re-enter the code.  If <user-message> is
+  present, this instead indicates that the validation service rejected the
+  authentication for some reason either more complex or requiring more
+  explanation than simply "the OTP code was wrong."  The user will still
+  be prompted to enter an OTP code, but the contents of <user-message>
+  will be made availed to the WebLogin template for display to the user.
+  This will be logged as a rejected authentication.
 
 WebLogin Templates
 
@@ -407,7 +554,7 @@ OTP and SMS
 
 License
 
-  Copyright 2011, 2012
+  Copyright 2011, 2012, 2013
     The Board of Trustees of the Leland Stanford Junior University
 
   Copying and distribution of this file, with or without modification, are

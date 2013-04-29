@@ -14,16 +14,21 @@ page, as well as (optionally) a way to set preferences for doing
 REMOTE_USER authentication.  Variables used:
 
 username               : the authenticated identity of the user
+authz_subject          : the authorization identity of the user
+permitted_authz        : array of permitted authorization identities
 return_url             : the WebAuth-protected page now authenticated for
 pretty_return_url      : same, but cleaned up for use as link text
 login_cancel           : a cancel URL was specified
 cancel_url             : the specified cancel URL
 show_remuser           : show REMOTE_USER login preferences
 remuser                : set if REMOTE_USER is desired
+remember_login         : set if single sign-on cookies should be generated
 warn_expire            : show warning for upcoming password expiration
-expire_date            : the date and time of password expiration
-expire_time_left       : the amount of time left until password expiration
+expire_timestamp       : timestamp for password expiration
 pwchange_url           : URL for the password change form
+device_expiring        : timestamp of when a device factor will expire
+ST                     : Original service token
+RT                     : Original request token
 
 You may customize this file however you wish for your site.
 
@@ -35,7 +40,8 @@ in this work against any person or entity, or prevent any person or
 entity from copying, publishing, distributing or creating derivative
 works of this work.
 -->
-  [% END %]
+  [% END -%]
+  [% USE date(format = '%Y-%m-%d %l:%M %p') -%]
 
   <body>
     <h1 align="center">WebAuth Confirm</h1>
@@ -46,9 +52,13 @@ works of this work.
             <td colspan="2">
               <div class="errortext">
                 Warning: Your password will expire in
-                [% expire_time_left FILTER html %], on
-                [% expire_date FILTER html %].  Please change your password
-                before this happens.
+                [% PERL -%]
+                    use Time::Duration;
+                    my $timestamp = $stash->get('expire_timestamp');
+                    print Time::Duration::duration($timestamp - time);
+                [% END -%]
+                at [% date.format(expire_timestamp) %].  Please change your
+                password before this happens.
                 <form action="[% pwchange_url FILTER html %]"
                       method="post" target="_blank"
                       enctype="application/x-www-form-urlencoded">
@@ -59,9 +69,22 @@ works of this work.
                          value="[% username FILTER html %]">
                   <input type="hidden" name="CPT"
                          value="[% CPT FILTER html %]">
+                  <input type="hidden" name="remember_login"
+                         value="[% remember_login FILTER html %]">
                   <input type="submit" name="Submit"
                          value="Change Password">
                 </form>
+              </div>
+            </td>
+          </tr>
+        [% END %]
+        [% IF device_expiring %]
+          <tr>
+            <td colspan="2">
+              <div class="errortext">
+                Warning: Your device long-lived multifactor token will expire
+                at [% date.format(device_expiring) %].  This will require you
+                to log in via multifactor again to renew the token.
               </div>
             </td>
           </tr>
@@ -75,7 +98,6 @@ works of this work.
                   logins you have made to WebAuth-protected
                   resources.</strong></p>
                 <ul>
-                  [% USE date(format = '%Y-%m-%d %l:%M %p') %]
                   [% FOREACH login IN history %]
                     [% IF login.hostname %]
                       <li>
@@ -104,6 +126,10 @@ works of this work.
             <div class="logintext">
               <p>You are logged into WebAuth as user
               <strong>[% username FILTER html %]</strong></p>
+              [% IF authz_subject %]
+                <p>You will be identified to the website as
+                <strong>[% authz_subject FILTER html %]</strong></p>
+              [% END %]
               <p>Click this link to continue to the website you
               requested:</p>
               <p><a href="[% return_url FILTER html %]">
@@ -132,6 +158,42 @@ works of this work.
         </tr>
       </table>
     </div>
+
+    [% IF permitted_authz.size %]
+    <div class="authzbox" style="width: 70%; margin-left: auto;
+                                 margin-right: auto">
+      <p>
+        You are permitted to identify to this web site as a user other
+        than your normal identity.  If you want to do that, select a
+        different identity from the list below.
+      </p>
+      <form action="[% script_name FILTER html %]" method="post"
+            enctype="application/x-www-form-urlencoded"
+            align="center">
+        <input type="hidden" name="rm" value="edit_authz_identity">
+        <input type="hidden" name="ST" value="[% ST FILTER html %]">
+        <input type="hidden" name="RT" value="[% RT FILTER html %]">
+        <input type="hidden" name="remember_login"
+               value="[% remember_login FILTER html %]">
+        <table>
+          <tr>
+            <td><strong>Identity:</strong></td>
+            <td>
+              <select name="authz_subject">
+                <option selected>[% username FILTER html %]</option>
+                [% FOREACH authz IN permitted_authz %]
+                <option>[% authz FILTER html %]</option>
+                [% END %]
+              </select>
+            </td>
+            <td>
+              <input type="submit" name="Submit" value="Change Identity">
+            </td>
+          </tr>
+        </table>
+      </form>
+    </div>
+    [% END %]
 
     [% IF show_remuser %]
       <div class="remuserbox" align="center">

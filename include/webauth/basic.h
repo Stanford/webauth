@@ -9,7 +9,7 @@
  * argument to other functions.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011
+ * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,35 +60,92 @@ struct webauth_context;
  *
  * Use webauth_error_message() to get the corresponding error message and any
  * additional information, if available.
+ *
+ * These error messages are in two blocks.  WA_ERR_* status codes are used
+ * internally in the WebAuth code, and WA_PEC_* status codes are valid in
+ * protocol elements (the code attribute of error tokens, the <errorCode>
+ * element of an <errorResponse>, and the <loginErrorCode> element of a
+ * <requestTokenResponse>).  Most WebAuth functions only return the internal
+ * status codes, but webauth_krb5_* calls and webauth_webkdc_login may return
+ * either type.
+ *
+ * The numeric values of the protocol status codes are fixed in the protocol
+ * and must not change for interoperability reasons.  The WA_ERR_* status
+ * codes are internal to the library API and may change with the API.
  */
 enum webauth_status {
-    WA_ERR_NONE = 0,         /* No error occured. */
-    WA_ERR_NO_ROOM,          /* Supplied buffer too small. */
-    WA_ERR_CORRUPT,          /* Data is incorrectly formatted. */
-    WA_ERR_NO_MEM,           /* No memory. */
-    WA_ERR_BAD_HMAC,         /* HMAC check failed. */
-    WA_ERR_RAND_FAILURE,     /* Unable to get random data. */
-    WA_ERR_BAD_KEY,          /* Unable to use key. */
-    WA_ERR_KEYRING_OPENWRITE,/* Unable to open key ring for writing. */
-    WA_ERR_KEYRING_WRITE,    /* Unable to write to key ring. */
-    WA_ERR_KEYRING_OPENREAD, /* Unable to open key ring for reading. */
-    WA_ERR_KEYRING_READ,     /* Unable to read key ring file. */
-    WA_ERR_KEYRING_VERSION,  /* Bad keyring version. */
-    WA_ERR_NOT_FOUND,        /* Item not found while searching. */
-    WA_ERR_KRB5,             /* A Kerberos error occured. */
-    WA_ERR_INVALID_CONTEXT,  /* Invalid context passed to function. */
-    WA_ERR_LOGIN_FAILED,     /* Bad username/password. */
-    WA_ERR_TOKEN_EXPIRED,    /* Token has expired. */
-    WA_ERR_TOKEN_STALE,      /* Token is stale. */
-    WA_ERR_CREDS_EXPIRED,    /* Password has expired. */
-    WA_ERR_USER_REJECTED,    /* User not permitted to authenticate. */
-    WA_ERR_APR,              /* An APR error occurred. */
-    WA_ERR_UNIMPLEMENTED,    /* Operation not supported. */
-    WA_ERR_INVALID,          /* Invalid argument to function. */
-    WA_ERR_REMOTE_FAILURE,   /* A remote service call failed. */
+    WA_ERR_NONE = 0,
+
+    /* Protocol status codes. */
+    WA_PEC_SERVICE_TOKEN_EXPIRED       =  1, /* Past expiration time */
+    WA_PEC_SERVICE_TOKEN_INVALID       =  2, /* Can't decrypt / bad format */
+    WA_PEC_PROXY_TOKEN_EXPIRED         =  3, /* Past expiration time */
+    WA_PEC_PROXY_TOKEN_INVALID         =  4, /* Can't decrypt / bad format */
+    WA_PEC_INVALID_REQUEST             =  5, /* Missing/incorrect data, etc */
+    WA_PEC_UNAUTHORIZED                =  6, /* Access denied */
+    WA_PEC_SERVER_FAILURE              =  7, /* Server failure, try again */
+    WA_PEC_REQUEST_TOKEN_STALE         =  8, /* Too old */
+    WA_PEC_REQUEST_TOKEN_INVALID       =  9, /* Can't decrypt / bad format */
+    WA_PEC_GET_CRED_FAILURE            = 10, /* Can't get credential */
+    WA_PEC_REQUESTER_KRB5_CRED_INVALID = 11, /* <requesterCredential> was bad */
+    WA_PEC_LOGIN_TOKEN_STALE           = 12, /* Too old */
+    WA_PEC_LOGIN_TOKEN_INVALID         = 13, /* Can't decrypt / bad format */
+    WA_PEC_LOGIN_FAILED                = 14, /* Username/password failed */
+    WA_PEC_PROXY_TOKEN_REQUIRED        = 15, /* Missing required proxy-token */
+    WA_PEC_LOGIN_CANCELED              = 16, /* User cancelled login */
+    WA_PEC_LOGIN_FORCED                = 17, /* User must re-login */
+    WA_PEC_USER_REJECTED               = 18, /* Principal not permitted */
+    WA_PEC_CREDS_EXPIRED               = 19, /* User password expired */
+    WA_PEC_MULTIFACTOR_REQUIRED        = 20, /* Multifactor login required */
+    WA_PEC_MULTIFACTOR_UNAVAILABLE     = 21, /* MF required, not available */
+    WA_PEC_LOGIN_REJECTED              = 22, /* User may not log on now */
+    WA_PEC_LOA_UNAVAILABLE             = 23, /* Requested LoA not available */
+    WA_PEC_AUTH_REJECTED               = 24, /* Auth to this site rejected */
+    WA_PEC_AUTH_REPLAY                 = 25, /* Auth was a replay */
+    WA_PEC_AUTH_LOCKOUT                = 26, /* Too many failed attempts */
+
+    /* Internal status codes. */
+    WA_ERR_INTERNAL = 1000,  /* Internal error */
+    WA_ERR_APR,              /* An APR error occurred */
+    WA_ERR_BAD_HMAC,         /* HMAC check failed */
+    WA_ERR_BAD_KEY,          /* Unable to use key */
+    WA_ERR_CORRUPT,          /* Data is incorrectly formatted */
+    WA_ERR_FILE_NOT_FOUND,   /* File does not exist */
+    WA_ERR_FILE_OPENREAD,    /* Unable to open file for reading */
+    WA_ERR_FILE_OPENWRITE,   /* Unable to open file for writing */
+    WA_ERR_FILE_READ,        /* Unable to read file file */
+    WA_ERR_FILE_VERSION,     /* Bad file data version */
+    WA_ERR_FILE_WRITE,       /* Unable to write to file */
+    WA_ERR_INVALID,          /* Invalid argument to function */
+    WA_ERR_INVALID_CONTEXT,  /* Invalid context passed to function */
+    WA_ERR_KRB5,             /* A Kerberos error occured */
+    WA_ERR_NOT_FOUND,        /* Item not found while searching */
+    WA_ERR_NO_MEM,           /* No memory */
+    WA_ERR_NO_ROOM,          /* Supplied buffer too small */
+    WA_ERR_RAND_FAILURE,     /* Unable to get random data */
+    WA_ERR_REMOTE_FAILURE,   /* A remote service call failed */
+    WA_ERR_TOKEN_EXPIRED,    /* Token has expired */
+    WA_ERR_TOKEN_REJECTED,   /* Token used in invalid context */
+    WA_ERR_TOKEN_STALE,      /* Token is stale */
+    WA_ERR_UNIMPLEMENTED,    /* Operation not supported */
 
     /* Update webauth_error_message when adding more codes. */
 };
+
+/*
+ * When setting logging callbacks, this enum identifies the log level for
+ * which to set a callback.  The level is akin to syslog levels.
+ */
+enum webauth_log_level {
+    WA_LOG_TRACE,
+    WA_LOG_INFO,
+    WA_LOG_NOTICE,
+    WA_LOG_WARN,
+};
+
+/* Data type for a logging callback. */
+typedef void (*webauth_log_func)(struct webauth_context *, void *,
+                                 const char *);
 
 BEGIN_DECLS
 
@@ -139,6 +196,20 @@ void webauth_context_free(struct webauth_context *)
  * pool-allocated and should not be modified or freed.
  */
 const char *webauth_error_message(struct webauth_context *, int code);
+
+/*
+ * Set a logging callback for a particular log level.  The void * data is
+ * passed through to the log function when it is called.  callback may be
+ * NULL, in which case the callback for that log level is cleared.  Returns
+ * a WebAuth error code, but the only error case is an invalid log level.
+ *
+ * If a callback is set and then later removed or overwritten, the data
+ * pointer will be discarded but will not be freed.  The caller is responsible
+ * for freeing the data in that situation.
+ */
+int webauth_log_callback(struct webauth_context *, enum webauth_log_level,
+                          webauth_log_func callback, void *data)
+    __attribute__((__nonnull__(1)));
 
 END_DECLS
 

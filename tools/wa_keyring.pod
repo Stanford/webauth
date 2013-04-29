@@ -1,10 +1,13 @@
+=for stopwords
+AES WebAuth arg decrypt gc -hv keyring
+
 =head1 NAME
 
 wa_keyring - WebAuth keyring manipulation tool
 
 =head1 SYNOPSIS
 
-B<wa_keyring> [-B<-hv>] B<-f> I<file> I<command> [I<arg> ...]
+B<wa_keyring> [B<-hv>] B<-f> I<file> I<command> [I<arg> ...]
 
 B<wa_keyring> B<-f> I<keyring> add I<valid-after>
 

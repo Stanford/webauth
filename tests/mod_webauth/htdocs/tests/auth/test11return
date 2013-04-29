@@ -1,54 +1,45 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
 # Written by Roland Schemers
-# Copyright 2003
+# Copyright 2003, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
+use warnings;
 
-sub query_string_test {
+use WebAuth::Tests qw(build_page run_test);
 
-    my $QUERY_STRING = $ENV{'QUERY_STRING'};
+# Text for the page.
+my @extended = ('This test is to make sure query parameters work at the '
+                .'initial redirect.');
 
-    print "<hr>\n";
-
-    &begin_tests("Performing Query String test");
-
-    &do_test("QUERY_STRING",
-	     $QUERY_STRING eq '',
-	     "set to nothing",
-	     "incorrect value: $QUERY_STRING");
-    &end_tests;
-    print "<hr>\n";
-}
-
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
-
-require 'util.pl';
+# Set information for the tests.
+my %settings = (
+    test_number   => 11,
+    test_desc     => 'testing for no query params on initial redirect',
+    extended_desc => \@extended,
+    extra_title   => 'Performing Query String test',
+    extra_tests   => query_string_test(),
+);
 
 print "Content-type: text/html\n\n";
+print build_page(\%settings);
 
-print "<html>\n";
+#############################################################################
+# Tests only for this page
+#############################################################################
 
-test_title(11, "testing for no query params on initial redirect");
-
-print<<EOS;
-
-
-You are accessing a webauth-protected page as the user: $REMOTE_USER<br>
-<br>
-This test is to make sure query parameters work at the initial redirect.
-<br>
-<br>
-EOS
-
-&return_links;
-
-&query_string_test;
-
-&dump_stuff;
-
-print "</html>";
-
+# Check to make sure the query string is not set.
+sub query_string_test {
+    my @tests;
+    my $query_string = $ENV{QUERY_STRING};
+    my $record = run_test('QUERY_STRING',
+                          $query_string eq '',
+                          'set to nothing',
+                          "incorrect value: $query_string",
+                          0);
+    push (@tests, $record);
+    return \@tests;
+}

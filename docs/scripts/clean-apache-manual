@@ -1,0 +1,234 @@
+#!/usr/bin/perl
+#
+# Post-process external Apache module documentation.
+#
+# The XML format for documenting Apache modules, and the corresponding build
+# system to generate formatted HTML, is quite useful even outside of Apache
+# for documenting external modules.  However, the output of the Apache
+# documentation build system includes some Apache-specific content, such as a
+# comments section that only works on the Apache site and a license (Apache
+# 2.0) that may not be appropriate.
+#
+# This script is used to post-process the formatted documentation for the
+# WebAuth Apache modules to remove those elements.  It should work (but has
+# not been tested with) Apache module documentation for other third-party
+# modules.
+
+use 5.010;
+use autodie;
+use strict;
+use warnings;
+
+use File::Temp;
+use Readonly;
+
+##############################################################################
+# Global variables
+##############################################################################
+
+# Regular expression matching the start of the comments section.  This regex
+# will match all of the comments-related output on a partial line so that it
+# can be used in s{}{} to remove the start of the comment section.
+Readonly my $REGEX_COMMENTS_START => qr{
+    <div \s+ class="section"> \s*
+    <h2> \s*
+    <a \s+ id="comments_section"
+    [^\n]*
+}xms;
+
+# Regular expression matching the end of the comments section.  As with the
+# start, this will match all the comments-related output on a partial line so
+# that s{}{} can use it to remove the whole comments section.
+Readonly my $REGEX_COMMENTS_END => qr{
+    .*
+    </script> \s*
+    </div>
+}xms;
+
+# Regular expression to strip out the link to the comments section in the
+# sidebar.
+Readonly my $REGEX_COMMENTS_LINK => qr{
+    <ul \s+ class="seealso">
+    .*
+    </ul>
+}xms;
+
+# Regular expression matching the Apache License notice.  Use s{}{} to remove
+# that notice entirely.  Hide the magic copyright word from build-license.
+Readonly my $REGEX_APACHE_LICENSE => qr{
+    <p \s+ class="apache">
+    Copyrigh[t] \s+ \d+ \s+ The \s+ Apache \s+ Software \s+ Foundation
+    .*
+    Version \s+ 2[.]0
+    </a> \s* [.]? \s* </p>
+    \s* \n
+}xms;
+
+# Regular expression matching a sidebar listing of a section title.  Returns
+# the prefix in $1, the section title in $2, and the rest of the line in $3.
+Readonly my $REGEX_SECTION_LISTING => qr{
+    ( .* <li><img [^>]+ >\s* )          # $1 - list item prefix
+    (?: <a \s+ name="[^\"]+"> )?        # strip any anchor lifted from title
+    ( [^>]+ )                           # $2 - title
+    (?: </a> )?                         # strip end of anchor
+    ( </li> .* )                        # $3 - remainder of line
+}xms;
+
+# Regular expression matching the heading of a section (but not a directive).
+# The section title will be returned in $1.
+Readonly my $REGEX_SECTION_HEADING => qr{
+    <h2>
+    (
+        (?:<a \s+ name="[^\"]+">)?
+        [^<]+
+        (?:</a>)?
+    )
+    </h2>
+}xms;
+
+##############################################################################
+# Implementation
+##############################################################################
+
+# Process a given source file.  Takes the intput and output file handles and
+# makes all the necessary changes to the HTML output.
+#
+# $input  - File handle to read the HTML source from
+# $output - File handle to which to write the output
+#
+# Returns: undef
+#  Throws: Text exceptions on I/O errors
+sub process_file {
+    my ($input, $output) = @_;
+
+    # Used to generate the anchors and links for sections.
+    my $link_index    = 0;
+    my $section_index = 0;
+
+    # Process the file, strip unwanted content, and add section links.
+  LINE:
+    while (defined(my $line = <$input>)) {
+        if ($line =~ s{$REGEX_COMMENTS_START}{}xms) {
+            print {$output} $line
+              or die "Cannot write to $output: $!\n";
+
+            # Scan forward looking for the end of the comments section.  Leave
+            # the first content after the comments section in $line.
+          COMMENTS:
+            while (defined($line = <$input>)) {
+                last COMMENTS if $line =~ s{$REGEX_COMMENTS_END}{}xms;
+            }
+        }
+
+        # Remove the link to the comments section.
+        $line =~ s{$REGEX_COMMENTS_LINK}{}xms;
+
+        # Remove the Apache license statement.
+        $line =~ s{$REGEX_APACHE_LICENSE}{}xms;
+
+        # If this is the start of a section, add an anchor.
+        if ($line =~ $REGEX_SECTION_HEADING) {
+            $section_index++;
+            $line =~ s{$REGEX_SECTION_HEADING}
+                      {<h2><a name="s$section_index">$1</a></h2>}xms;
+        }
+
+        # If this is a sidebar mention of a section, add a link.
+        if ($line =~ $REGEX_SECTION_LISTING) {
+            $link_index++;
+            $line =~ s{$REGEX_SECTION_LISTING}
+                      {$1<a href="#s$link_index">$2</a>$3}xms;
+        }
+
+        # Print whatever is left.
+        print {$output} $line
+          or die "Cannot write to $output: $!\n";
+    }
+    return;
+}
+
+# We only take one argument, which is the name of the manual documentation to
+# process.  Write the output to a new temporary file and then replace the
+# original on success.
+if (@ARGV != 1) {
+    die "Usage: clean-apache-manual <html-output>\n";
+}
+
+# Open the output file and make its permissions match the input.
+my $tmp = File::Temp->new(
+    TEMPLATE => $ARGV[0] . '.XXXXXX',
+    UNLINK   => 0,
+);
+my $mode = (stat($ARGV[0]))[2];
+chmod($mode, $tmp);
+
+# Process the input file.
+open(my $source, '<', $ARGV[0]);
+process_file($source, $tmp);
+close($source);
+close($tmp);
+
+# Rename the temporary file over the original.
+rename($tmp->filename, $ARGV[0]);
+exit 0;
+
+__END__
+
+=for stopwords
+clean-apache-manual html-output sublicense MERCHANTABILITY NONINFRINGEMENT
+Allbery
+
+=head1 NAME
+
+clean-apache-manual - Post-process external Apache module documentation
+
+=head1 SYNOPSIS
+
+B<clean-apache-manual> I<html-output>
+
+=head1 DESCRIPTION
+
+The XML format for documenting Apache modules, and the corresponding build
+system to generate formatted HTML, is quite useful even outside of Apache
+for documenting external modules.  However, the output of the Apache
+documentation build system includes some Apache-specific content, such as
+a comments section that only works on the Apache site and a license
+(Apache 2.0) that may not be appropriate.
+
+This script is used to post-process the formatted documentation for the
+WebAuth Apache modules to remove those elements.  It should work (but has
+not been tested with) Apache module documentation for other third-party
+modules.
+
+B<clean-apache-manual> takes only one argument, which should be the HTML
+output from the Apache module manual build process.  It will replace that
+file with the corrected output.
+
+=head1 AUTHOR
+
+Russ Allbery <rra@stanford.edu>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2013 The Board of Trustees of the Leland Stanford Junior
+University
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+=cut

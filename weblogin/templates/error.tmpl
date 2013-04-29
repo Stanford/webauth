@@ -13,12 +13,15 @@ Variables used:
 
 err_html                  : the complete HTML text of the error
 err_bad_method            : browser submitted login page via GET not POST
+err_confirm               : incomplete data for confirm page
 err_cookies_disabled      : cookies disabled in the web browser
-err_no_request_token      : no request token (user went straight to weblogin)
-err_sendauth              : sendauth function returned non-zero status
-err_no_mfactor            : site requested multifactor, user has none
 err_insufficient_mfactor  : site requested higher multifactor than user has
 err_insufficient_loa      : site requested higher LoA than user has
+err_lockout               : account locked out due to login failures
+err_no_mfactor            : site requested multifactor, user has none
+err_no_request_token      : no request token (user went straight to weblogin)
+err_replay                : authentication was a replay
+err_sendauth              : sendauth function returned non-zero status
 err_webkdc                : the WebKDC returned an error
 err_msg                   : error message from WebKDC
 multifactor_required      : level of multifactor required for the destination
@@ -74,9 +77,25 @@ works of this work.
                    service.  Please enable cookies in your web browser.<p>
               [% END %]
 
+              <!-- Error: locked out due to excessive login failures -->
+              [% IF err_lockout %]
+                <p>Error: Too many login failures.</p>
+                <p>There have been too many failed login attempts for this
+                   account.  Please try again later.</p>
+              [% END %]
+
               <!-- Error: no response token -->
               [% IF err_no_request_token %]
                 <p>Error: The URL given is incomplete.</p>
+              [% END %]
+
+              <!-- Error: request was a replay -->
+              [% IF err_replay %]
+                <p>Error: Authentication was a replay.</p>
+                <p>You cannot repeat your authentication to this site.  If
+                   you reached this page via the back button in your
+                   browser, start over by going directly to the web site
+                   you want to visit.</p>
               [% END %]
 
               <!-- Error: missing data when redisplaying the confirm page -->

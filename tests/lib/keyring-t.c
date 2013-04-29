@@ -1,9 +1,8 @@
 /*
  * Test suite for keyring handling.
  *
- * Written by Roland Schemers
- * Updated for current TAP library support by Russ Allbery
- * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012
+ * Written by Roland Schemers and Russ Allbery <rra@stanford.edu>
+ * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -30,13 +29,15 @@ main(void)
     const struct webauth_key *best;
     struct webauth_keyring *ring, *ring2;
     struct webauth_keyring_entry *entry, *entry2;
-    char *tmpdir, *keyring;
+    char *tmpdir, *keyring, *buf2;
+    char buf[4096];
+    FILE *file;
     int s, ks, fd;
-    size_t i;
+    size_t i, size;
     time_t now;
     enum webauth_kau_status kau;
 
-    plan(90);
+    plan(96);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -46,6 +47,8 @@ main(void)
     is_int(WA_ERR_NONE, s, "Key created successfully");
     ring = webauth_keyring_from_key(ctx, key);
     ok(ring->entries != NULL, "Keyring created successfully");
+    if (ring->entries == NULL)
+        bail("Cannot continue after keyring creation failure");
     is_int(1, ring->entries->nelts, "... with one entry");
     entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
     is_int(0, entry->creation, "Key has 0 creation time");
@@ -62,8 +65,12 @@ main(void)
     s = webauth_key_create(ctx, WA_KEY_AES, WA_AES_256, NULL, &key);
     is_int(WA_ERR_NONE, s, "Creating a key succeeds");
     now = time(NULL);
+    if (ring == NULL)
+        bail("Cannot continue after keyring creation failure");
     webauth_keyring_add(ctx, ring, now, now, key);
-    ok(ring->entries != NULL, "Keyring created successfully");
+    ok(ring->entries != NULL, "Key added successfully");
+    if (ring->entries == NULL)
+        bail("Cannot continue after keyring creation failure");
     is_int(1, ring->entries->nelts, "... with one entry");
     entry = &APR_ARRAY_IDX(ring->entries, 0, struct webauth_keyring_entry);
     is_int(now, entry->creation, "Key has correct creation time");
@@ -82,6 +89,8 @@ main(void)
     s = webauth_keyring_write(ctx, ring, keyring);
     is_int(WA_ERR_NONE, s, "Writing the keyring to a file succeeds");
     s = webauth_keyring_read(ctx, keyring, &ring2);
+    if (s != WA_ERR_NONE)
+        diag("error message: %s", webauth_error_message(ctx, s));
     is_int(WA_ERR_NONE, s, "Reading the keyring back from a file succeeds");
     is_int(ring->entries->nelts, ring2->entries->nelts,
            "... and the key count matches");
@@ -103,6 +112,27 @@ main(void)
     }
     s = webauth_keyring_write(ctx, ring2, keyring);
     is_int(WA_ERR_NONE, s, "Writing the second keyring back out succeeds");
+
+    /* Read the encoded keyring data back in. */
+    file = fopen(keyring, "r");
+    ok(file != NULL, "...and can open the file");
+    if (file == NULL)
+        ok_block(5, false, "Keyring file doesn't exist");
+    else {
+        size = fread(buf, 1, sizeof(buf), file);
+        buf[size] = '\0';
+        fclose(file);
+        s = webauth_keyring_decode(ctx, buf, size, &ring2);
+        is_int(WA_ERR_NONE, s, "...and decode the results");
+        is_int(ring->entries->nelts, ring2->entries->nelts,
+           "... and the key count matches");
+        s = webauth_keyring_encode(ctx, ring, &buf2, &size);
+        is_int(WA_ERR_NONE, s, "Encoding the first keyring works");
+        is_int(strlen(buf), size,
+               "...and the length matches the first encoding");
+        ok(memcmp(buf, buf2, strlen(buf)) == 0,
+           "...and the encoding matches what we read from the file");
+    }
 
     /* Test removal of keys from a keyring. */
     s = webauth_keyring_remove(ctx, ring, 2);
@@ -168,12 +198,12 @@ main(void)
         sysbail("Cannot truncate %s", keyring);
     close(fd);
     s = webauth_keyring_read(ctx, keyring, &ring);
-    is_int(WA_ERR_KEYRING_READ, s, "Correct error from reading empty keyring");
+    is_int(WA_ERR_FILE_READ, s, "Correct error from reading empty keyring");
 
     /* Test creating a new keyring with keyring_auto_update. */
     unlink(keyring);
     s = webauth_keyring_auto_update(ctx, keyring, false, 0, &ring, &kau, &ks);
-    is_int(WA_ERR_KEYRING_OPENREAD, s,
+    is_int(WA_ERR_FILE_NOT_FOUND, s,
            "keyring_auto_update fails with no ring and no creation");
     is_int(WA_KAU_NONE, kau, "... with correct kau_status");
     s = webauth_keyring_auto_update(ctx, keyring, true, 0, &ring, &kau, &ks);
@@ -232,5 +262,6 @@ main(void)
     unlink(keyring);
     free(keyring);
     test_tmpdir_free(tmpdir);
+    webauth_context_free(ctx);
     return 0;
 }

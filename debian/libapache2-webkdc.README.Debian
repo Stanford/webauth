@@ -67,9 +67,9 @@ WebKDC available:
     will be allowed to get tokens from the WebKDC.  I recommend starting
     with a line like:
 
-        krb5:webauth/*@example.com id
+        krb5:webauth/*@EXAMPLE.COM id
 
-    which will allow any webauth/* principal in the example.com realm
+    which will allow any webauth/* principal in the EXAMPLE.COM realm
     (replace that with your own realm) to get an "id" token, which is the
     token for basic authentication.  You can allow particular servers to
     get additional Kerberos credentials on behalf of the user; for more
@@ -89,4 +89,4 @@ WebKDC available:
     The WebKDC should now be available, and you can start testing with
     WebAuth servers.
 
- -- Russ Allbery <rra@debian.org>, Thu Mar 16 13:33:35 2006
+ -- Russ Allbery <rra@debian.org>, Mon, 22 Apr 2013 13:47:30 -0700

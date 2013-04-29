@@ -1,12 +1,21 @@
 <authdata user="full">
   <success>yes</success>
   <factors>
+    <expiration>1893484800</expiration>
     <factor>o</factor>
     <factor>o3</factor>
   </factors>
+  <persistent-factors>
+    <valid-threshold>1365630519</valid-threshold>
+    <expiration>1893484802</expiration>
+    <factor>d</factor>
+    <factor>u</factor>
+  </persistent-factors>
   <login-history>
     <host ip="127.0.0.2">example.com</host>
     <host ip="127.0.0.3">www.example.com</host>
   </login-history>
   <loa>3</loa>
+  <user-message><![CDATA[<em>OTP3</em> down.  &lt;_&lt;;]]></user-message>
+  <login-state><![CDATA[RESET_PIN]]></login-state>
 </authdata>

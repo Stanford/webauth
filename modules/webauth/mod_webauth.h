@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebAuth module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -19,12 +19,8 @@
 #include <httpd.h>              /* server_rec and request_rec */
 #include <sys/types.h>          /* size_t, etc. */
 
-#include <webauth.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
-
-/* The module initialization struct, used to retrieve configuration. */
-extern module webauth_module;
 
 /* Command table provided by the configuration handling code. */
 extern const command_rec webauth_cmds[];
@@ -48,6 +44,7 @@ extern const command_rec webauth_cmds[];
 
 /* environment variables to set */
 #define ENV_WEBAUTH_USER "WEBAUTH_USER"
+#define ENV_WEBAUTH_AUTHZ_USER "WEBAUTH_AUTHZ_USER"
 #define ENV_WEBAUTH_TOKEN_CREATION "WEBAUTH_TOKEN_CREATION"
 #define ENV_WEBAUTH_TOKEN_EXPIRATION "WEBAUTH_TOKEN_EXPIRATION"
 #define ENV_WEBAUTH_TOKEN_LASTUSED "WEBAUTH_TOKEN_LASTUSED"
@@ -57,9 +54,10 @@ extern const command_rec webauth_cmds[];
 #define ENV_KRB5CCNAME "KRB5CCNAME"
 
 /* r->notes keys */
-#define N_WEBAUTHR "mod_webauth_WEBAUTHR"
-#define N_WEBAUTHS "mod_webauth_WEBAUTHS"
-#define N_SUBJECT  "mod_webauth_SUBJECT"
+#define N_WEBAUTHR      "mod_webauth_WEBAUTHR"
+#define N_WEBAUTHS      "mod_webauth_WEBAUTHS"
+#define N_SUBJECT       "mod_webauth_SUBJECT"
+#define N_AUTHZ_SUBJECT "mod_webauth_AUTHZ"
 
 
 /* a service token and associated data, all memory (including key)
@@ -101,6 +99,7 @@ struct server_config {
     bool strip_url;
     const char *subject_auth_type;
     unsigned long token_max_ttl;
+    bool trust_authz_identity;
     bool webkdc_cert_check;
     const char *webkdc_cert_file;
     const char *webkdc_principal;
@@ -118,6 +117,7 @@ struct server_config {
     bool strip_url_set;
     bool subject_auth_type_set;
     bool token_max_ttl_set;
+    bool trust_authz_identity_set;
     bool webkdc_cert_check_set;
 
     /*
@@ -149,6 +149,7 @@ struct dir_config {
     const char *post_return_url;
     const char *return_url;
     bool ssl_return;
+    bool trust_authz_identity;
     bool use_creds;
     const char *var_prefix;
     apr_array_header_t *creds;           /* Array of MWA_WACRED */
@@ -167,6 +168,7 @@ struct dir_config {
     bool loa_set;
     bool optional_set;
     bool ssl_return_set;
+    bool trust_authz_identity_set;
     bool use_creds_set;
 };
 
@@ -287,11 +289,8 @@ mwa_log_request(request_rec *r, const char *msg);
  * log a webauth-related error
  */
 void
-mwa_log_webauth_error(server_rec *r,
-                      int status,
-                      const char *mwa_func,
-                      const char *func,
-                      const char *extra);
+mwa_log_webauth_error(MWA_REQ_CTXT *rc, int status, const char *mwa_func,
+                      const char *func, const char *extra);
 
 /*
  * this should only be called in the module init routine
