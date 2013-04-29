@@ -366,19 +366,14 @@ sub print_headers {
               && $value eq '') {
             $cookie = $self->expire_cookie ($name, $secure);
 
-        # Also expire the factor token on any public computer.
-        } elsif ($name eq 'webauth_wft'
+        # If told not to remember the login, expire the SSO cookies on display
+        # of the confirmation page or any final redirect to WAS.
+        } elsif ($name =~ /^webauth_wpt_/ && ($return_url || $confirm_page)
                  && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
-        # Expire the SSO cookies on any final redirect to WAS, on a public
-        # computer.
-        } elsif ($name =~ /^webauth_wpt_/ && $return_url
-                 && $self->remember_login eq 'no') {
-            $cookie = $self->expire_cookie ($name, $secure);
-
-        # Expire the SSO cookies on the confirm page on a public computer.
-        } elsif ($name =~ /^webauth_wpt_/ && $confirm_page
+        # Likewise for any webkdc-factor token.
+        } elsif ($name eq 'webauth_wft' && ($return_url || $confirm_page)
                  && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
