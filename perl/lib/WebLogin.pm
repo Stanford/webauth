@@ -230,8 +230,15 @@ sub fix_token {
 # factor token.  To accomodate a form listing a checkbox for either yes or no
 # depending on site preferences, we check to see if there is a settting, and
 # if not, return the default.
+#
+# If the request method is GET, not POST, we're dealing with a single sign-on
+# authentication, and we should always remember the login.
 sub remember_login {
     my ($self) = @_;
+    my $method = $self->query->request_method || 'POST';
+    if ($method eq 'GET') {
+        return 'yes';
+    }
     if ($self->query->param ('remember_login')) {
         return $self->query->param ('remember_login');
     } else {
