@@ -404,7 +404,12 @@ sub print_headers {
                                   -secure   => $secure,
                                   -httponly => 1);
         }
-        push (@ca, $cookie);
+
+        # Add the cookie to the list of cookies we're setting if we created a
+        # new cookie object.
+        if (defined $cookie) {
+            push (@ca, $cookie);
+        }
     }
 
     # If we haven't been given a webauth factor token cookie explicitly, then
