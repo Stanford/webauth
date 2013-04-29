@@ -1,3 +1,10 @@
+webauth (4.5.0-2) UNRELEASED; urgency=low
+
+  * Increase Breaks and minimum dependency versions between the WebLogin
+    components to 4.5.0.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 29 Apr 2013 13:40:47 -0700
+
 webauth (4.5.0-1) experimental; urgency=low
 
   * New upstream release.
