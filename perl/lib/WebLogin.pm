@@ -397,8 +397,8 @@ sub print_headers {
                 $cookie->expires ($lifetime);
             }
 
-        # Pass along all other WebAuth cookies.
-        } elsif ($name =~ /^webauth_/) {
+        # Pass along all other webkdc-proxy and webkdc-factor cookies.
+        } elsif ($name =~ /^webauth_w[pf]t/) {
             $cookie = $q->cookie (-name     => $name,
                                   -value    => $value,
                                   -secure   => $secure,
