@@ -807,7 +807,7 @@ sub print_confirm_page {
     $params->{pretty_return_url} = $pretty_return_url;
     $params->{token_rights} = $self->token_rights;
     $params->{history} = $history;
-    $params->{remember_login} = $q->param ('remember_login');
+    $params->{remember_login} = $self->remember_login;
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
 
@@ -895,7 +895,7 @@ sub redisplay_confirm_page {
     $params->{show_remuser} = 1;
     my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
     $params->{remuser} = $remuser;
-    $params->{remember_login} = $q->param ('remember_login');
+    $params->{remember_login} = $self->remember_login;
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
     $params->{LS} = $q->param ('LS');
@@ -991,7 +991,7 @@ sub print_multifactor_page {
 
     $params->{script_name} = $self->param ('script_name');
     $params->{username} = $q->param ('username');
-    $params->{remember_login} = $q->param ('remember_login');
+    $params->{remember_login} = $self->remember_login;
     $params->{user_message} = $self->{response}->user_message;
     $params->{RT} = $RT;
     $params->{ST} = $ST;
