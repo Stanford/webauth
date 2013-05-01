@@ -130,12 +130,16 @@ is ($cookie->name, 'webauth_wft', 'Factor cookie was set');
 my $expires = str2time ($cookie->expires);
 is ($expires, time - 60 * 60 * 24, '... with the correct expiration time');
 
-# Check clearing the webauth cookie by setting the public computer checkbox.
+# Check clearing the webauth cookie by setting the remember_login checkbox.
 $weblogin = init_weblogin;
+$weblogin->query->request_method ('GET');
 $status = $weblogin->setup_kdc_request;
 $weblogin->query->param (remember_login => 'no');
 $weblogin->{response}->cookie ('webauth_wft', 'test', $expires_epoch);
-%args = (cookies => $weblogin->{response}->cookies);
+%args = (
+    cookies      => $weblogin->{response}->cookies,
+    confirm_page => 1,
+);
 $weblogin->print_headers (\%args);
 $cookie = undef;
 for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {

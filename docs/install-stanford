@@ -30,6 +30,10 @@ COMPILING, TESTING, and INSTALLATION
 
     for information on how to install packages from backports.debian.org.
 
+    To use mod_webauthldap, also install libsasl2-modules-gssapi-mit or
+    libsasl2-modules-gssapi-heimdal to enable GSS-API authentication via
+    SASL for the LDAP libraries.
+
     For Red Hat Enterprise users, WebAuth packages are available from our
     local yum repository.  See:
 
@@ -58,8 +62,8 @@ CONFIGURATION
 
   Apache Directives
 
-    On Debian or Ubuntu, create /etc/apache2/conf.d/stanford-webauth with
-    the following contents:
+    On Debian or Ubuntu, create /etc/apache2/conf.d/stanford-webauth.conf
+    with the following contents:
 
         WebAuthLoginURL  https://weblogin.stanford.edu/login/
         WebAuthWebKdcURL https://weblogin.stanford.edu/webkdc-service/
@@ -67,7 +71,11 @@ CONFIGURATION
 
     and then run a2enmod webauth.  Depending on the Apache version, you
     may also need to run a2enmod authz_user.  That's all the custom Apache
-    configuration you should need on those platforms.
+    configuration you should need on those platforms.  It's best to put
+    this configuration in a separate file rather than adding it to the
+    files in /etc/apache2/mods-available, since it keeps it separate from
+    the configuration that is maintained by the module package during
+    upgrades.
 
     On Red Hat Enterprise Linux 4 or 5 (or equivalent) systems, create the
     file /etc/httpd/conf.d/stanford-webauth.conf with the same contents as
@@ -193,10 +201,9 @@ CONFIGURATION
 
     First, any access to the LDAP servers (at least for purposes relevant
     to WebAuth) requires university approval.  There are, at present, no
-    exceptions.  For this approval process, which requires requesting
-    access from each university data owner, see:
+    exceptions.  For this approval process, see:
 
-        <http://www.stanford.edu/services/directory/access/>
+        <https://itservices.stanford.edu/service/directory/access/requesting>
 
     and follow the sidebar links.  To use workgroups to control access,
     you generally want the set of permissions called WebAuth General.  The
@@ -397,7 +404,7 @@ TESTING
 
 LICENSE
 
-    Copyright 2010, 2011, 2012
+    Copyright 2010, 2011, 2012, 2013
         The Board of Trustees of the Leland Stanford Junior University
 
     Copying and distribution of this file, with or without modification,

@@ -14,12 +14,12 @@
 [% END -%]
 
 [% IF unauth_location -%]
-        <p>Click <a href="/tests-new/index.html">here</a> to return to
+        <p>Click <a href="/tests/index.html">here</a> to return to
             tests</p>
 [% ELSE -%]
-        <p>Click <a href="/tests-new/index.html">here</a> to return without
+        <p>Click <a href="/tests/index.html">here</a> to return without
             logging out<br />
-           Click <a href="/tests-new/auth/logout">here</a> to logout and
+           Click <a href="/tests/auth/logout">here</a> to logout and
             return
         </p>
 [% END -%]

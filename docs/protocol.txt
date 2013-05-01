@@ -4,7 +4,7 @@
 WebAuth Documentation                                        R. Schemers
                                                               R. Allbery
                                                      Stanford University
-                                                          April 26, 2013
+                                                              April 2013
 
 
                     WebAuth Technical Specification

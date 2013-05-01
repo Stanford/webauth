@@ -230,8 +230,15 @@ sub fix_token {
 # factor token.  To accomodate a form listing a checkbox for either yes or no
 # depending on site preferences, we check to see if there is a settting, and
 # if not, return the default.
+#
+# If the request method is GET, not POST, we're dealing with a single sign-on
+# authentication, and we should always remember the login.
 sub remember_login {
     my ($self) = @_;
+    my $method = $self->query->request_method || 'POST';
+    if ($method eq 'GET') {
+        return 'yes';
+    }
     if ($self->query->param ('remember_login')) {
         return $self->query->param ('remember_login');
     } else {
@@ -366,19 +373,14 @@ sub print_headers {
               && $value eq '') {
             $cookie = $self->expire_cookie ($name, $secure);
 
-        # Also expire the factor token on any public computer.
-        } elsif ($name eq 'webauth_wft'
+        # If told not to remember the login, expire the SSO cookies on display
+        # of the confirmation page or any final redirect to WAS.
+        } elsif ($name =~ /^webauth_wpt_/ && ($return_url || $confirm_page)
                  && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
-        # Expire the SSO cookies on any final redirect to WAS, on a public
-        # computer.
-        } elsif ($name =~ /^webauth_wpt_/ && $return_url
-                 && $self->remember_login eq 'no') {
-            $cookie = $self->expire_cookie ($name, $secure);
-
-        # Expire the SSO cookies on the confirm page on a public computer.
-        } elsif ($name =~ /^webauth_wpt_/ && $confirm_page
+        # Likewise for any webkdc-factor token.
+        } elsif ($name eq 'webauth_wft' && ($return_url || $confirm_page)
                  && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
@@ -402,14 +404,19 @@ sub print_headers {
                 $cookie->expires ($lifetime);
             }
 
-        # Pass along all other WebAuth cookies.
-        } elsif ($name =~ /^webauth_/) {
+        # Pass along all other webkdc-proxy and webkdc-factor cookies.
+        } elsif ($name =~ /^webauth_w[pf]t/) {
             $cookie = $q->cookie (-name     => $name,
                                   -value    => $value,
                                   -secure   => $secure,
                                   -httponly => 1);
         }
-        push (@ca, $cookie);
+
+        # Add the cookie to the list of cookies we're setting if we created a
+        # new cookie object.
+        if (defined $cookie) {
+            push (@ca, $cookie);
+        }
     }
 
     # If we haven't been given a webauth factor token cookie explicitly, then
@@ -691,15 +698,17 @@ sub print_error_fatal {
 # Setting the runmode occurs in the actual template file.
 sub print_confirm_page {
     my ($self) = @_;
-    my $q = $self->query;
-    my $resp = $self->{response};
-    my $pagename = $self->get_pagename ('confirm');
-    my $params = $self->template_params;
 
-    my $uri = URI->new ($resp->return_url);
+    my $q                 = $self->query;
+    my $resp              = $self->{response};
+    my $pagename          = $self->get_pagename ('confirm');
+    my $params            = $self->template_params;
+
+    my $uri               = URI->new ($resp->return_url);
     my $pretty_return_url = $self->pretty_return_uri ($uri);
-    my $return_url = $resp->return_url;
-    my $token_type = $resp->response_token_type;
+    my $return_url        = $resp->return_url;
+    my $token_type        = $resp->response_token_type;
+    my $user_message      = $self->{response}->user_message;
 
     # The code to return the response token type was added in WebAuth 3.6.1.
     # Provide a useful error message if the mod_webkdc is older than that.
@@ -780,6 +789,7 @@ sub print_confirm_page {
     $bypass = 0 if $factor_warning;
     $bypass = 0 if $history;
     $bypass = 0 if $resp->authz_subject;
+    $bypass = 0 if $user_message;
     if ($bypass and $bypass eq 'id') {
         $bypass = ($token_type eq 'id') ? 1 : 0;
     }
@@ -793,16 +803,17 @@ sub print_confirm_page {
     }
 
     # Find our page and set general template parameters.
-    $params->{return_url} = $return_url;
-    $params->{username} = $resp->subject;
-    $params->{authz_subject} = $resp->authz_subject;
-    $params->{permitted_authz} = [ $resp->permitted_authz ];
+    $params->{return_url}        = $return_url;
+    $params->{username}          = $resp->subject;
+    $params->{authz_subject}     = $resp->authz_subject;
+    $params->{permitted_authz}   = [ $resp->permitted_authz ];
     $params->{pretty_return_url} = $pretty_return_url;
-    $params->{token_rights} = $self->token_rights;
-    $params->{history} = $history;
-    $params->{remember_login} = $q->param ('remember_login');
-    $params->{ST} = $q->param ('ST');
-    $params->{RT} = $q->param ('RT');
+    $params->{token_rights}      = $self->token_rights;
+    $params->{history}           = $history;
+    $params->{user_message}      = $user_message;
+    $params->{remember_login}    = $self->remember_login;
+    $params->{ST}                = $q->param ('ST');
+    $params->{RT}                = $q->param ('RT');
 
     # Create the login_state object for use in templates
     if ($self->{response}->login_state) {
@@ -888,7 +899,7 @@ sub redisplay_confirm_page {
     $params->{show_remuser} = 1;
     my $remuser = $q->param ('remuser') eq 'on' ? 'checked' : '';
     $params->{remuser} = $remuser;
-    $params->{remember_login} = $q->param ('remember_login');
+    $params->{remember_login} = $self->remember_login;
     $params->{ST} = $q->param ('ST');
     $params->{RT} = $q->param ('RT');
     $params->{LS} = $q->param ('LS');
@@ -929,6 +940,7 @@ sub print_pwchange_page {
     $params->{CPT} = $self->param ('CPT');
     $params->{RT} = $RT;
     $params->{ST} = $ST;
+    $params->{remember_login} = $self->remember_login;
     $params->{script_name} = $self->param ('script_name');
     $params->{expired} = 1
         if ($q->param ('expired') and $q->param ('expired') == 1);
@@ -984,7 +996,7 @@ sub print_multifactor_page {
 
     $params->{script_name} = $self->param ('script_name');
     $params->{username} = $q->param ('username');
-    $params->{remember_login} = $q->param ('remember_login');
+    $params->{remember_login} = $self->remember_login;
     $params->{user_message} = $self->{response}->user_message;
     $params->{RT} = $RT;
     $params->{ST} = $ST;

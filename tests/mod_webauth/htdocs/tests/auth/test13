@@ -26,7 +26,7 @@ if ($remote_user) {
           'You are accessing a page with optional authentication and are not '
           .'authenticated.  This part of the test succeeded.  To see if your '
           .'identity is displayed properly after logging in, follow the '
-          .'<a href="/tests-new/auth/test13login">login</a> link.  You should '
+          .'<a href="/tests/auth/test13login">login</a> link.  You should '
           .'then authenticate and be returned to this page, but with an '
           .'identity set.');
 }
