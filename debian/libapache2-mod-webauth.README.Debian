@@ -34,7 +34,7 @@ installing this package.  You must also do the following:
 
  1. Determine your local site WebAuth configuration.  You need to know
     three pieces of information:  the URL of the WebKDC service, the URL
-    of the weblogin service, and the Kerberos principal used by the
+    of the WebLogin service, and the Kerberos principal used by the
     WebKDC.  These should be part of your local WebAuth documentation.
 
     If you are setting up a new WebAuth installation from scratch, install
@@ -69,15 +69,21 @@ installing this package.  You must also do the following:
     Apache server.  Don't restart the server yet; you still need to
     configure the module.
 
- 4. Add the following configuration to /etc/apache2/conf.d/webauth or
-    wherever you prefer to put local Apache configuration:
+ 4. Add the following configuration to:
+
+        /etc/apache2/conf-available/webauth.conf
+
+    (or wherever you prefer to put local Apache configuration):
 
         WebAuthLoginURL <weblogin-url>
         WebAuthWebKdcURL <webkdc-url>
         WebAuthWebKdcPrincipal <webkdc-principal>
 
     where <weblogin-url>, <webkdc-url>, and <webkdc-principal> are the
-    local configuration values that you obtained in step 1.
+    local configuration values that you obtained in step 1.  Then enable
+    that configuration file with:
+
+        a2enconf webauth
 
  5. Restart Apache:
 
@@ -107,8 +113,11 @@ following:
     (These packages are recommended but not required by the Apache module
     package since mod_webauth is usable without them.)
 
- 2. Add the following configuration to /etc/apache2/conf.d/webauth.conf or
-    wherever you prefer to put local Apache configuration:
+ 2. Add the following configuration to:
+
+        /etc/apache2/conf-available/webauth.conf
+
+    (or wherever you put the configuration mentioned above):
 
         WebAuthLdapHost <ldap-server>
         WebAuthLdapBase <ldap-base>
@@ -142,4 +151,4 @@ configured a privgroup attribute, you may now use the "require privgroup"
 command to restrict access to particular web pages to members of that
 privgroup.
 
- -- Russ Allbery <rra@debian.org>, Wed,  1 May 2013 16:23:29 -0700
+ -- Russ Allbery <rra@debian.org>, Wed,  1 May 2013 16:26:30 -0700
