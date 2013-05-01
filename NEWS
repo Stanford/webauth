@@ -10,6 +10,9 @@ WebAuth 4.5.1 (2013-05-01)
     where there is no opportunity for local templates to send a default
     setting.
 
+    The remember_login setting is now preserved through a forced password
+    change due to an expired password.
+
     WebLogin now passes any user information message returned by the user
     information service to the confirm template as well as the multifactor
     authentication template.  This allows the <userinfo> element in the

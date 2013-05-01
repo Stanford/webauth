@@ -940,6 +940,7 @@ sub print_pwchange_page {
     $params->{CPT} = $self->param ('CPT');
     $params->{RT} = $RT;
     $params->{ST} = $ST;
+    $params->{remember_login} = $self->remember_login;
     $params->{script_name} = $self->param ('script_name');
     $params->{expired} = 1
         if ($q->param ('expired') and $q->param ('expired') == 1);
