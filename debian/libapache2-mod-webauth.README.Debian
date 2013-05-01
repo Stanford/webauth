@@ -100,7 +100,14 @@ authorization through directory entries and obtaining directory
 information for authenticated users, you need to additionally do the
 following:
 
- 1. Add the following configuration to /etc/apache2/conf.d/webauth or
+ 1. Ensure that either libsasl2-modules-gssapi-mit or
+    libsasl2-modules-gssapi-heimdal is installed on your system.
+    mod_webauthldap only supports GSS-API authentication to an LDAP server
+    and therefore requires the GSS-API SASL mechanism be available.
+    (These packages are recommended but not required by the Apache module
+    package since mod_webauth is usable without them.)
+
+ 2. Add the following configuration to /etc/apache2/conf.d/webauth.conf or
     wherever you prefer to put local Apache configuration:
 
         WebAuthLdapHost <ldap-server>
@@ -110,7 +117,7 @@ following:
     the LDAP search base to use (something like dc=example,dc=com).  Your
     local LDAP administrator will be able to provide this information.
 
- 2. If you want to use authorization through privilege groups defined by
+ 3. If you want to use authorization through privilege groups defined by
     the presence of an LDAP attribute in the record of the authenticated
     user, also add a line like:
 
@@ -120,7 +127,7 @@ following:
     your users that contains all of the privilege groups that that user is
     a member of.
 
- 3. Enable the WebAuth LDAP module:
+ 4. Enable the WebAuth LDAP module:
 
         a2enmod webauthldap
 
@@ -135,4 +142,4 @@ configured a privgroup attribute, you may now use the "require privgroup"
 command to restrict access to particular web pages to members of that
 privgroup.
 
- -- Russ Allbery <rra@debian.org>, Fri, 13 Jul 2012 17:10:27 -0700
+ -- Russ Allbery <rra@debian.org>, Wed,  1 May 2013 16:23:29 -0700
