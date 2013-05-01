@@ -10,5 +10,5 @@ warn_expire
 expire_timestamp 
 pwchange_url 
 CPT 
-remember_login 
+remember_login no
 device_expiring 

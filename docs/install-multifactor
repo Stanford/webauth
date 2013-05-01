@@ -350,8 +350,9 @@ User Information Service
   the user with any additional information from the userinfo service.  It
   can be used to explain the reasoning for an unexpected multifactor
   enforcement, or any other messaging specific to this step of the
-  authenication process.  It can be displayed on the first load of
-  WebLogin's OTP submission page.
+  authenication process.  It will be passed, via the WebKDC and WebLogin,
+  to the template for the multifactor authentication page or confirmation
+  page (depending on whether a multifactor authentication is required).
 
   The optional <login-state> element may contain a simple value or a string
   serialized object that can be used to retain state for a subsequent call

@@ -11,6 +11,7 @@ err_msg
 RT TestRT
 ST TestST
 CPT
+remember_login no
 username testuser
 password
 new_passwd1

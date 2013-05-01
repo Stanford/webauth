@@ -8,8 +8,11 @@ webauth-weblogin (4.5.0-1) experimental; urgency=low
       <input type="checkbox" name="remember_login" value="yes"
              checked="checked">
 
-  with appropriate associated wording; or, if they don't want to change
-  the UI, should add the setting:
+  with appropriate associated wording and add remember_login as an
+  additional hidden form variable to all of the forms in the multifactor,
+  confirm, and pwchange templates.  See the sample templates in
+  /usr/share/weblogin/generic/templates for examples.  Or, if they don't
+  want to change the UI, should add the setting:
 
       $REMEMBER_FALLBACK = 'yes';
 

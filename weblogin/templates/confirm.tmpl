@@ -27,6 +27,7 @@ warn_expire            : show warning for upcoming password expiration
 expire_timestamp       : timestamp for password expiration
 pwchange_url           : URL for the password change form
 device_expiring        : timestamp of when a device factor will expire
+user_message           : raw HTML returned by the user information service
 ST                     : Original service token
 RT                     : Original request token
 
@@ -86,6 +87,13 @@ works of this work.
                 at [% date.format(device_expiring) %].  This will require you
                 to log in via multifactor again to renew the token.
               </div>
+            </td>
+          </tr>
+        [% END %]
+        [% IF user_message %]
+          <tr>
+            <td colspan="2">
+              <div class="errortext">[% user_message %]</div>
             </td>
           </tr>
         [% END %]

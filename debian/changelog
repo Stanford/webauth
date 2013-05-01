@@ -1,11 +1,26 @@
-webauth (4.5.0-1~sbp60+1) stable; urgency=low
+webauth (4.5.1-1~sbp60+1) stable; urgency=low
 
   * Backport to squeeze, preserving changes from the previous backport.
   * Remove AM_PROG_AR from configure.ac.  This is not available with the
     squeeze versions of Autoconf and Automake, and was only added for Hurd
     portability (which isn't important for backports).
 
- -- Russ Allbery <rra@debian.org>  Mon, 29 Apr 2013 13:19:40 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 01 May 2013 16:20:04 -0700
+
+webauth (4.5.1-1) experimental; urgency=low
+
+  * New upstream release.
+    - Fix support for single sign-on in WebLogin, broken in 4.5.0.
+    - Document additional template changes required for remember_login.
+    - Preserve remember_login through a forced password change.
+    - Pass any user information service message to the confirm template.
+    - Avoid re-creating WebAuth cookies unnecessarily in WebLogin.
+    - Fix a few bugs in the installable mod_webauth test suite.
+  * Increase Breaks and minimum dependency versions between the WebLogin
+    components to 4.5.0.
+  * Remove a stray Debian revision in the libwebauth10 symbols file.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 01 May 2013 15:31:24 -0700
 
 webauth (4.5.0-1) experimental; urgency=low
 
