@@ -10,8 +10,15 @@ WebAuth 4.5.1 (2013-05-01)
     where there is no opportunity for local templates to send a default
     setting.
 
+    Sites that wish to add the new UI element to the login page that
+    allows the user to control whether single sign-on cookies are created
+    will need to preserve the remember_login setting as a hidden form
+    variable in any local confirm, multifactor, and pwchange templates.
+    See the sample templates for examples.
+
     The remember_login setting is now preserved through a forced password
-    change due to an expired password.
+    change due to an expired password.  This, as with all the
+    remember_login changes, requires updates to any local templates.
 
     WebLogin now passes any user information message returned by the user
     information service to the confirm template as well as the multifactor
