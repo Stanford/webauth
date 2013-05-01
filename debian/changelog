@@ -1,5 +1,12 @@
-webauth (4.5.0-2) UNRELEASED; urgency=low
+webauth (4.5.1-1) UNRELEASED; urgency=low
 
+  * New upstream release.
+    - Fix support for single sign-on in WebLogin, broken in 4.5.0.
+    - Document additional template changes required for remember_login.
+    - Preserve remember_login through a forced password change.
+    - Pass any user information service message to the confirm template.
+    - Avoid re-creating WebAuth cookies unnecessarily in WebLogin.
+    - Fix a few bugs in the installable mod_webauth test suite.
   * Increase Breaks and minimum dependency versions between the WebLogin
     components to 4.5.0.
   * Remove a stray Debian revision in the libwebauth10 symbols file.
