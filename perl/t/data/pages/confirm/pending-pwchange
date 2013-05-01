@@ -10,5 +10,5 @@ warn_expire 1
 expire_timestamp \S+
 pwchange_url /pwchange
 CPT \S+
-remember_login 
+remember_login no
 device_expiring 

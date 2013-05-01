@@ -25,6 +25,7 @@ err_msg                : extra text describing an error
 RT                     : Response Token
 ST                     : Service Token
 CPT                    : kadmin/changepw Token
+remember_login         : set if single sign-on cookies should be generated
 skip_username          : suppress display of an entry box for the username
 username               : the username
 password               : the old password
@@ -128,6 +129,8 @@ works of this work.
                          value="[% ST FILTER html %]">
                   <input type="hidden" name="CPT"
                          value="[% CPT FILTER html %]">
+                  <input type="hidden" name="remember_login"
+                         value="[% remember_login FILTER html %]">
                   <input type="hidden" name="changepw" value="yes">
                   <input type="hidden" name="expired"
                          value="[% expired FILTER html %]">

@@ -61,8 +61,10 @@ my %check = read_outputfile ('t/data/pages/pwchange/bare');
 ok (%output, 'pwchange was printed');
 is_deeply (\%output, \%check, '... and the output matches what is expected');
 
-# Once more, testing CPT suppressing the username and password.
+# Once more, testing CPT suppressing the username and password, and adding a
+# remember_login setting.
 $weblogin->param ('CPT', 'TestCPT');
+$weblogin->query->param ('remember_login', 'yes');
 %output = page_wrapper ($weblogin, 'TestRT2', 'TestST2');
 %check = read_outputfile ('t/data/pages/pwchange/cpt');
 ok (%output, 'pwchange page was printed with CPT');
