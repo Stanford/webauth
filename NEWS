@@ -1,5 +1,28 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.5.1 (2013-05-01)
+
+    Fix bugs in the remember_login feature introduced in WebAuth 4.5.0
+    that would cause WebLogin to discard all single sign-on cookies in the
+    default configuration and many other common situations.  WebLogin
+    should now reliably respect the value sent by the form, and should
+    retain single sign-on and persistent factor cookies in situations
+    where there is no opportunity for local templates to send a default
+    setting.
+
+    WebLogin now passes any user information message returned by the user
+    information service to the confirm template as well as the multifactor
+    authentication template.  This allows the <userinfo> element in the
+    user information service reply to be used to pass arbitrary
+    information to the end user through the WebKDC and WebLogin
+    components.
+
+    Avoid re-creating WebAuth cookies other than single sign-on cookies
+    during WebLogin cookie processing, which fixes some corner-case bugs
+    when the WebLogin server and WAS are on the same host.
+
+    Fix a few minor bugs in the installable mod_webauth test suite.
+
 WebAuth 4.5.0 (2013-04-26)
 
     The change in interpretation of WebAuthForceLogin introduced in 4.4.0
