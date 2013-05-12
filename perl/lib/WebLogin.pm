@@ -444,6 +444,7 @@ sub print_headers {
     push (@params, -cookie => [@ca]) if @ca;
     $self->header_props (-type => 'text/html', -Pragma => 'no-cache',
                          -Cache_Control => 'no-cache, no-store', @params);
+    return '';
 }
 
 # Determine what pretty display URL to use from the given return URI object.
@@ -1385,7 +1386,6 @@ sub error_if_no_cookies {
     if (defined $self->query->param ('test_cookie')) {
         print STDERR "no cookie, even after redirection\n"
             if $self->param ('logging');
-
         $self->template_params ({err_cookies_disabled => 1});
         return $self->print_error_page;
     } elsif ($self->query->request_method ne 'POST') {
@@ -1394,15 +1394,11 @@ sub error_if_no_cookies {
         my $return_url = $self->query->url (-query => 1);
         print STDERR "no cookie set, redirecting to $return_url\n"
             if $self->param ('debug');
-        # FIXME: How do we handle this?  print_headers will set the headers,
-        #        but then we have no actual output that should be returned.
-        #        Should probably return '' and make the caller differentiate
-        #        between getting that and getting undef.
         my %args = (return_url => $return_url);
         return $self->print_headers (\%args);
+    } else {
+        return undef;
     }
-
-    return undef;
 }
 
 # If the user sent a password, force POST as a method.  Otherwise, if we
@@ -2022,9 +2018,9 @@ sub pwchange : Runmode {
 
     # Test to make sure that all required fields are filled out.
     my $page;
-    return $page if ($page = $self->error_invalid_pwchange_fields);
-    return $page if ($page = $self->error_if_no_cookies);
-    return $page if ($page = $self->error_password_no_post);
+    return $page if defined ($page = $self->error_invalid_pwchange_fields);
+    return $page if defined ($page = $self->error_if_no_cookies);
+    return $page if defined ($page = $self->error_password_no_post);
 
     # Attempt password change via krb5_change_password API.
     my $error = '';
