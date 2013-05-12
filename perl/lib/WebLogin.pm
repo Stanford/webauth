@@ -661,7 +661,7 @@ sub print_error_page {
 
     # Print out the error page.
     my %args = (cookies => $resp->cookies);
-    $self->print_headers ($resp->cookies);
+    $self->print_headers (\%args);
     $self->header_add (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
