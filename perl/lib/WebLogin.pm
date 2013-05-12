@@ -375,12 +375,12 @@ sub print_headers {
 
         # If told not to remember the login, expire the SSO cookies on display
         # of the confirmation page or any final redirect to WAS.
-        } elsif ($name =~ /^webauth_wpt_/ && ($return_url || $confirm_page)
+        } elsif ($name =~ /^webauth_wpt_/ && $confirm_page
                  && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
         # Likewise for any webkdc-factor token.
-        } elsif ($name eq 'webauth_wft' && ($return_url || $confirm_page)
+        } elsif ($name eq 'webauth_wft' && $confirm_page
                  && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
