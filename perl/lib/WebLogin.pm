@@ -1935,7 +1935,7 @@ sub index : StartRunmode {
             WebKDC::Config::record_login ($resp->subject);
         }
         if ($q->param ('password')) {
-            $self->register_auth ($req->request_token);
+            $self->register_auth ($req->request_token, $resp->subject);
         }
 
         print STDERR "WebKDC::make_request_token_request success\n"
