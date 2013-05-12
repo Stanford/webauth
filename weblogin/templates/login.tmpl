@@ -132,8 +132,17 @@ authorization identities if appropriate.
 [% END %]
                   <tr>
                     <td colspan="2" align="right">
+[% IF remember_login %]
+  [% IF remember_login == 'yes' %]
                       <input type="checkbox" name="remember_login" value="yes"
                              checked="checked">
+  [% ELSE %]
+                      <input type="checkbox" name="remember_login" value="yes">
+  [% END %]
+[% ELSE %]
+                      <input type="checkbox" name="remember_login" value="yes"
+                             checked="checked">
+[% END %]
                       Remember my login on this machine until it expires.
                     </td>
                   </tr>
