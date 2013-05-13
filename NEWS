@@ -1,5 +1,23 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.5.2 (unreleased)
+
+    WebLogin now supports preserving the remember_login setting on the
+    login page after a failed authentication, instead of resetting the
+    checkbox to the default.  Taking advantage of this support requires
+    local template changes.  See the sample login.tmpl file for an example
+    of how to write the template.
+
+    Fix clearing of account authentication attempts (for lockout)
+    following a successful authentication.
+
+    Fix setting cookies on the WebLogin error page so that single sign-on
+    cookies are still correctly created.
+
+    WebLogin no longer erroneously clears single sign-on and persistent
+    factor cookies when redirecting the user to test for session cookie
+    support.
+
 WebAuth 4.5.1 (2013-05-01)
 
     Fix bugs in the remember_login feature introduced in WebAuth 4.5.0
