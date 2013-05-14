@@ -1120,10 +1120,11 @@ LogLevel debug
       <note>
         <title>Note</title>
         <p>
-          WebAuth-related cookies are all cookis that start with the
-          prefix "webauth_", except for those beginning with
-          "webauth_wpt".  The latter are single sign-on cookies used with
-          the WebLogin server and aren't removed by this directive.
+          WebAuth-related cookies are all cookies that start with the
+          prefix "webauth_", except for those beginning with "webauth_wpt"
+          or "webauth_wft".  The latter are single sign-on or persistent
+          factor cookies used with the WebLogin server and aren't removed
+          by this directive.
         </p>
       </note>
     </usage>
