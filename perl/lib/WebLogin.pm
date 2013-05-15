@@ -1901,9 +1901,9 @@ sub index : StartRunmode {
     # internally handle the error pages, so we stop processing this
     # request.
     my $page;
-    return $page if ($page = $self->error_no_request_token);
-    return $page if ($page = $self->error_if_no_cookies);
-    return $page if ($page = $self->error_password_no_post);
+    return $page if defined ($page = $self->error_no_request_token);
+    return $page if defined ($page = $self->error_if_no_cookies);
+    return $page if defined ($page = $self->error_password_no_post);
 
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # IP and trace information.
