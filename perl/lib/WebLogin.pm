@@ -68,7 +68,7 @@ if ($WebKDC::Config::MULTIFACTOR_SERVER) {
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.05';
+    $VERSION = '1.06';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -166,6 +166,11 @@ sub setup {
 # Hook called before processing of each query.
 sub cgiapp_prerun {
     my ($self) = @_;
+
+    # Reset the header type and all header properties for clean state for
+    # each request.
+    $self->header_props ({});
+    $self->header_type ('header');
 
     # Clear any per-query state that was stored as parameters.
     for my $param (@PER_QUERY_PARAMS) {
