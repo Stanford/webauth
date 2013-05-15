@@ -585,7 +585,7 @@ sub print_login_page {
     $params->{username} = $q->param ('username');
     $params->{RT} = $RT;
     $params->{ST} = $ST;
-    $params->{remember_login} = $q->param ('remember_login');
+    $params->{remember_login} = $self->remember_login;
     if ($self->param ('remuser_url')) {
         $params->{show_remuser} = 1;
         $params->{remuser_url} = $self->param ('remuser_url');
