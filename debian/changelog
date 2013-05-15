@@ -1,5 +1,11 @@
-webauth (4.5.1-2) UNRELEASED; urgency=low
+webauth (4.5.2-1) UNRELEASED; urgency=low
 
+  * New upstream release.
+    - WebLogin now supports preserving remember_login on authentication
+      failure.  Template changes are required.
+    - Fix clearing of failed authentication attempts on successful auth.
+    - Fix setting cookies on the WebLogin error page.
+    - Stop clearing single sign-on cookies on cookie test redirect.
   * Recommend the GSS-API SASL module packages for mod_webauthldap and
     document their need in README.Debian.
   * Update the Debian-specific installation instructions to reference
