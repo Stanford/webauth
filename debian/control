@@ -26,7 +26,8 @@ Package: libapache2-webauth
 Section: httpd
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
-Description: Apache 2 modules for WebAuth authentication
+Recommends: libsasl2-modules-gssapi-mit | libsasl2-modules-gssapi-heimdal
+Description: Apache modules for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
  user authentication for a domain and creates user authentication
