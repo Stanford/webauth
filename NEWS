@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.5.2 (unreleased)
+WebAuth 4.5.2 (2013-05-14)
 
     WebLogin now supports preserving the remember_login setting on the
     login page after a failed authentication, instead of resetting the
