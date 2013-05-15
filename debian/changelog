@@ -1,4 +1,4 @@
-webauth (4.5.2-1) UNRELEASED; urgency=low
+webauth (4.5.2-1) experimental; urgency=low
 
   * New upstream release.
     - WebLogin now supports preserving remember_login on authentication
@@ -11,7 +11,7 @@ webauth (4.5.2-1) UNRELEASED; urgency=low
   * Update the Debian-specific installation instructions to reference
     conf-available and a2enconf instead of /etc/apache2/conf.d.
 
- -- Russ Allbery <rra@debian.org>  Wed, 01 May 2013 16:24:07 -0700
+ -- Russ Allbery <rra@debian.org>  Tue, 14 May 2013 19:15:35 -0700
 
 webauth (4.5.1-1) experimental; urgency=low
 
