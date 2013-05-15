@@ -1,3 +1,14 @@
+webauth (4.5.3-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - SECURITY: Clear header state between requests to avoid information
+      leaks or infinite redirects for WebLogin servers using FastCGI and
+      $REMUSER_REDIRECT (not the default).  The vulnerability was
+      introduced in WebAuth 4.4.1.  All versions of WebAuth with this
+      vulnerability were only uploaded to Debian experimental.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 15 May 2013 13:50:14 -0700
+
 webauth (4.5.2-1) experimental; urgency=low
 
   * New upstream release.
