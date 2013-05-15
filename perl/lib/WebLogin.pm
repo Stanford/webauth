@@ -68,7 +68,7 @@ if ($WebKDC::Config::MULTIFACTOR_SERVER) {
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.04';
+    $VERSION = '1.05';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -375,12 +375,12 @@ sub print_headers {
 
         # If told not to remember the login, expire the SSO cookies on display
         # of the confirmation page or any final redirect to WAS.
-        } elsif ($name =~ /^webauth_wpt_/ && ($return_url || $confirm_page)
+        } elsif ($name =~ /^webauth_wpt_/ && $confirm_page
                  && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
         # Likewise for any webkdc-factor token.
-        } elsif ($name eq 'webauth_wft' && ($return_url || $confirm_page)
+        } elsif ($name eq 'webauth_wft' && $confirm_page
                  && $self->remember_login eq 'no') {
             $cookie = $self->expire_cookie ($name, $secure);
 
@@ -444,6 +444,7 @@ sub print_headers {
     push (@params, -cookie => [@ca]) if @ca;
     $self->header_props (-type => 'text/html', -Pragma => 'no-cache',
                          -Cache_Control => 'no-cache, no-store', @params);
+    return '';
 }
 
 # Determine what pretty display URL to use from the given return URI object.
@@ -584,6 +585,7 @@ sub print_login_page {
     $params->{username} = $q->param ('username');
     $params->{RT} = $RT;
     $params->{ST} = $ST;
+    $params->{remember_login} = $q->param ('remember_login');
     if ($self->param ('remuser_url')) {
         $params->{show_remuser} = 1;
         $params->{remuser_url} = $self->param ('remuser_url');
@@ -660,7 +662,7 @@ sub print_error_page {
 
     # Print out the error page.
     my %args = (cookies => $resp->cookies);
-    $self->print_headers ($resp->cookies);
+    $self->print_headers (\%args);
     $self->header_add (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
@@ -1385,7 +1387,6 @@ sub error_if_no_cookies {
     if (defined $self->query->param ('test_cookie')) {
         print STDERR "no cookie, even after redirection\n"
             if $self->param ('logging');
-
         $self->template_params ({err_cookies_disabled => 1});
         return $self->print_error_page;
     } elsif ($self->query->request_method ne 'POST') {
@@ -1394,15 +1395,11 @@ sub error_if_no_cookies {
         my $return_url = $self->query->url (-query => 1);
         print STDERR "no cookie set, redirecting to $return_url\n"
             if $self->param ('debug');
-        # FIXME: How do we handle this?  print_headers will set the headers,
-        #        but then we have no actual output that should be returned.
-        #        Should probably return '' and make the caller differentiate
-        #        between getting that and getting undef.
         my %args = (return_url => $return_url);
         return $self->print_headers (\%args);
+    } else {
+        return undef;
     }
-
-    return undef;
 }
 
 # If the user sent a password, force POST as a method.  Otherwise, if we
@@ -1939,7 +1936,7 @@ sub index : StartRunmode {
             WebKDC::Config::record_login ($resp->subject);
         }
         if ($q->param ('password')) {
-            $self->register_auth ($req->request_token);
+            $self->register_auth ($req->request_token, $resp->subject);
         }
 
         print STDERR "WebKDC::make_request_token_request success\n"
@@ -2022,9 +2019,9 @@ sub pwchange : Runmode {
 
     # Test to make sure that all required fields are filled out.
     my $page;
-    return $page if ($page = $self->error_invalid_pwchange_fields);
-    return $page if ($page = $self->error_if_no_cookies);
-    return $page if ($page = $self->error_password_no_post);
+    return $page if defined ($page = $self->error_invalid_pwchange_fields);
+    return $page if defined ($page = $self->error_if_no_cookies);
+    return $page if defined ($page = $self->error_password_no_post);
 
     # Attempt password change via krb5_change_password API.
     my $error = '';

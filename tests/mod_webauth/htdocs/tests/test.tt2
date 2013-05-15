@@ -2,6 +2,17 @@
     <head>
         <title>test [% test_num FILTER html %]</title>
     </head>
+
+<!--
+  Copyright 2013
+    The Board of Trustees of the Leland Stanford Junior University
+
+  Copying and distribution of this file, with or without modification, are
+  permitted in any medium without royalty provided the copyright notice
+  and this notice are preserved.  This file is offered as-is, without any
+  warranty.
+-->
+
     <body>
         <h1>test [% test_num FILTER html %]: [% test_desc FILTER html %]</h2>
         <hr />

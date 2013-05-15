@@ -136,8 +136,9 @@ $weblogin = init_weblogin;
 $status = $weblogin->setup_kdc_request;
 $weblogin->query->param (remember_login => 'no');
 $weblogin->{response}->cookie ($cookie_name, 'test', $expires_epoch);
-%args = (cookies => $weblogin->{response}->cookies,
-         return_url => 'http://www.test.com');
+%args = (confirm_page => 1,
+         cookies      => $weblogin->{response}->cookies,
+         return_url   => 'http://www.test.com');
 $weblogin->print_headers (\%args);
 $cookie = undef;
 for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
