@@ -1,9 +1,20 @@
-webauth (4.5.2-1~sbp60+1) stable; urgency=low
+webauth (4.5.3-1~sbp60+1) stable; urgency=low
 
   * Backport to squeeze, preserving changes from the previous backport.
   * Revert the changes to README.Debian.
 
  -- Russ Allbery <rra@debian.org>  Tue, 14 May 2013 20:06:52 -0700
+
+webauth (4.5.3-1) experimental; urgency=low
+
+  * New upstream release.
+    - SECURITY: Clear header state between requests to avoid information
+      leaks or infinite redirects for WebLogin servers using FastCGI and
+      $REMUSER_REDIRECT (not the default).  The vulnerability was
+      introduced in WebAuth 4.4.1.  All versions of WebAuth with this
+      vulnerability were only uploaded to Debian experimental.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 15 May 2013 13:57:37 -0700
 
 webauth (4.5.2-1) experimental; urgency=low
 
