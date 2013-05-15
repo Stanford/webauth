@@ -25,7 +25,8 @@ Files: HACKING INSTALL conf/README conf/sample-webauth.conf
  docs/weblogin-testing perl/lib/WebAuth/KeyringEntry.pod perl/t/data/README
  tests/data/creds/README tests/mod_webauth/htdocs/ldaptests/index.html
  tests/mod_webauth/htdocs/tests/index.html
- tests/mod_webauth/htdocs/tests/php/test1.php tools/wa_keyring.1
+ tests/mod_webauth/htdocs/tests/php/test1.php
+ tests/mod_webauth/htdocs/tests/test.tt2 tools/wa_keyring.1
  tools/wa_keyring.pod
 Copyright: 2002-2013
     The Board of Trustees of the Leland Stanford Junior University
