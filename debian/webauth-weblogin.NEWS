@@ -11,8 +11,11 @@ webauth-weblogin (4.5.0-1) experimental; urgency=low
   with appropriate associated wording and add remember_login as an
   additional hidden form variable to all of the forms in the multifactor,
   confirm, and pwchange templates.  See the sample templates in
-  /usr/share/weblogin/generic/templates for examples.  Or, if they don't
-  want to change the UI, should add the setting:
+  /usr/share/weblogin/generic/templates for examples, which includes a
+  more complex example for the login page that preserves the checkbox
+  after a failed authentication.
+
+  Or, to not change the UI and keep the previous behavior, add:
 
       $REMEMBER_FALLBACK = 'yes';
 
