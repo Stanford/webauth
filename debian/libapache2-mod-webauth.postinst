@@ -10,6 +10,15 @@ fi
 chgrp www-data /var/lib/webauth
 chmod 770 /var/lib/webauth
 
+# dh_apache2 -e currently doesn't add code to restart Apache when a module
+# that isn't enabled by default was enabled and is upgraded.  (#710463)
+if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+    . /usr/share/apache2/apache2-maintscript-helper
+    if a2query -q -m webauth || a2query -q -m webauthldap ; then
+        apache2_reload restart
+    fi
+fi
+
 #DEBHELPER#
 
 exit 0
