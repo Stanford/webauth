@@ -10,19 +10,6 @@ fi
 chgrp www-data /var/lib/webauth
 chmod 770 /var/lib/webauth
 
-# Reload Apache on upgrade if either of our modules are enabled.  We don't
-# let dh_apache2 handle this because we don't want to enable the modules
-# automatically.  Both of our modules have configuration directives that must
-# be set or Apache startup is aborted and for which we don't have reasonable
-# defaults.
-if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
-    . /usr/share/apache2/apache2-maintscript-helper
-
-    if a2query -q -m webauth || a2query -q -m webauthldap ; then
-        apache2_reload restart
-    fi
-fi
-
 #DEBHELPER#
 
 exit 0

@@ -2,7 +2,7 @@ Source: webauth
 Section: web
 Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 9), apache2-dev (>> 2.4.4), dh-autoreconf,
+Build-Depends: debhelper (>= 9), apache2-dev (>> 2.4.4-3~), dh-autoreconf,
  libapr1-dev, libaprutil1-dev, libcgi-application-perl,
  libcgi-application-perl (>= 4.50) |
  libcgi-application-basic-plugin-bundle-perl,
@@ -25,7 +25,7 @@ Vcs-Browser: http://git.eyrie.org/?p=kerberos/webauth.git
 Package: libapache2-mod-webauth
 Section: httpd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, apache2 (>= 2.4.4)
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: libsasl2-modules-gssapi-mit | libsasl2-modules-gssapi-heimdal
 Description: Apache modules for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of

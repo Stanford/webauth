@@ -1,3 +1,11 @@
+webauth (4.5.3-2) UNRELEASED; urgency=low
+
+  * Now that dh_apache2 has an option to not enable the modules by
+    default, let it handle all module setup for libapache2-mod-webauth and
+    remove the now-unnecessary prerm script.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 30 May 2013 18:27:28 -0700
+
 webauth (4.5.3-1) experimental; urgency=low
 
   * New upstream release.
