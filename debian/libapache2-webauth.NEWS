@@ -1,3 +1,15 @@
+libapache2-webauth (4.5.3-3) unstable; urgency=low
+
+  This package has been split into two packages, libapache2-mod-webauth
+  and libapache2-mod-webauthldap, as part of the Apache 2.4 transition.
+  This matches the standard naming scheme of Apache modules and allows
+  better handling of dependencies for the LDAP module.  Once the upgrade
+  is complete, you may safely remove the libapache2-webauth package, and
+  you can remove the libapache2-mod-webauthldap package if you weren't
+  using the LDAP module.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 02 Jun 2013 10:30:41 -0700
+  
 libapache2-webauth (4.2.0-1) experimental; urgency=low
 
   Use of AuthType StanfordAuth (instead of AuthType WebAuth) is deprecated
@@ -12,11 +24,6 @@ libapache2-webauth (4.2.0-1) experimental; urgency=low
   restrictions that used "require group" and expected the groups to be
   interpreted as WebAuth privilege groups must be changed to use AuthType
   WebAuth and "require privgroup".
-
-  This package has been renamed to libapache2-mod-webauth to match the
-  standard naming scheme of Apache modules as part of the Apache 2.4
-  transition.  Once the upgrade is complete, you may safely remove the
-  libapache2-webauth package.
 
  -- Russ Allbery <rra@debian.org>  Fri, 13 Jul 2012 13:43:13 -0700
 

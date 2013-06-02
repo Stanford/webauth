@@ -21,23 +21,47 @@ Package: libapache2-mod-webauth
 Section: httpd
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, apache2 (>= 2.4.4)
-Recommends: libsasl2-modules-gssapi-mit | libsasl2-modules-gssapi-heimdal
-Description: Apache modules for WebAuth authentication
+Suggests: libapache2-mod-webauthldap
+Breaks: libapache2-webauth (<< 4.2.0)
+Replaces: libapache2-webauth (<< 4.2.0)
+Description: Apache module for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
  user authentication for a domain and creates user authentication
  credentials for any web server that needs strong authentication.
  .
- This package contains the Apache modules to do basic authentication for
- individual web servers and to look up LDAP information using LDAP v3 with
- GSS-API binds about the authenticated user.  Directory information can be
- used for authorization control and to populate environment variables.
- These modules should be installed on any web server using WebAuth.
+ This package contains the Apache module to do user authentication for
+ individual web servers.  This module does not do authorization; for an
+ approach to LDAP-based authorization that works well with WebAuth, see
+ libapache2-mod-webauthldap.
+
+Package: libapache2-mod-webauthldap
+Section: httpd
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, apache2 (>= 2.4.4),
+ libapache2-mod-webauth,
+ libsasl2-modules-gssapi-mit | libsasl2-modules-gssapi-heimdal
+Breaks: libapache2-mod-webauth (<< 4.5.3-3~),
+ libapache2-webauth (<< 4.2.0)
+Replaces: libapache2-mod-webauth (<< 4.5.3-3~),
+ libapache2-webauth (<< 4.2.0)
+Description: Apache module for WebAuth LDAP lookup and authorization
+ WebAuth is a cookie-based web authentication system built on top of
+ Kerberos.  It relies on a central authentication server that handles all
+ user authentication for a domain and creates user authentication
+ credentials for any web server that needs strong authentication.
+ .
+ This package contains an Apache module to do LDAP-based authorization
+ after a WebAuth authentication and retrieve LDAP information about the
+ authenticated user.  It only supports GSS-API binds and requires WebAuth
+ be used as the authentication method.
 
 Package: libapache2-mod-webkdc
 Section: httpd
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Breaks: libapache2-webkdc (<< 4.2.0)
+Replaces: libapache2-webkdc (<< 4.2.0)
 Description: Apache modules for a WebAuth authentication KDC
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all
@@ -53,7 +77,8 @@ Package: libapache2-webauth
 Section: oldlibs
 Priority: extra
 Architecture: all
-Depends: ${misc:Depends}, libapache2-mod-webauth
+Depends: ${misc:Depends}, libapache2-mod-webauth,
+ libapache2-mod-webauthldap
 Description: Transitional package for WebAuth Apache modules
  WebAuth is a cookie-based web authentication system built on top of
  Kerberos.  It relies on a central authentication server that handles all

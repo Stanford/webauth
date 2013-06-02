@@ -1,3 +1,21 @@
+webauth (4.5.3-3) UNRELEASED; urgency=low
+
+  * Move mod_webauthldap into a separate libapache2-mod-webauthldap
+    package.  This permits better dependencies, more closely conforms to
+    the Apache module naming convention, and allows users who aren't
+    interested in the LDAP module to easily remove it.  Note that the
+    libapache2-mod-webauth package does not attempt to clean up
+    configuration files left behind from the mod_webauthldap module, since
+    nearly all users upgrading from an older version will end up with both
+    packages installed, and removal of libapache2-mod-webauthldap will do
+    the right thing.  Additional cleanup would only be needed for people
+    upgrading from experimental versions of libapache2-mod-webauth who do
+    not install libapache2-mod-webauthldap and doesn't seem worth the
+    complexity.
+  * Add proper Breaks/Replaces for the Apache module package renaming.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 02 Jun 2013 10:50:17 -0700
+
 webauth (4.5.3-2) unstable; urgency=low
 
   * Upload to unstable.

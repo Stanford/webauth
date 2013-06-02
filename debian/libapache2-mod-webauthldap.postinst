@@ -3,7 +3,7 @@
 set -e
 
 # Make sure that /var/lib/webauth exists and is writable by the www-data
-# group, since this is where the keyring and service token cache will go.
+# group, since this is where the Kerberos ticket cache will go.
 if [ ! -d /var/lib/webauth ] ; then
     mkdir /var/lib/webauth
 fi
@@ -17,8 +17,8 @@ chmod 770 /var/lib/webauth
 # already enabled.
 if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
     . /usr/share/apache2/apache2-maintscript-helper
-    if a2query -q -m webauth ; then
-        apache2_invoke enmod webauth
+    if a2query -q -m webauthldap ; then
+        apache2_invoke enmod webauthldap
     fi
 fi
 

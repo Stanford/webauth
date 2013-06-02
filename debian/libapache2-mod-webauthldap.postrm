@@ -5,7 +5,7 @@ set -e
 # Remove known files from /var/lib/webauth on purge and try to remove the
 # directory.
 if [ "$1" = purge ] ; then
-    rm -f /var/lib/webauth/keyring /var/lib/webauth/service_token_cache
+    rm -f /var/lib/webauth/krb5cc_ldap
     rmdir --ignore-fail-on-non-empty /var/lib/webauth
 fi
 
