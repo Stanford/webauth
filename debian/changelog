@@ -1,4 +1,4 @@
-webauth (4.5.3-3) UNRELEASED; urgency=low
+webauth (4.5.3-3) unstable; urgency=low
 
   * Move mod_webauthldap into a separate libapache2-mod-webauthldap
     package.  This permits better dependencies, more closely conforms to
@@ -14,7 +14,7 @@ webauth (4.5.3-3) UNRELEASED; urgency=low
     complexity.
   * Add proper Breaks/Replaces for the Apache module package renaming.
 
- -- Russ Allbery <rra@debian.org>  Sun, 02 Jun 2013 10:50:17 -0700
+ -- Russ Allbery <rra@debian.org>  Sun, 02 Jun 2013 11:42:19 -0700
 
 webauth (4.5.3-2) unstable; urgency=low
 
