@@ -269,7 +269,7 @@ endif
 # CFLAGS and LDFLAGS to pass to the Perl build.
 PERL_CFLAGS = -I$(abs_top_builddir) -I$(abs_top_srcdir) \
 	-I$(abs_top_srcdir)/include $(CPPFLAGS) $(APR_CPPFLAGS)
-PERL_LDFLAGS_FULL = -L$(abs_top_builddir)/lib/.libs $(PERL_LDFLAGS)
+PERL_LDFLAGS_FULL = -L$(abs_top_builddir)/lib/.libs $(PERL_LDFLAGS) $(LDFLAGS)
 
 # The following section sets up the Perl module build properly.  Most of the
 # complexity is here to handle building outside of the source directory, in
