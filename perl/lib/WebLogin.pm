@@ -2254,7 +2254,7 @@ __END__
 =for stopwords
 WebAuth WebLogin CGI login API Allbery CPT FastCGI PAGETYPE SMS SPNEGO SSL
 URI USERNAME login logins memcached redisplay remctl username keyring
-post-login logout
+post-login logout OTP WebKDC multifactor
 
 =head1 NAME
 

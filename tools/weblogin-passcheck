@@ -300,8 +300,8 @@ __END__
 ##############################################################################
 
 =for stopwords
-weblogin-passcheck WebLogin TimeDate CPAN WebAuth login logins usernames
-Kerberos username sublicense MERCHANTABILITY NONINFRINGEMENT
+Allbery weblogin-passcheck WebLogin TimeDate CPAN WebAuth login logins
+usernames Kerberos username sublicense MERCHANTABILITY NONINFRINGEMENT
 
 =head1 NAME
 

@@ -292,7 +292,7 @@ __END__
 ##############################################################################
 
 =for stopwords
-WebAuth
+WebAuth WebLogin multifactor
 
 =head1 NAME
 

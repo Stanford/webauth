@@ -107,7 +107,7 @@ sub proxy_cookies_rich {
 __END__
 
 =for stopwords
-WebAuth WebKDC login IP otp username decrypt WebLogin Allbery
+WebAuth WebKDC login IP otp username decrypt WebLogin Allbery multifactor
 
 =head1 NAME
 
