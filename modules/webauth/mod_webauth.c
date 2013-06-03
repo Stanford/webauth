@@ -2292,7 +2292,8 @@ register_hooks(apr_pool_t *p UNUSED)
     ap_hook_translate_name(translate_name_hook, NULL, NULL,
                            APR_HOOK_REALLY_FIRST);
 
-    ap_hook_check_user_id(check_user_id_hook, NULL, mods, APR_HOOK_MIDDLE);
+    ap_hook_check_authn(check_user_id_hook, NULL, mods, APR_HOOK_MIDDLE,
+                        AP_AUTH_INTERNAL_PER_CONF);
 #if 0
     ap_hook_access_checker(webauth_access_checker, NULL,NULL,APR_HOOK_FIRST);
     ap_hook_auth_checker(webauth_auth_checker, NULL, NULL, APR_HOOK_FIRST);

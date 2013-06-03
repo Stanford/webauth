@@ -80,8 +80,8 @@ AC_PATH_PROG([PATH_REMCTLD], [remctld], [],
 
 RRA_LIB_APACHE
 RRA_LIB_APACHE_SWITCH
-AC_CHECK_DECLS([ap_get_server_description, ap_register_auth_provider,
-    ap_unixd_config], [], [], [RRA_INCLUDES_APACHE])
+AC_CHECK_DECLS([ap_get_server_description, ap_hook_check_authn,
+    ap_register_auth_provider, ap_unixd_config], [], [], [RRA_INCLUDES_APACHE])
 AC_CHECK_MEMBERS([request_rec.useragent_ip], [], [],
     [RRA_INCLUDES_APACHE])
 AC_CHECK_HEADERS([mod_auth.h])
