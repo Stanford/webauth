@@ -291,6 +291,11 @@ WebLogin:
 
  * WEBAUTH-145: Support remembering the username in a cookie.
 
+ * WEBAUTH-153: Remember the setting of the "use this computer regularly"
+   checkbox via a cookie.  Specifically, if the user says single sign-on
+   cookies should *not* be retained on this system, remember that choice
+   and change the default.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
@@ -319,6 +324,9 @@ Scripts:
  * WEBAUTH-149: Provide a script to take apart a token, given the keyring
    that encrypted it, and display information about the token and its
    contents.
+
+ * WEBAUTH-155: Provide a script that generates the HTML pages for all
+   WebLogin page flow paths.
 
 Test Suite:
 
@@ -379,6 +387,10 @@ Documentation:
    protocol to indicate that the subject can be included in this case and
    the WAS may choose to trust it rather than validating the authenticator
    (since the choice of requested credentials was the WAS's anyway.)
+
+ * WEBAUTH-154: Write XML schemas for all of the XML documents that the
+   WebAuth components exchange, including the interactions with the user
+   information service.
 
 Style:
 
