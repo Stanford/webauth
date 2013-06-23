@@ -404,9 +404,9 @@ tests_lib_krb5_cred_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_cred_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
 tests_lib_krb5_tgt_t_CPPFLAGS = $(APRUTIL_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS)
+tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a portable/libportable.la $(APRUTIL_LIBS)
+	util/libutil.a portable/libportable.la $(APRUTIL_LIBS) $(KRB5_LIBS)
 tests_lib_userinfo_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_userinfo_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_userinfo_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
@@ -429,9 +429,9 @@ tests_lib_webkdc_krb_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_krb_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 tests_lib_webkdc_login_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_webkdc_login_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_login_t_LDFLAGS = $(APR_LDFLAGS)
 tests_lib_webkdc_login_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
+	util/libutil.a portable/libportable.la $(APR_LIBS)
 tests_lib_webkdc_mf_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_mf_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_mf_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
