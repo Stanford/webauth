@@ -1,3 +1,10 @@
+webauth (4.5.3-4) unstable; urgency=low
+
+  * Apply upstream patch to fix incorrect linkage of some of the test
+    programs.  (Closes: #713452)
+
+ -- Russ Allbery <rra@debian.org>  Sun, 23 Jun 2013 12:14:52 -0700
+
 webauth (4.5.3-3) unstable; urgency=low
 
   * Move mod_webauthldap into a separate libapache2-mod-webauthldap
