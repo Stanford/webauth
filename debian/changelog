@@ -1,3 +1,12 @@
+webauth (4.5.3-5) unstable; urgency=low
+
+  * Only remove /var/lib/webauth during purge if the directory exists.
+    Both libapache2-mod-webauth and libapache2-mod-webauthldap create and
+    use that directory, so it may have already been removed by the other
+    package.  (Closes: #714602)
+
+ -- Russ Allbery <rra@debian.org>  Mon, 01 Jul 2013 15:21:48 -0700
+
 webauth (4.5.3-4) unstable; urgency=low
 
   * Apply upstream patch to fix incorrect linkage of some of the test
