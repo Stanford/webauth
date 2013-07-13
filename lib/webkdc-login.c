@@ -1758,7 +1758,7 @@ done:
         s = result;
         result = wai_error_protocol(ctx, s);
         if (result != s) {
-            wai_log_error(ctx, s, WA_LOG_WARN, "cannot handle login request");
+            wai_log_error(ctx, WA_LOG_WARN, s, "cannot handle login request");
             wai_error_set(ctx, result, NULL);
         }
     }
