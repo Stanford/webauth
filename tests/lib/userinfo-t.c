@@ -273,7 +273,7 @@ main(void)
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
         is_int(0, info->valid_threshold, "...valid threshold");
-        is_string("h,m,p", webauth_factors_string(ctx, info->factors),
+        is_string("h,m,p,o", webauth_factors_string(ctx, info->factors),
                   "...factors are correct");
         ok(info->required == NULL, "...required is NULL");
         is_string("h", webauth_factors_string(ctx, info->additional),

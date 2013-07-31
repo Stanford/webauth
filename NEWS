@@ -11,6 +11,15 @@ WebAuth 4.5.4 (unreleased)
     WebAuthOptional is set the user is not authenticated, but the value
     will be empty.
 
+    Fix handling of non-password session factors.  Requiring any session
+    factor other than password, for users using password authentication,
+    resulted in the user being repeatedly presented with the password
+    login page because mod_webkdc did not notice the password session
+    factor and continue to asking for a multifactor authentication.  The
+    logic is still not entirely correct for users who use non-password
+    initial authentication factors; that will be fixed in a subsequent
+    release.
+
 WebAuth 4.5.3 (2013-05-15)
 
     SECURITY: Reset all header contents between WebLogin requests, fixing

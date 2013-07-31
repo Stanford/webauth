@@ -896,6 +896,52 @@ static const struct wat_login_test tests_default[] = {
     },
 
     /*
+     * Test the error message returned when a session factor is required and
+     * the user has just completed a password authentication.  We want to be
+     * sure we return the error to force multifactor authentication, not
+     * forced login, since the latter would create a loop.  (This bug was
+     * present in WebAuth 3.5.3.)
+     */
+    {
+        "Session multifactor, password login",
+        WA_PEC_MULTIFACTOR_REQUIRED,
+        "multifactor login required",
+        {
+            { "<krb5-principal>", 0, 0 },
+            {
+                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, "o", 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "o", "h,m,p,o",
+            {
+                {
+                    "<userprinc>", "krb5", "<webkdc-principal>", NULL, 0,
+                    "p,h,m", 0, 0, 0, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
+    /*
      * Try requesting only a level of assurance, with a webkdc-proxy token for
      * an insufficient level of assurance, but a level of assurance that the
      * user can meet.  Ensure the correct error message is returned.  Use
@@ -973,7 +1019,7 @@ static const struct wat_login_test tests_default[] = {
         },
         {
             NULL, NULL,
-            "m", "h,m,p",
+            "m", "h,m,p,o",
             {
                 {
                     "<userprinc>", "remuser", "WEBKDC:remuser", "full", 4,

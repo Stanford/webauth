@@ -1053,6 +1053,11 @@ check_multifactor(struct webauth_context *ctx,
      * can't satisfy the factors at all, we'll change the error later.  Be
      * careful not to override errors from the LoA check.
      *
+     * If the user has no password session factor, we need to start them at
+     * the beginning of the login process to ensure we get all the required
+     * factors and any synthesized multifactor.  But be careful not to loop on
+     * the password screen if they do have a password session factor already.
+     *
      * We assume that if the user needs factors they don't have but are
      * capable of getting, the correct next step is to force a multifactor
      * authentication.  This may not be the correct assumption always, but it
@@ -1060,8 +1065,12 @@ check_multifactor(struct webauth_context *ctx,
      */
     if (webauth_factors_satisfies(ctx, have, wanted)) {
         if (!webauth_factors_satisfies(ctx, shave, swanted))
-            if (s == WA_ERR_NONE)
-                s = WA_PEC_LOGIN_FORCED;
+            if (s == WA_ERR_NONE) {
+                if (webauth_factors_contains(ctx, shave, WA_FA_PASSWORD))
+                    s = WA_PEC_MULTIFACTOR_REQUIRED;
+                else
+                    s = WA_PEC_LOGIN_FORCED;
+            }
     } else {
         s = WA_PEC_MULTIFACTOR_REQUIRED;
     }

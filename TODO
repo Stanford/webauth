@@ -249,6 +249,13 @@ mod_webkdc:
    the WebLogin server can choose whether to tell the user about them.
    This will let us remove the token.acl parser in WebLogin.
 
+ * Fix the logic for required session factors to work properly when the
+   initial authentication factor is not password.  For example, a
+   combination of X.509 and OTP authentication should satisfy a
+   requirement for a session "m" factor, but currently mod_webkdc will
+   return a forced authentication error, which WebLogin will turn into a
+   password prompt.
+
 WebLogin:
 
  * WEBAUTH-65: When going to a site with multiple pieces of content
