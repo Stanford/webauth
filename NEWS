@@ -2,15 +2,6 @@
 
 WebAuth 4.5.4 (unreleased)
 
-    WebAuthOptional was previously broken with Apache 2.4 because the
-    behavior of require valid-user changed to require a username be set.
-    For Apache 2.4 and later, set the authenticated user to the empty
-    string when WebAuthOptional is enabled and the user isn't
-    authenticated, which restores the behavior of Apache 2.2.  Be aware
-    that this means REMOTE_USER may show up in the environment when
-    WebAuthOptional is set the user is not authenticated, but the value
-    will be empty.
-
     Fix handling of non-password session factors.  Requiring any session
     factor other than password, for users using password authentication,
     resulted in the user being repeatedly presented with the password

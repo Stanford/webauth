@@ -1691,25 +1691,14 @@ WebAuthLoginURL https://weblogin.stanford.edu/login
         Normally, if an unauthenticated user attempts to access a
         directory protected by WebAuth, they will be redirected to the
         WebLogin server to authenticate.  This directive allows that
-        authentication to be deferred.
-      </p>
-      <p>
-        If this option is set to on, an unauthenticated user will still be
-        permitted access to the protected resource (even with
-        <code>require valid-user</code> in effect) unless they're
-        prohibited by some other authorization rule.  Unauthenticated
-        users will not have the WEBAUTH_USER or AUTH_TYPE environment
-        variables set, and REMOTE_USER will either be unset or set to the
-        empty string depending on the version of Apache.  If the user has
-        already authenticated, then all the environment variables will be
-        set as normal.
-      </p>
-      <p>
-        Normally, this directive should be used in combination with
-        <code>require valid-user</code>.  You must set some sort of access
-        control restriction or the WebAuth module will not be called and
-        will not have an opportunity to set environment variables if the
-        user is authenticated.
+        authentication to be deferred.  If this option is set to on, an
+        unauthenticated user will still be permitted access to the
+        protected resource (even with <code>require valid-user</code> in
+        effect), unless they're prohibited by some other authorization
+        rule.  Unauthenticated users will not have the REMOTE_USER,
+        WEBAUTH_USER, or AUTH_TYPE environment variables set.  If the user
+        has already authenticated, then all the environment variables will
+        be set as normal.
       </p>
       <p>
         This directive is normally used to protect CGI scripts or other
@@ -1724,29 +1713,9 @@ WebAuthLoginURL https://weblogin.stanford.edu/login
         authentication information available in the environment.
       </p>
 
-      <note>
-        <title>Security Warning</title>
-        <p>
-          Setting this directive will grant unauthenticated users access
-          to content protected by <code>require valid-user</code> and
-          <code>AuthType WebAuth</code>.  It is meant only for protecting
-          resources that check for user authentication in the environment,
-          and should be set on as narrow a portion of the web server
-          resource space as possible to avoid security surprises.
-        </p>
-      </note>
-
       <example>
         <title>Example</title>
-<pre>
-# A typical use would be to put these three lines in an .htaccess or
-# &lt;Location&gt; block protecting a CGI script that checks REMOTE_USER
-# for a non-empty value to decide whether to show an authenticated or
-# unauthenticated view.
-AuthType WebAuth
 WebAuthOptional on
-require valid-user
-</pre>
       </example>
     </usage>
   </directivesynopsis>

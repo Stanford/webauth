@@ -22,24 +22,6 @@
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
 
-/*
- * When WebAuthOptional is set, we want to satisfy require valid-user even if
- * the user has not authenticated.  With Apache 2.2 and earlier, we can do
- * this by returning success from the check_user_id hook but not setting
- * r->user in the request.  Apache 2.4's mod_authz_core module will reject
- * that configuration as not authenticated, so for Apache 2.4 and later we
- * need to set r->user to something.  We use the empty string, which should
- * hopefully produce similar behavior in many CGI programs.
- *
- * Do this by defining ANON_USER to either NULL or the empty string based on
- * the Apache version and using it when we encounter this situation.
- */
-#if AP_SERVER_MAJORVERSION_NUMBER == 2 && AP_SERVER_MINORVERSION_NUMBER <= 2
-# define ANON_USER NULL
-#else
-# define ANON_USER ((char *) "")
-#endif
-
 APLOG_USE_MODULE(webauth);
 
 
@@ -2001,10 +1983,8 @@ check_user_id_hook(request_rec *r)
     }
 
     /* If WebAuth is optional and the user isn't authenticated, we're done. */
-    if (subject == NULL && rc.at == NULL && rc.dconf->optional) {
-        r->user = ANON_USER;
+    if (subject == NULL && rc.at == NULL && rc.dconf->optional)
         return OK;
-    }
 
     /*
      * This should never get called, since if WebAuth is not optional,
