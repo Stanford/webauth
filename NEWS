@@ -20,6 +20,11 @@ WebAuth 4.5.4 (unreleased)
     initial authentication factors; that will be fixed in a subsequent
     release.
 
+    Fix logging of mod_webkdc <requestTokenRequest> failures.
+
+    Fix the webauth/webkdc.h header prototype for webauth_user_validate to
+    correctly allow the user state parameter to be NULL.
+
 WebAuth 4.5.3 (2013-05-15)
 
     SECURITY: Reset all header contents between WebLogin requests, fixing
