@@ -96,8 +96,12 @@ wai_token_merge_webkdc_factor(struct webauth_context *ctx,
         wft = &token->token.webkdc_factor;
 
         /* Discard all expired tokens. */
-        if (wft->expiration <= now)
+        if (wft->expiration <= now) {
+            wai_log_info(ctx, "ignoring expired webkdc-factor token for %s"
+                         " (expired at %lu)", wft->subject,
+                         (unsigned long) wft->expiration);
             continue;
+        }
 
         /* If this is the first token, make it the best. */
         if (best == NULL) {
@@ -241,8 +245,12 @@ wai_token_merge_webkdc_proxy(struct webauth_context *ctx,
         }
 
         /* Discard all expired tokens. */
-        if (wkproxy->expiration <= now)
+        if (wkproxy->expiration <= now) {
+            wai_log_info(ctx, "ignoring expired webkdc-proxy token for %s"
+                         " (expired at %lu)", wkproxy->subject,
+                         (unsigned long) wkproxy->expiration);
             continue;
+        }
 
         /* best will be NULL if this is the first valid token we see. */
         if (best == NULL) {

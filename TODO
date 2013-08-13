@@ -360,6 +360,8 @@ Test Suite:
  * WEBAUTH-151: Script the analysis of valgrind output from
    check-valgrind.
 
+ * Add tests for the info logging in the token merge functions.
+
 Documentation:
 
  * WEBAUTH-73: Rewrite the protocol specification to provide a
