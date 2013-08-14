@@ -11,6 +11,12 @@ WebAuth 4.5.4 (unreleased)
     initial authentication factors; that will be fixed in a subsequent
     release.
 
+    Improve handling of required initial factors when users have a way to
+    establish initial credentials that don't include password.  mod_webkdc
+    now returns a forced login error instead of multifactor required if
+    the user's initial factors don't satisfy the request and don't contain
+    a password factor.
+
     mod_webkdc now requires that the return URL in a request token be
     absolute URL and not contain any non-ASCII characters.  The latter
     check avoids error messages and later problems with WebLogin template

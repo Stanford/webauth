@@ -1072,7 +1072,10 @@ check_multifactor(struct webauth_context *ctx,
                     s = WA_PEC_LOGIN_FORCED;
             }
     } else {
-        s = WA_PEC_MULTIFACTOR_REQUIRED;
+        if (webauth_factors_contains(ctx, have, WA_FA_PASSWORD))
+            s = WA_PEC_MULTIFACTOR_REQUIRED;
+        else
+            s = WA_PEC_LOGIN_FORCED;
     }
     if (s == WA_ERR_NONE)
         return WA_ERR_NONE;

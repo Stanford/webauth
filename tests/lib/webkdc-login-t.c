@@ -220,6 +220,53 @@ static const struct wat_login_test tests_login[] = {
         },
     },
 
+    /*
+     * An initial factor requirement of p with a webkdc-proxy token for
+     * something other than p should result in a forced login error code, not
+     * multifactor required.
+     */
+    {
+        "Initial factor of p required with different webkdc-proxy factors",
+        WA_PEC_LOGIN_FORCED,
+        "forced authentication, must reauthenticate",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 10, 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                "p", NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "p", "p",
+            {
+                {
+                    "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
+                    "x,x1", 3, 10, 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
     /* A proxy token request with a webkdc-proxy token should fail. */
     {
         "Proxy token request with webkdc-proxy token",
