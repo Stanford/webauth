@@ -2,6 +2,17 @@
 
 WebAuth 4.5.4 (unreleased)
 
+    If the user presents a login token for one user and a webkdc-proxy
+    token for a different user, or, more generally, mismatched
+    webkdc-proxy tokens, ignore and log the mismatched webkdc-proxy token
+    rather than rejecting the authentication with a fatal error.  While
+    this case ideally should not happen, in practice it's not uncommon for
+    users sharing devices to attempt authentication (due to session factor
+    requirements or forced login) while still possessing webkdc-proxy
+    tokens for another user, and rejecting the authentication instead of
+    replacing the older webkdc-proxy token does nothing to improve the
+    situation.
+
     Fix handling of non-password session factors.  Requiring any session
     factor other than password, for users using password authentication,
     resulted in the user being repeatedly presented with the password

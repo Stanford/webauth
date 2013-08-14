@@ -150,11 +150,13 @@ static const struct wat_login_test tests_no_local[] = {
         },
     },
 
-    /* Test rejecting mismatched webkdc-proxy and login tokens. */
+    /*
+     * Test mismatched webkdc-proxy and login tokens.  The webkdc-proxy token
+     * should be ignored in favor of the login token.
+     */
     {
         "Mismatched webkdc-proxy and login tokens",
-        WA_PEC_UNAUTHORIZED,
-        "authorization denied (may not use webkdc-proxy token)",
+        LOGIN_SUCCESS,
         {
             { "<krb5-principal>", 0, 0 },
             {
@@ -180,9 +182,16 @@ static const struct wat_login_test tests_no_local[] = {
         {
             NULL, NULL,
             NO_FACTOR_DATA,
-            NO_TOKENS_WKPROXY,
+            {
+                {
+                    "<userprinc>", "krb5", "<webkdc-principal>", NULL, 0,
+                    "p", 0, 0, 0, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
             EMPTY_TOKEN_WKFACTOR,
-            EMPTY_TOKEN_ID,
+            { "<userprinc>", NULL, "webkdc", NULL, 0, "p", "p", 0, 0, 0 },
             EMPTY_TOKEN_PROXY,
             NO_LOGINS,
             0,
