@@ -35,6 +35,15 @@ WebAuth 4.5.4 (unreleased)
     errors and loops caused by detecting this problem after the successful
     second factor authentication.
 
+    If the WebLogin post to the WebKDC fails, retry once.  It's common for
+    the POST to be interrupted by a signal from the FastCGI process
+    manager trying to shut down the login.fcgi process, in which case
+    retrying will succeed and allow completion of the request before
+    shutting down.
+
+    Produce more succinct and hopefully still useful error messages when
+    WebLogin cannot POST to the WebKDC.
+
     mod_webkdc now requires that the return URL in a request token be
     absolute URL and not contain any non-ASCII characters.  The latter
     check avoids error messages and later problems with WebLogin template

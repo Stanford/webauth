@@ -44,7 +44,7 @@ use WebKDC::XmlElement;
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '2.06';
+    $VERSION = '2.07';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
@@ -168,11 +168,9 @@ sub proxy_token_request {
     # Get the response.
     my $http_res = $ua->request ($http_req);
     if (!$http_res->is_success) {
-        # FIXME: Better error reporting needed here.
-        print STDERR "post failed\n";
-        print STDERR $http_res->as_string . "\n";
-        print STDERR $http_res->content . "\n";
-        throw (WK_ERR_UNRECOVERABLE_ERROR, "post to webkdc failed");
+        my $error = 'post to WebKDC failed: ' . $http_res->status_line;
+        warn "$error\n";
+        throw (WK_ERR_UNRECOVERABLE_ERROR, $error);
     }
     my $root = eval { WebKDC::XmlElement->new ($http_res->content) };
     if ($@) {
@@ -272,7 +270,10 @@ sub request_token_request {
     }
     $webkdc_doc->end ('requestTokenRequest');
 
-    # Send the request to the webkdc
+    # Send the request to the WebKDC.  If this fails, retry once.  It's common
+    # for this to fail due to EINTR because the FastCGI process manager is
+    # trying to shut down the login.fcgi process, in which case it should only
+    # fail once and the second try should succeed.
     my $xml = $webkdc_doc->root->to_string (1);
     my $ua = LWP::UserAgent->new;
     my $http_req = HTTP::Request->new (POST => $WebKDC::Config::URL);
@@ -280,11 +281,12 @@ sub request_token_request {
     $http_req->content ($webkdc_doc->root->to_string);
     my $http_res = $ua->request ($http_req);
     if (!$http_res->is_success) {
-        # FIXME: get more details out of $http_res
-        print STDERR "post failed\n";
-        print STDERR $http_res->as_string . "\n";
-        print STDERR $http_res->content . "\n";
-        throw (WK_ERR_UNRECOVERABLE_ERROR, "post to webkdc failed");
+        $http_res = $ua->request ($http_req);
+    }
+    if (!$http_res->is_success) {
+        my $error = 'post to WebKDC failed: ' . $http_res->status_line;
+        warn "$error\n";
+        throw (WK_ERR_UNRECOVERABLE_ERROR, $error);
     }
 
     # Parse the response.
