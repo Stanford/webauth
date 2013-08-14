@@ -68,7 +68,7 @@ if ($WebKDC::Config::MULTIFACTOR_SERVER) {
 # that it will sort properly.
 our $VERSION;
 BEGIN {
-    $VERSION = '1.06';
+    $VERSION = '1.07';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
