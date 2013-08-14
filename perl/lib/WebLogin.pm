@@ -725,6 +725,13 @@ sub print_confirm_page {
         $token_type = '';
     }
 
+    # We saw one error in production where this function was called after an
+    # apparently successful WebKDC interaction, but there was no response
+    # token.  Make a sanity check for that case.
+    if (!$resp->response_token) {
+        return $self->print_error_fatal ('token missing in WebKDC response');
+    }
+
     # FIXME: This looks like it generates extra, unnecessary semicolons, but
     # should be checked against the parser in the WebAuth module.
     $return_url .= "?WEBAUTHR=" . $resp->response_token . ";";
