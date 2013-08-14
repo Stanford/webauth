@@ -16,6 +16,9 @@ WebAuth 4.5.4 (unreleased)
     check avoids error messages and later problems with WebLogin template
     processing.
 
+    Fix the WebLogin replay detection logic to not attempt to trigger
+    during password changes, which do not have request tokens.
+
     Fix logging of mod_webkdc <requestTokenRequest> failures.
 
     Fix the webauth/webkdc.h header prototype for webauth_user_validate to

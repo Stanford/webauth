@@ -1588,9 +1588,12 @@ sub setup_kdc_request {
     $self->{request}->login_state ($q->param ('LS'))
         if $q->param ('LS');
 
-    # For the initial login page, we may need to map the username.  For OTP,
-    # we've already done this, so we don't need to do it again.  Also check
-    # here if this request is a replay and reject it if so.
+    # For the initial login page and password change page, we may need to map
+    # the username.  For OTP, we've already done this, so we don't need to do
+    # it again.
+    #
+    # Also check here for replays or rate limiting of failed authentications
+    # and reject them if so.
     if ($q->param ('password') && $q->param ('username')) {
         my $username = $q->param ('username');
         if (defined (&WebKDC::Config::map_username)) {
@@ -1606,12 +1609,17 @@ sub setup_kdc_request {
         }
         $q->param ('username', $username);
 
-        # Check for replay.
-        if ($self->is_replay ($self->{request}->request_token)) {
-            $status = WK_ERR_AUTH_REPLAY;
+        # Check for replay.  The request token won't exist if we're processing
+        # a password change instead of an authentication.
+        if ($self->{request}->request_token) {
+            if ($self->is_replay ($self->{request}->request_token)) {
+                $status = WK_ERR_AUTH_REPLAY;
+            }
         }
 
-        # Check for rate limiting.
+        # Check for rate limiting.  This applies to password changes as well
+        # as authentications, since the password change screen could still be
+        # used to guess the user's password otherwise.
         if ($self->is_rate_limited ($username)) {
             $status = WK_ERR_AUTH_LOCKOUT;
         }
