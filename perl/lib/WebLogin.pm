@@ -1431,13 +1431,16 @@ sub error_password_no_post {
     return $self->print_error_page;
 }
 
-# Check to see if we have a defined request token.  If not, display the
-# error page and tell the caller to skip to the next request.
+# Check to see if we have a defined request token.  If not, display the error
+# page and tell the caller to skip to the next request.  Returns undef on
+# success and the page text on failure.
 sub error_no_request_token {
     my ($self) = @_;
     my $q = $self->query;
 
-    return undef if defined $q->param ('RT') && defined $q->param ('ST');
+    if (defined ($q->param ('RT')) && defined ($q->param ('ST'))) {
+        return undef;
+    }
 
     $self->template_params ({err_no_request_token => 1});
     print STDERR "no request or service token\n" if $self->param ('logging');

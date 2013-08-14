@@ -27,6 +27,9 @@ WebAuth 4.5.4 (unreleased)
     Log (at the info level) whenever mod_webkdc ignores expired
     webkdc-factor or webkdc-proxy tokens passed to <requestTokenRequest>.
 
+    Correctly diagnose a missing service token in a WebLogin request and
+    return the correct error page rather than an internal error.
+
 WebAuth 4.5.3 (2013-05-15)
 
     SECURITY: Reset all header contents between WebLogin requests, fixing
