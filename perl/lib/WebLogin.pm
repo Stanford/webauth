@@ -2147,10 +2147,14 @@ sub multifactor : Runmode {
         } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
             print STDERR "additional multifactor required\n"
                 if $self->param ('logging');
-        } else {
+        } elsif ($status == WK_ERR_LOGIN_FAILED) {
             print STDERR "multifactor failed: $error ($status)\n"
                 if $self->param ('logging');
             $self->template_params ({err_multifactor_invalid => 1});
+        } else {
+            # Hopefully this is close enough that we can just use the default
+            # error handling code.
+            return $self->handle_login_error ($status, $error);
         }
     } else {
         $self->template_params ({err_otp_missing => 1});

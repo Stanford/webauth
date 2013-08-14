@@ -40,6 +40,9 @@ WebAuth 4.5.4 (unreleased)
     Log (at the info level) whenever mod_webkdc ignores expired
     webkdc-factor or webkdc-proxy tokens passed to <requestTokenRequest>.
 
+    Display more correct errors after less common failures during the
+    second step of a multifactor login.
+
     Correctly diagnose a missing service token in a WebLogin request and
     return the correct error page rather than an internal error.
 
