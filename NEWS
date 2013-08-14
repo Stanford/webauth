@@ -44,6 +44,9 @@ WebAuth 4.5.4 (unreleased)
     Produce more succinct and hopefully still useful error messages when
     WebLogin cannot POST to the WebKDC.
 
+    Ignore SIGPIPE signals in the WebLogin scripts, fixing unexpected
+    failures and subsequent FastCGI problems when run under mod_fastcgi.
+
     mod_webkdc now requires that the return URL in a request token be
     absolute URL and not contain any non-ASCII characters.  The latter
     check avoids error messages and later problems with WebLogin template
