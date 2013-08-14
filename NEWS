@@ -11,6 +11,11 @@ WebAuth 4.5.4 (unreleased)
     initial authentication factors; that will be fixed in a subsequent
     release.
 
+    mod_webkdc now requires that the return URL in a request token be
+    absolute URL and not contain any non-ASCII characters.  The latter
+    check avoids error messages and later problems with WebLogin template
+    processing.
+
     Fix logging of mod_webkdc <requestTokenRequest> failures.
 
     Fix the webauth/webkdc.h header prototype for webauth_user_validate to
