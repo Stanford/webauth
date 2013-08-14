@@ -389,6 +389,52 @@ static const struct wat_login_test tests_default[] = {
     },
 
     /*
+     * The same, while requesting a Kerberos authenticator.  The error message
+     * should not change, since unavailable multifactor is stronger.
+     */
+    {
+        "Require an unavailable factor and a Kerberos authenticator",
+        WA_PEC_MULTIFACTOR_UNAVAILABLE,
+        "multifactor required but not configured",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "krb5", NULL, NULL, 0, "https://example.com/", NULL,
+                "o", NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "o", "p",
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "p", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+
+    /*
      * Try with the factor user, which should require multifactor since we
      * haven't included a d factor in our initial authentication factors.
      */
@@ -411,6 +457,96 @@ static const struct wat_login_test tests_default[] = {
             NULL,
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "m", "p,m,o,o2",
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+
+    /*
+     * The same, but requesting a Kerberos authenticator.  The error message
+     * indicating that a proxy token is required should override the
+     * multifactor required error.
+     */
+    {
+        "Kerberos authenticator and multifactor required",
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "krb5", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "m", "p,m,o,o2",
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+
+    /* The same, but requesting a Kerberos proxy token. */
+    {
+        "Kerberos proxy token and multifactor required",
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "proxy", NULL, "krb5", NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
             }
         },

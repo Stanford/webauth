@@ -1005,19 +1005,22 @@ add_user_info(struct webauth_context *ctx,
  * information (which may be NULL if there's no information service
  * configured), check whether multifactor authentication and a level of
  * assurance restriction is already satisfied or unnecessary, required, or
- * impossible.
+ * impossible.  If the request asks for a Kerberos authenticator or Kerberos
+ * proxy credentials, also check if we can satisfy those with the proxy token
+ * we have.
  *
  * Returns a WebAuth status code, and sets the configured and required factors
  * if multifactor is needed and can be met by the user's configured factors.
  */
 static int
-check_multifactor(struct webauth_context *ctx,
-                  struct wai_webkdc_login_state *state,
-                  struct webauth_user_info *info)
+check_factors_proxy(struct webauth_context *ctx,
+                    struct wai_webkdc_login_state *state,
+                    struct webauth_user_info *info)
 {
     struct webauth_factors *wanted, *swanted, *have, *shave;
     const struct webauth_factors *configured;
     struct webauth_token_webkdc_proxy *wpt;
+    bool need_kerberos;
     int s = WA_ERR_NONE;
 
     /* Figure out what factors we want and have. */
@@ -1035,9 +1038,9 @@ check_multifactor(struct webauth_context *ctx,
         wanted = webauth_factors_union(ctx, wanted, info->required);
 
     /*
-     * Second, check the level of assurance required.  If the user cannot
-     * establish a sufficient level of assurance, punt immediately; we don't
-     * care about the available factors in that case.
+     * Check the level of assurance required.  If the user cannot establish a
+     * sufficient level of assurance, punt immediately; we don't care about
+     * the available factors in that case.
      */
     if (state->request->loa > wpt->loa) {
         if (info != NULL && state->request->loa > info->max_loa) {
@@ -1048,10 +1051,26 @@ check_multifactor(struct webauth_context *ctx,
     }
 
     /*
-     * Third, see if the WAS-requested factors are already satisfied by the
-     * factors that we have.  If not, choose the error message.  If the user
-     * can't satisfy the factors at all, we'll change the error later.  Be
-     * careful not to override errors from the LoA check.
+     * If we need Kerberos, check if we have a Kerberos authenticator.  If
+     * not, set our initial error code.  We may override that later if the
+     * user can't satisfy the required factors.
+     */
+    need_kerberos = false;
+    if (strcmp(state->request->type, "id") == 0) {
+        if (strcmp(state->request->auth, "krb5") == 0)
+            need_kerberos = true;
+    } else if (strcmp(state->request->type, "proxy") == 0) {
+        if (strcmp(state->request->proxy_type, "krb5") == 0)
+            need_kerberos = true;
+    }
+    if (need_kerberos && strcmp(wpt->proxy_type, "krb5") != 0)
+        s = WA_PEC_PROXY_TOKEN_REQUIRED;
+
+    /*
+     * See if the WAS-requested factors are already satisfied by the factors
+     * that we have.  If not, choose the error message.  If the user can't
+     * satisfy the factors at all, we'll change the error later.  Be careful
+     * not to override errors from the LoA or Kerberos authenticator checks.
      *
      * If the user has no password session factor, we need to start them at
      * the beginning of the login process to ensure we get all the required
@@ -1063,19 +1082,20 @@ check_multifactor(struct webauth_context *ctx,
      * authentication.  This may not be the correct assumption always, but it
      * works for the most common cases.
      */
-    if (webauth_factors_satisfies(ctx, have, wanted)) {
-        if (!webauth_factors_satisfies(ctx, shave, swanted))
-            if (s == WA_ERR_NONE) {
+    if (s == WA_ERR_NONE) {
+        if (webauth_factors_satisfies(ctx, have, wanted)) {
+            if (!webauth_factors_satisfies(ctx, shave, swanted)) {
                 if (webauth_factors_contains(ctx, shave, WA_FA_PASSWORD))
                     s = WA_PEC_MULTIFACTOR_REQUIRED;
                 else
                     s = WA_PEC_LOGIN_FORCED;
             }
-    } else {
-        if (webauth_factors_contains(ctx, have, WA_FA_PASSWORD))
-            s = WA_PEC_MULTIFACTOR_REQUIRED;
-        else
-            s = WA_PEC_LOGIN_FORCED;
+        } else {
+            if (webauth_factors_contains(ctx, have, WA_FA_PASSWORD))
+                s = WA_PEC_MULTIFACTOR_REQUIRED;
+            else
+                s = WA_PEC_LOGIN_FORCED;
+        }
     }
     if (s == WA_ERR_NONE)
         return WA_ERR_NONE;
@@ -1726,8 +1746,12 @@ webauth_webkdc_login(struct webauth_context *ctx,
      * some other factor we don't have is required, reject the login with
      * either multifactor required or with multifactor unavailable, depending
      * on whether the user has multifactor configured.
+     *
+     * We also check here whether we have a Kerberos proxy token if the
+     * request asks for a Kerberos authenticator or for Kerberos proxy
+     * credentials.
      */
-    s = check_multifactor(ctx, &state, info);
+    s = check_factors_proxy(ctx, &state, info);
     if (s != WA_ERR_NONE)
         goto done;
 

@@ -17,6 +17,13 @@ WebAuth 4.5.4 (unreleased)
     the user's initial factors don't satisfy the request and don't contain
     a password factor.
 
+    If a password authentication is required in order to obtain a Kerberos
+    authenticator, return that error in preference to a multifactor
+    required error.  This ensures that the password authentication page
+    happens first, preserving expected user page flow, and fixes various
+    errors and loops caused by detecting this problem after the successful
+    second factor authentication.
+
     mod_webkdc now requires that the return URL in a request token be
     absolute URL and not contain any non-ASCII characters.  The latter
     check avoids error messages and later problems with WebLogin template

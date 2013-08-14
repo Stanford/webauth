@@ -295,7 +295,7 @@ static const struct wat_login_test tests_login[] = {
         },
         {
             NULL, NULL,
-            NO_FACTOR_DATA,
+            NULL, "p",
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
@@ -341,7 +341,7 @@ static const struct wat_login_test tests_login[] = {
         },
         {
             NULL, NULL,
-            NO_FACTOR_DATA,
+            NULL, "p",
             {
                 {
                     "testuser", "remuser", "WEBKDC:remuser", "testuser", 8,
