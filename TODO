@@ -256,6 +256,12 @@ mod_webkdc:
    return a forced authentication error, which WebLogin will turn into a
    password prompt.
 
+ * In some cases, such as when the user entered a non-ASCII username, the
+   error reply from the WebKDC is invalid XML because it contains
+   non-ASCII characters that aren't encoded in UTF-8.  Figure out
+   something reasonable to do in this case so that the WebKDC always
+   generates valid XML.
+
 WebLogin:
 
  * WEBAUTH-65: When going to a site with multiple pieces of content

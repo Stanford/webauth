@@ -174,8 +174,11 @@ sub proxy_token_request {
     }
     my $root = eval { WebKDC::XmlElement->new ($http_res->content) };
     if ($@) {
-        my $msg = "unable to parse response from webkdc: $@";
-        print STDERR "$msg " . $http_res->content . "\n";
+        my $error = $@;
+        $error =~ s{ \A \s+ }{}xms;
+        $error =~ s{ \s+ \z }{}xms;
+        my $msg = "unable to parse response from webkdc: $error";
+        warn "$msg, content: " . $http_res->content . "\n";
         throw (WK_ERR_UNRECOVERABLE_ERROR, $msg);
     }
     if ($root->name eq 'errorResponse') {
@@ -289,11 +292,24 @@ sub request_token_request {
         throw (WK_ERR_UNRECOVERABLE_ERROR, $error);
     }
 
-    # Parse the response.
+    # XML::Parser will choke on all non-ASCII that isn't UTF-8.  This causes
+    # problems when users enter usernames that contain ISO 8859-1 characters
+    # or use other encodings, causing those usernames to be reproduced in the
+    # Kerberos error message.  For now, hack around this problem by replacing
+    # all non-ASCII characters or control characters with "." so that we can
+    # at least attempt to process the content.
+    my $content = $http_res->content;
+    $content =~ s{ [^\x20-\x7e] }{.}xmsg;
+
+    # Parse the response.  For some reason, XML::Parser exceptions tend to
+    # start with a newline.
     $root = eval { WebKDC::XmlElement->new ($http_res->content) };
     if ($@) {
-        my $msg = "unable to parse response from webkdc: $@";
-        print STDERR "$msg " . $http_res->content . "\n";
+        my $error = $@;
+        $error =~ s{ \A \s+ }{}xms;
+        $error =~ s{ \s+ \z }{}xms;
+        my $msg = "unable to parse response from webkdc: $error";
+        warn "$msg, content: " . $http_res->content . "\n";
         throw (WK_ERR_UNRECOVERABLE_ERROR, $msg);
     }
 
