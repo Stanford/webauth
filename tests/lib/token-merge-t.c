@@ -235,7 +235,7 @@ static const struct test_case_wkproxy {
         NULL
     },
 
-    /* Tokens from a different user should result in a fatal error. */
+    /* Tokens from a different user should be ignored. */
     {
         "webkdc-proxy tokens with mismatched users",
         {
@@ -249,8 +249,11 @@ static const struct test_case_wkproxy {
             },
             EMPTY_TOKEN_WKPROXY
         },
-        EMPTY_TOKEN_WKPROXY,
-        "token used in invalid context (subject mismatch: testuser != test)"
+        {
+            "test", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1, 1365545626,
+            1896163200, "c"
+        },
+        NULL
     },
 
     /*
@@ -347,7 +350,7 @@ static const struct test_case_wkproxy_wkfactor {
 
     /* Merge of a token for a different user. */
     {
-        "webkdc-proxy and webkdc-factor with mismatched users",
+        "webkdc-proxy, webkdc-factor with mismatched users",
         {
             "testuser", "otp", "WEBKDC:otp", NULL, 0, "o,o1", 1,
             1365545626, 1896163200, "c"
@@ -394,7 +397,7 @@ main(void)
     if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(151);
+    plan(160);
 
     /*
      * Step through each webkdc-factor merge test in turn, build an array of

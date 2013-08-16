@@ -19,6 +19,7 @@
 #include <portable/system.h>
 
 #include <tests/tap/basic.h>
+#include <tests/tap/string.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
 #include <webauth/tokens.h>
@@ -512,9 +513,10 @@ main(void)
     struct webauth_token_webkdc_service service;
     struct webauth_token in;
     struct webauth_token *out;
+    char *expected;
     const char *result;
 
-    plan(476);
+    plan(482);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -818,6 +820,24 @@ main(void)
     req.command = "getTokensRequest";
     check_request_error(ctx, &req, ring, "with command and type",
                         "type not valid with command", "req");
+    req.command = NULL;
+    req.type = "id";
+    req.auth = "webkdc";
+    req.proxy_type = NULL;
+    req.return_url = "not a URL";
+    check_request_error(ctx, &req, ring, "invalid return URL",
+                        "invalid URL: not a URL", "req");
+
+    /*
+     * Real-life example of a URL with 8-bit characters (with some hostname
+     * modifications to protect the innocent).
+     */
+    req.return_url = "https://proxy-auth-test-a.example.edu/cgi-bin/index.cgi"
+        "?url=http://example.com%20(\xe2\x80\x8bhttp://proxy-test.example.edu/"
+        "login?url=http://www.example.com)";
+    basprintf(&expected, "non-ASCII characters in URL: %s", req.return_url);
+    check_request_error(ctx, &req, ring, "non-ASCII URL", expected, "req");
+    free(expected);
 
     /* Flesh out a webkdc-factor token, and then encode and decode it. */
     wkfactor.subject = "testuser";

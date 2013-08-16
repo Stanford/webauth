@@ -1,4 +1,4 @@
-                          WebAuth release 4.5.3
+                          WebAuth release 4.5.4
                   (site-wide web authentication system)
 
   Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
@@ -219,7 +219,7 @@ SUPPORT
   the ITSS Infrastructure Services team.  You can report problems or
   request help with WebAuth by submitting a HelpSU ticket at:
 
-      <http://helpsu.stanford.edu/>
+      <https://remedyweb.stanford.edu/helpsu/helpsu>
 
   Please note that we do not support Apache, and we cannot help you set up
   a web server.  We can help you configure WebAuth and may provide a

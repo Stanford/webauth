@@ -7,7 +7,7 @@ dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [4.5.3], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.5.4], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -80,8 +80,8 @@ AC_PATH_PROG([PATH_REMCTLD], [remctld], [],
 
 RRA_LIB_APACHE
 RRA_LIB_APACHE_SWITCH
-AC_CHECK_DECLS([ap_get_server_description, ap_register_auth_provider,
-    ap_unixd_config], [], [], [RRA_INCLUDES_APACHE])
+AC_CHECK_DECLS([ap_get_server_description, ap_hook_check_authn,
+    ap_register_auth_provider, ap_unixd_config], [], [], [RRA_INCLUDES_APACHE])
 AC_CHECK_MEMBERS([request_rec.useragent_ip], [], [],
     [RRA_INCLUDES_APACHE])
 AC_CHECK_HEADERS([mod_auth.h])

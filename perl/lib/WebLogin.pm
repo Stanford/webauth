@@ -63,12 +63,12 @@ if ($WebKDC::Config::MULTIFACTOR_SERVER) {
     require Net::Remctl;
 }
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
 our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '1.06';
+    $VERSION = '4.0504';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -725,6 +725,13 @@ sub print_confirm_page {
         $token_type = '';
     }
 
+    # We saw one error in production where this function was called after an
+    # apparently successful WebKDC interaction, but there was no response
+    # token.  Make a sanity check for that case.
+    if (!$resp->response_token) {
+        return $self->print_error_fatal ('token missing in WebKDC response');
+    }
+
     # FIXME: This looks like it generates extra, unnecessary semicolons, but
     # should be checked against the parser in the WebAuth module.
     $return_url .= "?WEBAUTHR=" . $resp->response_token . ";";
@@ -950,7 +957,7 @@ sub print_pwchange_page {
     $params->{remember_login} = $self->remember_login;
     $params->{script_name} = $self->param ('script_name');
     $params->{expired} = 1
-        if ($q->param ('expired') and $q->param ('expired') == 1);
+        if ($q->param ('expired') and $q->param ('expired') eq '1');
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token, or at previous request to skip the username.
@@ -1424,13 +1431,16 @@ sub error_password_no_post {
     return $self->print_error_page;
 }
 
-# Check to see if we have a defined request token.  If not, display the
-# error page and tell the caller to skip to the next request.
+# Check to see if we have a defined request token.  If not, display the error
+# page and tell the caller to skip to the next request.  Returns undef on
+# success and the page text on failure.
 sub error_no_request_token {
     my ($self) = @_;
     my $q = $self->query;
 
-    return undef if defined $q->param ('RT') && defined $q->param ('ST');
+    if (defined ($q->param ('RT')) && defined ($q->param ('ST'))) {
+        return undef;
+    }
 
     $self->template_params ({err_no_request_token => 1});
     print STDERR "no request or service token\n" if $self->param ('logging');
@@ -1588,9 +1598,12 @@ sub setup_kdc_request {
     $self->{request}->login_state ($q->param ('LS'))
         if $q->param ('LS');
 
-    # For the initial login page, we may need to map the username.  For OTP,
-    # we've already done this, so we don't need to do it again.  Also check
-    # here if this request is a replay and reject it if so.
+    # For the initial login page and password change page, we may need to map
+    # the username.  For OTP, we've already done this, so we don't need to do
+    # it again.
+    #
+    # Also check here for replays or rate limiting of failed authentications
+    # and reject them if so.
     if ($q->param ('password') && $q->param ('username')) {
         my $username = $q->param ('username');
         if (defined (&WebKDC::Config::map_username)) {
@@ -1606,12 +1619,17 @@ sub setup_kdc_request {
         }
         $q->param ('username', $username);
 
-        # Check for replay.
-        if ($self->is_replay ($self->{request}->request_token)) {
-            $status = WK_ERR_AUTH_REPLAY;
+        # Check for replay.  The request token won't exist if we're processing
+        # a password change instead of an authentication.
+        if ($self->{request}->request_token) {
+            if ($self->is_replay ($self->{request}->request_token)) {
+                $status = WK_ERR_AUTH_REPLAY;
+            }
         }
 
-        # Check for rate limiting.
+        # Check for rate limiting.  This applies to password changes as well
+        # as authentications, since the password change screen could still be
+        # used to guess the user's password otherwise.
         if ($self->is_rate_limited ($username)) {
             $status = WK_ERR_AUTH_LOCKOUT;
         }
@@ -1719,7 +1737,7 @@ sub handle_login_error {
         }
 
         $self->param ('script_name', $WebKDC::Config::EXPIRING_PW_URL);
-        $self->query->param ('expired', 1);
+        $self->query->param ('expired', '1');
         return $self->print_pwchange_page ($req->request_token,
                                            $req->service_token);
 
@@ -2129,10 +2147,14 @@ sub multifactor : Runmode {
         } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
             print STDERR "additional multifactor required\n"
                 if $self->param ('logging');
-        } else {
+        } elsif ($status == WK_ERR_LOGIN_FAILED) {
             print STDERR "multifactor failed: $error ($status)\n"
                 if $self->param ('logging');
             $self->template_params ({err_multifactor_invalid => 1});
+        } else {
+            # Hopefully this is close enough that we can just use the default
+            # error handling code.
+            return $self->handle_login_error ($status, $error);
         }
     } else {
         $self->template_params ({err_otp_missing => 1});
@@ -2254,7 +2276,7 @@ __END__
 =for stopwords
 WebAuth WebLogin CGI login API Allbery CPT FastCGI PAGETYPE SMS SPNEGO SSL
 URI USERNAME login logins memcached redisplay remctl username keyring
-post-login logout
+post-login logout OTP WebKDC multifactor
 
 =head1 NAME
 

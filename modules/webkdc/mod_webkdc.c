@@ -993,7 +993,7 @@ handle_getTokensRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     MWK_RETURNED_TOKEN rtokens[MAX_TOKENS_RETURNED];
 
     *subject_out = "<unknown>";
-    *req_subject_out = "<unkknown>";
+    *req_subject_out = "<unknown>";
     tokens = NULL;
     request_token = NULL;
     memset(&req_cred, 0, sizeof(req_cred));
@@ -1496,7 +1496,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
      * places we assume they aren't NULL.
      */
     *subject_out = "<unknown>";
-    *req_subject_out = "<unkknown>";
+    *req_subject_out = "<unknown>";
 
     memset(&request, 0, sizeof(request));
     request.client_ip = rc->r->useragent_ip;

@@ -1,7 +1,7 @@
 # Manipulate a document composed of WebKDC::XmlElement objects.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2009, 2012
+# Copyright 2002, 2009, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,12 +30,12 @@ use warnings;
 use Carp qw(croak);
 use WebKDC::XmlElement;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
 our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '1.01';
+    $VERSION = '4.0504';
 }
 
 # Create a new, empty document.

@@ -31,6 +31,9 @@ use WebLogin;
 # once it finishes processing the current request.
 our $EXITING = 0;
 
+# Ignore SIGPIPE to force return of a proper error message.
+local $SIG{PIPE} = 'IGNORE';
+
 # The names of the page templates, relative to the template path configured in
 # the WebLogin configuration file.  This is set in this driver so that a
 # modified driver script can use different template names, allowing multiple
