@@ -347,26 +347,6 @@ sub request_token_request {
         my $pass_expires = get_child_value ($root, 'passwordExpires', 1);
         my $login_state = get_child_value ($root, 'loginState', 1);
 
-        # If there was an error, translate that into an exception.
-        if ($error_code) {
-            my $wk_err = $pec_mapping{$error_code}
-              || WK_ERR_UNRECOVERABLE_ERROR;
-            throw ($wk_err, "Login error: $error_message ($error_code)",
-                   $error_code, $user_message);
-        }
-
-        # If there was no error code but we have no returned token, something
-        # very strange has happened.  It's not clear how this could possibly
-        # be the case, but it looked like it happened once in production, so
-        # add another sanity check.
-        unless (defined $returned_token) {
-            throw (WK_ERR_UNRECOVERABLE_ERROR,
-                   'unable to parse response from WebKDC: no token returned');
-        }
-
-        # This is a successful authentication.  All the code below constructs
-        # the response object to return to the caller.
-
         # Expand each of the proxy tokens, which contain a type and value.
         my $proxy_tokens = $root->find_child ('proxyTokens');
         if (defined $proxy_tokens) {
@@ -425,6 +405,7 @@ sub request_token_request {
             }
         }
 
+        # Set all of the simple response elements.
         $wresp->return_url ($return_url);
         $wresp->response_token ($returned_token);
         $wresp->response_token_type ($returned_token_type);
@@ -438,6 +419,26 @@ sub request_token_request {
             if defined $pass_expires;
         $wresp->user_message ($user_message) if defined $user_message;
         $wresp->login_state ($login_state) if defined $login_state;
+
+        # If there was no error code but we have no returned token, something
+        # very strange has happened.  It's not clear how this could possibly
+        # be the case, but it looked like it happened once in production, so
+        # add another sanity check.
+        if (!$error_code && !defined $returned_token) {
+            throw (WK_ERR_UNRECOVERABLE_ERROR,
+                   'unable to parse response from WebKDC: no token returned');
+        }
+
+        # If there was an error, translate that into an exception.  This has
+        # to be done after setting all of our state, since we rely on state
+        # after an exception is thrown for the login canceled token and for
+        # factor information.
+        if ($error_code) {
+            my $wk_err = $pec_mapping{$error_code}
+              || WK_ERR_UNRECOVERABLE_ERROR;
+            throw ($wk_err, "Login error: $error_message ($error_code)",
+                   $error_code, $user_message);
+        }
         return;
     } else {
         throw (WK_ERR_UNRECOVERABLE_ERROR,
