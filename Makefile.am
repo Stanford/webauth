@@ -55,9 +55,9 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
 	perl/t/data/pages/login/pass-required-not-error			    \
 	perl/t/data/pages/login/rejected				    \
 	perl/t/data/pages/login/remote-user perl/t/data/pages/pwchange/bare \
-	perl/t/data/pages/pwchange/cpt perl/t/data/templates/confirm.tmpl   \
-	perl/t/data/templates/error.tmpl perl/t/data/templates/login.tmpl   \
-	perl/t/data/templates/logout.tmpl				    \
+	perl/t/data/pages/pwchange/cpt perl/t/data/perl.conf		    \
+	perl/t/data/templates/confirm.tmpl perl/t/data/templates/error.tmpl \
+	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
 	perl/t/data/webkdc.conf perl/t/docs/pod-spelling.t		    \
 	perl/t/docs/pod.t perl/t/kerberos/changepw.t perl/t/kerberos/krb5.t \
