@@ -39,12 +39,12 @@ use WebKDC::WebKDCException 1.05;
 use WebKDC::XmlDoc;
 use WebKDC::XmlElement;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
 our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '2.07';
+    $VERSION = '4.0504';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal

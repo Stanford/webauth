@@ -79,6 +79,11 @@ WebAuth 4.5.4 (unreleased)
     Correctly diagnose a missing service token in a WebLogin request and
     return the correct error page rather than an internal error.
 
+    All Perl modules now have a version that matches the release of
+    WebAuth from which they came, with zeroes added so that the version
+    numbers will sort properly.  For example, the version number of each
+    Perl module included in WebAuth 4.5.4 is 4.0504.
+
 WebAuth 4.5.3 (2013-05-15)
 
     SECURITY: Reset all header contents between WebLogin requests, fixing

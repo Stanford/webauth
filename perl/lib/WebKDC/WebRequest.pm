@@ -27,12 +27,12 @@ package WebKDC::WebRequest;
 use strict;
 use warnings;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
 our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '1.03';
+    $VERSION = '4.0504';
 }
 
 # Create a new, empty request.

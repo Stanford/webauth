@@ -63,12 +63,12 @@ if ($WebKDC::Config::MULTIFACTOR_SERVER) {
     require Net::Remctl;
 }
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
 our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '1.07';
+    $VERSION = '4.0504';
 }
 
 # The CGI::Application parameters that must be cleared for each query.

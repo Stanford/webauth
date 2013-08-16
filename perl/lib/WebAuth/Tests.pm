@@ -38,6 +38,14 @@ use Template;
 use Exporter qw(import);
 our @EXPORT_OK = qw(build_page run_test app_lifetime_test last_used_test);
 
+our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
+BEGIN {
+    $VERSION = '4.0504';
+}
+
 #############################################################################
 # Internal tests
 #############################################################################
