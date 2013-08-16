@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.5.4 (unreleased)
+WebAuth 4.5.4 (2013-08-16)
 
     If the user presents a login token for one user and a webkdc-proxy
     token for a different user, or, more generally, mismatched
