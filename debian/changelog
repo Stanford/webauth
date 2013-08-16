@@ -1,3 +1,39 @@
+webauth (4.5.4-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Warn about mismatched webkdc-proxy tokens but no longer treat them
+      as a fatal error.
+    - Fix handling of non-password session factor requirements.
+    - Improve handling of initial factor requirements when users have a
+      way to establish initial credentials that don't include a password
+      factor.
+    - Improve handling of a Kerberos webkdc-proxy token requirement during
+      a multifactor authentication.
+    - Retry WebLogin posts to the WebKDC once to be more robust against
+      interruptions by signals (such as from the FastCGI process manager).
+    - Produce more succinct and hopefully better error messages when
+      WebLogin cannot post to the WebKDC.
+    - Ignore SIGPIPE signals in WebLogin scripts.
+    - Require the return URL be absolute and not contain non-ASCII
+      characters in mod_webkdc processing.
+    - Fix WebLogin replay detection logic to not trigger on password
+      changes.
+    - Work around problems in WebLogin caused by the WebKDC returning
+      error messages that contain undeclared non-UTF-8 characters in
+      violation of the XML standard.
+    - Improve error reporting of unparsable XML received by the WebLogin
+      server from the WebKDC.
+    - Fix logging of mod_webkdc <requestTokenRequest> failures.
+    - Fix the prototype attributes for webauth_user_validate.
+    - Log when mod_webkdc ignores expired tokens.
+    - Display more correct errors after some failures during the second
+      step of a multifactor authentication.
+    - Correctly diagnose a missing service token in a WebLogin request and
+      report the correct error instead of an internal error.
+    - Make the version of all Perl modules match the WebAuth release.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 15 Aug 2013 22:09:25 -0700
+
 webauth (4.5.3-5) unstable; urgency=low
 
   * Only remove /var/lib/webauth during purge if the directory exists.
