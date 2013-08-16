@@ -1,4 +1,4 @@
-webauth (4.5.4-1) UNRELEASED; urgency=low
+webauth (4.5.4-1) unstable; urgency=low
 
   * New upstream release.
     - Warn about mismatched webkdc-proxy tokens but no longer treat them
@@ -32,7 +32,7 @@ webauth (4.5.4-1) UNRELEASED; urgency=low
       report the correct error instead of an internal error.
     - Make the version of all Perl modules match the WebAuth release.
 
- -- Russ Allbery <rra@debian.org>  Thu, 15 Aug 2013 22:09:25 -0700
+ -- Russ Allbery <rra@debian.org>  Fri, 16 Aug 2013 15:15:12 -0700
 
 webauth (4.5.3-5) unstable; urgency=low
 
