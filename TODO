@@ -249,6 +249,19 @@ mod_webkdc:
    the WebLogin server can choose whether to tell the user about them.
    This will let us remove the token.acl parser in WebLogin.
 
+ * Fix the logic for required session factors to work properly when the
+   initial authentication factor is not password.  For example, a
+   combination of X.509 and OTP authentication should satisfy a
+   requirement for a session "m" factor, but currently mod_webkdc will
+   return a forced authentication error, which WebLogin will turn into a
+   password prompt.
+
+ * In some cases, such as when the user entered a non-ASCII username, the
+   error reply from the WebKDC is invalid XML because it contains
+   non-ASCII characters that aren't encoded in UTF-8.  Figure out
+   something reasonable to do in this case so that the WebKDC always
+   generates valid XML.
+
 WebLogin:
 
  * WEBAUTH-65: When going to a site with multiple pieces of content
@@ -291,6 +304,11 @@ WebLogin:
 
  * WEBAUTH-145: Support remembering the username in a cookie.
 
+ * WEBAUTH-153: Remember the setting of the "use this computer regularly"
+   checkbox via a cookie.  Specifically, if the user says single sign-on
+   cookies should *not* be retained on this system, remember that choice
+   and change the default.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
@@ -320,6 +338,9 @@ Scripts:
    that encrypted it, and display information about the token and its
    contents.
 
+ * WEBAUTH-155: Provide a script that generates the HTML pages for all
+   WebLogin page flow paths.
+
 Test Suite:
 
  * WEBAUTH-71: A test suite (and a redesign of the code so that it can be
@@ -344,6 +365,8 @@ Test Suite:
 
  * WEBAUTH-151: Script the analysis of valgrind output from
    check-valgrind.
+
+ * Add tests for the info logging in the token merge functions.
 
 Documentation:
 
@@ -379,6 +402,10 @@ Documentation:
    protocol to indicate that the subject can be included in this case and
    the WAS may choose to trust it rather than validating the authenticator
    (since the choice of requested credentials was the WAS's anyway.)
+
+ * WEBAUTH-154: Write XML schemas for all of the XML documents that the
+   WebAuth components exchange, including the interactions with the user
+   information service.
 
 Style:
 

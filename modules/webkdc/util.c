@@ -221,7 +221,7 @@ mwk_log_webauth_error(struct webauth_context *ctx, server_rec *serv,
 {
 
     ap_log_error(APLOG_MARK, APLOG_ERR, 0, serv,
-                 "mod_webkdc: %s:%s%s%s failed: %s (%d)", mwk_func, func,
+                 "mod_webkdc: %s: %s%s%s failed: %s (%d)", mwk_func, func,
                  extra == NULL ? "" : " ",
                  extra == NULL ? "" : extra,
                  webauth_error_message(ctx, status), status);

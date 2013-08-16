@@ -71,6 +71,15 @@
 # define ap_http_scheme(r) ap_http_method(r)
 #endif
 
+/*
+ * Apache 2.2 and earlier used check_user_id instead of check_authn, which
+ * doesn't take the final flag saying whether to do checks per URI.
+ */
+#if !HAVE_DECL_AP_HOOK_CHECK_AUTHN
+# define ap_hook_check_authn(f, b, a, o, t) \
+    ap_hook_check_user_id((f), (b), (a), (o))
+#endif
+
 /* The useragent_ip request member is new in Apache 2.4. */
 #if !HAVE_REQUEST_REC_USERAGENT_IP
 # define useragent_ip connection->remote_ip

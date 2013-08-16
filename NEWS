@@ -1,5 +1,97 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.5.4 (2013-08-16)
+
+    If the user presents a login token for one user and a webkdc-proxy
+    token for a different user, or, more generally, mismatched
+    webkdc-proxy tokens, ignore and log the mismatched webkdc-proxy token
+    rather than rejecting the authentication with a fatal error.  While
+    this case ideally should not happen, in practice it's not uncommon for
+    users sharing devices to attempt authentication (due to session factor
+    requirements or forced login) while still possessing webkdc-proxy
+    tokens for another user, and rejecting the authentication instead of
+    replacing the older webkdc-proxy token does nothing to improve the
+    situation.
+
+    Fix handling of non-password session factors.  Requiring any session
+    factor other than password, for users using password authentication,
+    resulted in the user being repeatedly presented with the password
+    login page because mod_webkdc did not notice the password session
+    factor and continue to asking for a multifactor authentication.  The
+    logic is still not entirely correct for users who use non-password
+    initial authentication factors; that will be fixed in a subsequent
+    release.
+
+    Improve handling of required initial factors when users have a way to
+    establish initial credentials that don't include password.  mod_webkdc
+    now returns a forced login error instead of multifactor required if
+    the user's initial factors don't satisfy the request and don't contain
+    a password factor.
+
+    If a password authentication is required in order to obtain a Kerberos
+    authenticator, return that error in preference to a multifactor
+    required error.  This ensures that the password authentication page
+    happens first, preserving expected user page flow, and fixes various
+    errors and loops caused by detecting this problem after the successful
+    second factor authentication.
+
+    If the WebLogin post to the WebKDC fails, retry once.  It's common for
+    the POST to be interrupted by a signal from the FastCGI process
+    manager trying to shut down the login.fcgi process, in which case
+    retrying will succeed and allow completion of the request before
+    shutting down.
+
+    Produce more succinct and hopefully still useful error messages when
+    WebLogin cannot POST to the WebKDC.
+
+    Ignore SIGPIPE signals in the WebLogin scripts, fixing unexpected
+    failures and subsequent FastCGI problems when run under mod_fastcgi.
+
+    mod_webkdc now requires that the return URL in a request token be
+    absolute URL and not contain any non-ASCII characters.  The latter
+    check avoids error messages and later problems with WebLogin template
+    processing.
+
+    Fix the WebLogin replay detection logic to not attempt to trigger
+    during password changes, which do not have request tokens.
+
+    Work around problems with WebLogin parsing of the XML returned from
+    the WebKDC when a user attempts an authentication using a non-ASCII
+    principal name.  This results in invalid XML that XML::Parser cannot
+    parse.  The proper fix is to catch this on the WebKDC side, but, as an
+    interim measure, replace non-ASCII characters in the WebKDC reply with
+    periods so that reply processing can continue.
+
+    Improve error reporting of unparsable XML received by the WebLogin
+    server from the WebKDC.
+
+    Fix logging of mod_webkdc <requestTokenRequest> failures.
+
+    Fix the webauth/webkdc.h header prototype for webauth_user_validate to
+    correctly allow the user state parameter to be NULL.
+
+    Log (at the info level) whenever mod_webkdc ignores expired
+    webkdc-factor or webkdc-proxy tokens passed to <requestTokenRequest>.
+
+    Display more correct errors after less common failures during the
+    second step of a multifactor login.
+
+    Correctly diagnose a missing service token in a WebLogin request and
+    return the correct error page rather than an internal error.
+
+    All Perl modules now have a version that matches the release of
+    WebAuth from which they came, with zeroes added so that the version
+    numbers will sort properly.  For example, the version number of each
+    Perl module included in WebAuth 4.5.4 is 4.0504.
+
+    Update to rra-c-util 4.9:
+
+    * Improve robustness of the Perl test scripts.
+
+    Update to C TAP Harness 2.2:
+
+    * bail and sysbail now exit with status 255 to match Test::More.
+
 WebAuth 4.5.3 (2013-05-15)
 
     SECURITY: Reset all header contents between WebLogin requests, fixing
@@ -8,7 +100,7 @@ WebAuth 4.5.3 (2013-05-15)
     installations that used FastCGI and the $REMUSER_REDIRECT setting in
     webkdc.conf could fail with infinite redirect loops or leak security
     information, such as single sign-on cookies, from one authenticated
-    user to another.
+    user to another.  (CVE-2013-2106)
 
 WebAuth 4.5.2 (2013-05-14)
 

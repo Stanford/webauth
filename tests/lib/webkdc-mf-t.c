@@ -389,6 +389,52 @@ static const struct wat_login_test tests_default[] = {
     },
 
     /*
+     * The same, while requesting a Kerberos authenticator.  The error message
+     * should not change, since unavailable multifactor is stronger.
+     */
+    {
+        "Require an unavailable factor and a Kerberos authenticator",
+        WA_PEC_MULTIFACTOR_UNAVAILABLE,
+        "multifactor required but not configured",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "krb5", NULL, NULL, 0, "https://example.com/", NULL,
+                "o", NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "o", "p",
+            {
+                {
+                    "mini", "remuser", "WEBKDC:remuser", "mini", 4,
+                    "p", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+
+    /*
      * Try with the factor user, which should require multifactor since we
      * haven't included a d factor in our initial authentication factors.
      */
@@ -411,6 +457,96 @@ static const struct wat_login_test tests_default[] = {
             NULL,
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "m", "p,m,o,o2",
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+
+    /*
+     * The same, but requesting a Kerberos authenticator.  The error message
+     * indicating that a proxy token is required should override the
+     * multifactor required error.
+     */
+    {
+        "Kerberos authenticator and multifactor required",
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "krb5", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "m", "p,m,o,o2",
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 1, 0, 60 * 60, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        }
+    },
+
+    /* The same, but requesting a Kerberos proxy token. */
+    {
+        "Kerberos proxy token and multifactor required",
+        WA_PEC_PROXY_TOKEN_REQUIRED,
+        "webkdc-proxy token required",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            NO_TOKENS_LOGIN,
+            {
+                {
+                    "factor", "remuser", "WEBKDC:remuser", "factor", 6,
+                    "p", 3, 0, 60 * 60, "c"
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "proxy", NULL, "krb5", NULL, 0, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
             }
         },
@@ -896,6 +1032,52 @@ static const struct wat_login_test tests_default[] = {
     },
 
     /*
+     * Test the error message returned when a session factor is required and
+     * the user has just completed a password authentication.  We want to be
+     * sure we return the error to force multifactor authentication, not
+     * forced login, since the latter would create a loop.  (This bug was
+     * present in WebAuth 3.5.3.)
+     */
+    {
+        "Session multifactor, password login",
+        WA_PEC_MULTIFACTOR_REQUIRED,
+        "multifactor login required",
+        {
+            { "<krb5-principal>", 0, 0 },
+            {
+                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, NULL, 0, "https://example.com/", NULL,
+                NULL, "o", 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            "o", "h,m,p,o",
+            {
+                {
+                    "<userprinc>", "krb5", "<webkdc-principal>", NULL, 0,
+                    "p,h,m", 0, 0, 0, NULL
+                },
+                EMPTY_TOKEN_WKPROXY,
+                EMPTY_TOKEN_WKPROXY
+            },
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
+    /*
      * Try requesting only a level of assurance, with a webkdc-proxy token for
      * an insufficient level of assurance, but a level of assurance that the
      * user can meet.  Ensure the correct error message is returned.  Use
@@ -973,7 +1155,7 @@ static const struct wat_login_test tests_default[] = {
         },
         {
             NULL, NULL,
-            "m", "h,m,p",
+            "m", "h,m,p,o",
             {
                 {
                     "<userprinc>", "remuser", "WEBKDC:remuser", "full", 4,

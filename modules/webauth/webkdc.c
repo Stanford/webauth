@@ -805,7 +805,7 @@ parse_get_creds_response(apr_xml_doc *xd,
         if (ct != NULL) {
             struct webauth_token_cred **nct;
 
-            ap_log_error(APLOG_MARK, APLOG_ERR, 0, rc->r->server,
+            ap_log_error(APLOG_MARK, APLOG_INFO, 0, rc->r->server,
                          "mod_webauth: %s: "
                          "parsed %s %s",
                          mwa_func, ct->type, ct->service);

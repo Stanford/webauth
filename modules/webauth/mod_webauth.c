@@ -2260,24 +2260,6 @@ fixups_hook(request_rec *r)
 }
 
 
-#if 0
-static int webauth_auth_checker(request_rec *r)
-{
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                 "mod_webauth: in auth_checker hook");
-    return DECLINED;
-}
-
-
-static int webauth_access_checker(request_rec *r)
-{
-    ap_log_error(APLOG_MARK, APLOG_ERR, 0, r->server,
-                 "mod_webauth: in accesss_checker hook");
-    return DECLINED;
-}
-#endif
-
-
 static void
 register_hooks(apr_pool_t *p UNUSED)
 {
@@ -2292,11 +2274,9 @@ register_hooks(apr_pool_t *p UNUSED)
     ap_hook_translate_name(translate_name_hook, NULL, NULL,
                            APR_HOOK_REALLY_FIRST);
 
-    ap_hook_check_user_id(check_user_id_hook, NULL, mods, APR_HOOK_MIDDLE);
-#if 0
-    ap_hook_access_checker(webauth_access_checker, NULL,NULL,APR_HOOK_FIRST);
-    ap_hook_auth_checker(webauth_auth_checker, NULL, NULL, APR_HOOK_FIRST);
-#endif
+    /* The core authentication hook. */
+    ap_hook_check_authn(check_user_id_hook, NULL, mods, APR_HOOK_MIDDLE,
+                        AP_AUTH_INTERNAL_PER_CONF);
     ap_hook_handler(handler_hook, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_fixups(fixups_hook, NULL,NULL,APR_HOOK_MIDDLE);
 }

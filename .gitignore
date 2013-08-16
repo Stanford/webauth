@@ -39,6 +39,7 @@
 /perl/t/data/test.realm
 /perl/t/data/tokens.conf
 /perl/t/data/tokens/
+/perl/t/lib/Test/
 /perl/webauth_keyring
 /perl/webauth_keyring2
 /stamp-h1

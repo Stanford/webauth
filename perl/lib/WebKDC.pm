@@ -39,12 +39,12 @@ use WebKDC::WebKDCException 1.05;
 use WebKDC::XmlDoc;
 use WebKDC::XmlElement;
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
 our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '2.06';
+    $VERSION = '4.0504';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
@@ -168,16 +168,17 @@ sub proxy_token_request {
     # Get the response.
     my $http_res = $ua->request ($http_req);
     if (!$http_res->is_success) {
-        # FIXME: Better error reporting needed here.
-        print STDERR "post failed\n";
-        print STDERR $http_res->as_string . "\n";
-        print STDERR $http_res->content . "\n";
-        throw (WK_ERR_UNRECOVERABLE_ERROR, "post to webkdc failed");
+        my $error = 'post to WebKDC failed: ' . $http_res->status_line;
+        warn "$error\n";
+        throw (WK_ERR_UNRECOVERABLE_ERROR, $error);
     }
     my $root = eval { WebKDC::XmlElement->new ($http_res->content) };
     if ($@) {
-        my $msg = "unable to parse response from webkdc: $@";
-        print STDERR "$msg " . $http_res->content . "\n";
+        my $error = $@;
+        $error =~ s{ \A \s+ }{}xms;
+        $error =~ s{ \s+ \z }{}xms;
+        my $msg = "unable to parse response from webkdc: $error";
+        warn "$msg, content: " . $http_res->content . "\n";
         throw (WK_ERR_UNRECOVERABLE_ERROR, $msg);
     }
     if ($root->name eq 'errorResponse') {
@@ -272,7 +273,10 @@ sub request_token_request {
     }
     $webkdc_doc->end ('requestTokenRequest');
 
-    # Send the request to the webkdc
+    # Send the request to the WebKDC.  If this fails, retry once.  It's common
+    # for this to fail due to EINTR because the FastCGI process manager is
+    # trying to shut down the login.fcgi process, in which case it should only
+    # fail once and the second try should succeed.
     my $xml = $webkdc_doc->root->to_string (1);
     my $ua = LWP::UserAgent->new;
     my $http_req = HTTP::Request->new (POST => $WebKDC::Config::URL);
@@ -280,18 +284,32 @@ sub request_token_request {
     $http_req->content ($webkdc_doc->root->to_string);
     my $http_res = $ua->request ($http_req);
     if (!$http_res->is_success) {
-        # FIXME: get more details out of $http_res
-        print STDERR "post failed\n";
-        print STDERR $http_res->as_string . "\n";
-        print STDERR $http_res->content . "\n";
-        throw (WK_ERR_UNRECOVERABLE_ERROR, "post to webkdc failed");
+        $http_res = $ua->request ($http_req);
+    }
+    if (!$http_res->is_success) {
+        my $error = 'post to WebKDC failed: ' . $http_res->status_line;
+        warn "$error\n";
+        throw (WK_ERR_UNRECOVERABLE_ERROR, $error);
     }
 
-    # Parse the response.
+    # XML::Parser will choke on all non-ASCII that isn't UTF-8.  This causes
+    # problems when users enter usernames that contain ISO 8859-1 characters
+    # or use other encodings, causing those usernames to be reproduced in the
+    # Kerberos error message.  For now, hack around this problem by replacing
+    # all non-ASCII characters or control characters with "." so that we can
+    # at least attempt to process the content.
+    my $content = $http_res->content;
+    $content =~ s{ [^\x20-\x7e] }{.}xmsg;
+
+    # Parse the response.  For some reason, XML::Parser exceptions tend to
+    # start with a newline.
     $root = eval { WebKDC::XmlElement->new ($http_res->content) };
     if ($@) {
-        my $msg = "unable to parse response from webkdc: $@";
-        print STDERR "$msg " . $http_res->content . "\n";
+        my $error = $@;
+        $error =~ s{ \A \s+ }{}xms;
+        $error =~ s{ \s+ \z }{}xms;
+        my $msg = "unable to parse response from webkdc: $error";
+        warn "$msg, content: " . $http_res->content . "\n";
         throw (WK_ERR_UNRECOVERABLE_ERROR, $msg);
     }
 
@@ -387,6 +405,7 @@ sub request_token_request {
             }
         }
 
+        # Set all of the simple response elements.
         $wresp->return_url ($return_url);
         $wresp->response_token ($returned_token);
         $wresp->response_token_type ($returned_token_type);
@@ -401,9 +420,22 @@ sub request_token_request {
         $wresp->user_message ($user_message) if defined $user_message;
         $wresp->login_state ($login_state) if defined $login_state;
 
+        # If there was no error code but we have no returned token, something
+        # very strange has happened.  It's not clear how this could possibly
+        # be the case, but it looked like it happened once in production, so
+        # add another sanity check.
+        if (!$error_code && !defined $returned_token) {
+            throw (WK_ERR_UNRECOVERABLE_ERROR,
+                   'unable to parse response from WebKDC: no token returned');
+        }
+
+        # If there was an error, translate that into an exception.  This has
+        # to be done after setting all of our state, since we rely on state
+        # after an exception is thrown for the login canceled token and for
+        # factor information.
         if ($error_code) {
             my $wk_err = $pec_mapping{$error_code}
-                || WK_ERR_UNRECOVERABLE_ERROR;
+              || WK_ERR_UNRECOVERABLE_ERROR;
             throw ($wk_err, "Login error: $error_message ($error_code)",
                    $error_code, $user_message);
         }

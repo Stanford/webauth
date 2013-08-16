@@ -1,7 +1,7 @@
 # Parse and manipulate XML documents and elements.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2009, 2012
+# Copyright 2002, 2009, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,12 +29,12 @@ use warnings;
 
 use XML::Parser ();
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
 our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '1.02';
+    $VERSION = '4.0504';
 }
 
 # An internaml method to convert the tree returned by XML::Parse into a tree
