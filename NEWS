@@ -84,6 +84,14 @@ WebAuth 4.5.4 (unreleased)
     numbers will sort properly.  For example, the version number of each
     Perl module included in WebAuth 4.5.4 is 4.0504.
 
+    Update to rra-c-util 4.9:
+
+    * Improve robustness of the Perl test scripts.
+
+    Update to C TAP Harness 2.2:
+
+    * bail and sysbail now exit with status 255 to match Test::More.
+
 WebAuth 4.5.3 (2013-05-15)
 
     SECURITY: Reset all header contents between WebLogin requests, fixing

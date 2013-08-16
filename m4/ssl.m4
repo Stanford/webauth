@@ -19,7 +19,7 @@ dnl The canonical version of this file is maintained in the rra-c-util
 dnl package, available at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2010
+dnl Copyright 2010, 2013
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl This file is free software; the authors give unlimited permission to copy
@@ -108,7 +108,7 @@ AC_DEFUN([RRA_LIB_SSL],
         [rra_ssl_includedir="$withval"])])
  AC_ARG_WITH([openssl-lib],
     [AS_HELP_STRING([--with-openssl-lib=DIR],
-        [Location of SSL libraries])],
+        [Location of OpenSSL libraries])],
     [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
         [rra_ssl_libdir="$withval"])])
 

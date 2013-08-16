@@ -111,8 +111,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	tests/data/service-token tests/data/tokens tests/data/tokens.conf   \
 	tests/data/valgrind.supp tests/data/xml tests/docs/pod-spelling-t   \
 	tests/docs/pod-t tests/mod_webauth tests/perl/critic-t		    \
-	tests/perl/minimum-version-t tests/perl/strict-t		    \
-	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			    \
+	tests/perl/minimum-version-t tests/perl/module-version-t	    \
+	tests/perl/strict-t tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm  \
 	tests/tap/perl/Test/RRA/Automake.pm				    \
 	tests/tap/perl/Test/RRA/Config.pm tests/tools/wa_keyring-t	    \
 	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
@@ -286,6 +286,7 @@ perl/lib/WebAuth.o: $(srcdir)/perl/Build.PL $(srcdir)/perl/lib/WebAuth.pm \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done							\
 	fi
+	cp -R $(srcdir)/tests/tap/perl/* perl/t/lib/
 	rm -f perl/lib/WebAuth.o
 	cd perl && perl Build.PL					\
 	    --config lddlflags='$(PERL_LDFLAGS_FULL)'			\
@@ -302,7 +303,9 @@ install-data-local-perl: perl/lib/WebAuth.o
 all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
-CLEANFILES = lib/libwebauth.pc perl/t/data/keyring perl/t/data/tokens.conf
+CLEANFILES = lib/libwebauth.pc perl/t/data/keyring perl/t/data/tokens.conf \
+	perl/t/lib/Test/RRA.pm perl/t/lib/Test/RRA/Automake.pm		   \
+	perl/t/lib/Test/RRA/Config.pm
 DISTCLEANFILES = include/webauth/defines.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	 \
 	configure docs/protocol.html docs/protocol.txt lib/rules-cache.c \
