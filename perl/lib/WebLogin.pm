@@ -957,7 +957,7 @@ sub print_pwchange_page {
     $params->{remember_login} = $self->remember_login;
     $params->{script_name} = $self->param ('script_name');
     $params->{expired} = 1
-        if ($q->param ('expired') and $q->param ('expired') == 1);
+        if ($q->param ('expired') and $q->param ('expired') eq '1');
 
     # We don't need the user information if they have already acquired a
     # kadmin/changepw token, or at previous request to skip the username.
@@ -1737,7 +1737,7 @@ sub handle_login_error {
         }
 
         $self->param ('script_name', $WebKDC::Config::EXPIRING_PW_URL);
-        $self->query->param ('expired', 1);
+        $self->query->param ('expired', '1');
         return $self->print_pwchange_page ($req->request_token,
                                            $req->service_token);
 
