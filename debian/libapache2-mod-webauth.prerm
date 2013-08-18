@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = remove ] || [ "$1" = deconfigure ] ; then
+    if [ -f /etc/apache2/mods-enabled/webauth.load ] ; then
+        a2dismod webauth
+    fi
+fi
+
+#DEBHELPER#
+
+exit 0

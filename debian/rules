@@ -17,7 +17,7 @@ ifndef PERL
 endif
 
 %:
-	dh $@ --parallel --with apache2,autoreconf
+	dh $@ --parallel --with autoreconf
 
 override_dh_autoreconf:
 	dh_autoreconf --as-needed
@@ -42,13 +42,6 @@ override_dh_fixperms:
 	set -e; if [ -d 'debian/libwebkdc-perl/var/cache/weblogin' ] ; then \
 	    chown www-data:www-data debian/libwebkdc-perl/var/cache/weblogin; \
 	fi
-
-# libapache2-mod-webauth has modules with directives with no default that
-# must be set, so we need to not enable those modules by default.
-override_dh_apache2:
-	dh_apache2 -Nlibapache2-mod-webauth -Nlibapache2-mod-webauthldap
-	dh_apache2 -plibapache2-mod-webauth -e
-	dh_apache2 -plibapache2-mod-webauthldap -e
 
 override_dh_builddeb:
 	dh_builddeb -- -Zxz

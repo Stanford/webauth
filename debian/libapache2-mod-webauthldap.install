@@ -1,0 +1,4 @@
+conf/debian/webauthldap.conf    etc/apache2/mods-available
+conf/debian/webauthldap.load    etc/apache2/mods-available
+
+debian/tmp/usr/lib/apache2/modules/mod_webauthldap.so usr/lib/apache2/modules

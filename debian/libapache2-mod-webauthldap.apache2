@@ -1,3 +1,0 @@
-mod conf/debian/webauthldap.conf
-mod conf/debian/webauthldap.load
-mod debian/tmp/usr/lib/apache2/modules/mod_webauthldap.so

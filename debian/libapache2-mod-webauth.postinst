@@ -10,15 +10,11 @@ fi
 chgrp www-data /var/lib/webauth
 chmod 770 /var/lib/webauth
 
-# dh_apache2 -e currently doesn't add code to restart Apache when a module
-# that isn't enabled by default was enabled and is upgraded.  (#710463)  This
-# code is somewhat odd since the cleanest way to restart Apache on upgrade is
-# to invoke the enmod action, but we must not do that unless the module is
-# already enabled.
-if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
-    . /usr/share/apache2/apache2-maintscript-helper
-    if a2query -q -m webauth ; then
-        apache2_invoke enmod webauth
+# If the Apache module is configured and Apache is running, restart Apache on
+# upgrades.
+if [ -f /etc/apache2/mods-enabled/webauth.load ] ; then
+    if invoke-rc.d apache2 status >/dev/null 2>&1 ; then
+        invoke-rc.d apache2 restart
     fi
 fi
 

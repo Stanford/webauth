@@ -2,9 +2,9 @@ Source: webauth
 Section: web
 Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
-Build-Depends: debhelper (>= 9), apache2-dev (>> 2.4.4-3~), dh-apache2,
+Build-Depends: debhelper (>= 9), apache2-threaded-dev (>= 2.2),
  dh-autoreconf, libapr1-dev, libaprutil1-dev, libcgi-application-perl,
- libcgi-application-plugin-autorunmode-perl,
+ libcgi-application-perl, libcgi-application-plugin-autorunmode-perl,
  libcgi-application-plugin-forward-perl,
  libcgi-application-plugin-tt-perl, libcgi-fast-perl,
  libcurl4-openssl-dev, libipc-run-perl, libkrb5-dev, libldap2-dev,
@@ -20,7 +20,7 @@ Vcs-Browser: http://git.eyrie.org/?p=kerberos/webauth.git
 Package: libapache2-mod-webauth
 Section: httpd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, apache2 (>= 2.4.4)
+Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
 Suggests: libapache2-mod-webauthldap
 Breaks: libapache2-webauth (<< 4.2.0)
 Replaces: libapache2-webauth (<< 4.2.0)
@@ -38,7 +38,7 @@ Description: Apache module for WebAuth authentication
 Package: libapache2-mod-webauthldap
 Section: httpd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, apache2 (>= 2.4.4),
+Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
  libapache2-mod-webauth,
  libsasl2-modules-gssapi-mit | libsasl2-modules-gssapi-heimdal
 Breaks: libapache2-mod-webauth (<< 4.5.3-3~),
@@ -59,7 +59,7 @@ Description: Apache module for WebAuth LDAP lookup and authorization
 Package: libapache2-mod-webkdc
 Section: httpd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
 Breaks: libapache2-webkdc (<< 4.2.0)
 Replaces: libapache2-webkdc (<< 4.2.0)
 Description: Apache modules for a WebAuth authentication KDC

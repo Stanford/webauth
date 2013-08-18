@@ -1,3 +1,0 @@
-mod conf/debian/webauth.conf
-mod conf/debian/webauth.load
-mod debian/tmp/usr/lib/apache2/modules/mod_webauth.so
