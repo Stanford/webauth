@@ -38,7 +38,7 @@ Description: Apache module for WebAuth authentication
 Package: libapache2-mod-webauthldap
 Section: httpd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common
+Depends: ${shlibs:Depends}, ${misc:Depends}, apache2.2-common,
  libapache2-mod-webauth,
  libsasl2-modules-gssapi-mit | libsasl2-modules-gssapi-heimdal
 Breaks: libapache2-mod-webauth (<< 4.5.3-3~),
