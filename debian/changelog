@@ -1,3 +1,11 @@
+webauth (4.5.4-1~bpo70+1) wheezy-backports; urgency=low
+
+  * Backport to stable.
+  * Revert the migration to Apache 2.4 and restore Apache 2.2 handling of
+    module installation and enabling, but keep the new package names.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 18 Aug 2013 17:01:23 -0700
+
 webauth (4.5.4-1) unstable; urgency=low
 
   * New upstream release.
