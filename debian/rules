@@ -24,7 +24,7 @@ override_dh_autoreconf:
 
 override_dh_auto_configure:
 	dh_auto_configure --parallel -- --libexecdir=/usr/lib \
-	    --enable-webkdc --enable-perl --with-apxs=/usr/bin/apxs \
+	    --enable-webkdc --enable-perl --with-apxs=/usr/bin/apxs2 \
 	    --enable-reduced-depends
 
 override_dh_auto_install:
