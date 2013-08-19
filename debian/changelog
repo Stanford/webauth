@@ -1,3 +1,94 @@
+webauth (4.5.4-1~bpo60+1) squeeze-backports; urgency=low
+
+  * Backport to squeeze, preserving changes from the previous backport.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 18 Aug 2013 18:43:16 -0700
+
+webauth (4.5.4-1) unstable; urgency=low
+
+  * New upstream release.
+    - Warn about mismatched webkdc-proxy tokens but no longer treat them
+      as a fatal error.
+    - Fix handling of non-password session factor requirements.
+    - Improve handling of initial factor requirements when users have a
+      way to establish initial credentials that don't include a password
+      factor.
+    - Improve handling of a Kerberos webkdc-proxy token requirement during
+      a multifactor authentication.
+    - Retry WebLogin posts to the WebKDC once to be more robust against
+      interruptions by signals (such as from the FastCGI process manager).
+    - Produce more succinct and hopefully better error messages when
+      WebLogin cannot post to the WebKDC.
+    - Ignore SIGPIPE signals in WebLogin scripts.
+    - Require the return URL be absolute and not contain non-ASCII
+      characters in mod_webkdc processing.
+    - Fix WebLogin replay detection logic to not trigger on password
+      changes.
+    - Work around problems in WebLogin caused by the WebKDC returning
+      error messages that contain undeclared non-UTF-8 characters in
+      violation of the XML standard.
+    - Improve error reporting of unparsable XML received by the WebLogin
+      server from the WebKDC.
+    - Fix logging of mod_webkdc <requestTokenRequest> failures.
+    - Fix the prototype attributes for webauth_user_validate.
+    - Log when mod_webkdc ignores expired tokens.
+    - Display more correct errors after some failures during the second
+      step of a multifactor authentication.
+    - Correctly diagnose a missing service token in a WebLogin request and
+      report the correct error instead of an internal error.
+    - Make the version of all Perl modules match the WebAuth release.
+
+ -- Russ Allbery <rra@debian.org>  Fri, 16 Aug 2013 15:15:12 -0700
+
+webauth (4.5.3-5) unstable; urgency=low
+
+  * Only remove /var/lib/webauth during purge if the directory exists.
+    Both libapache2-mod-webauth and libapache2-mod-webauthldap create and
+    use that directory, so it may have already been removed by the other
+    package.  (Closes: #714602)
+
+ -- Russ Allbery <rra@debian.org>  Mon, 01 Jul 2013 15:21:48 -0700
+
+webauth (4.5.3-4) unstable; urgency=low
+
+  * Apply upstream patch to fix incorrect linkage of some of the test
+    programs.  (Closes: #713452)
+
+ -- Russ Allbery <rra@debian.org>  Sun, 23 Jun 2013 12:14:52 -0700
+
+webauth (4.5.3-3) unstable; urgency=low
+
+  * Move mod_webauthldap into a separate libapache2-mod-webauthldap
+    package.  This permits better dependencies, more closely conforms to
+    the Apache module naming convention, and allows users who aren't
+    interested in the LDAP module to easily remove it.  Note that the
+    libapache2-mod-webauth package does not attempt to clean up
+    configuration files left behind from the mod_webauthldap module, since
+    nearly all users upgrading from an older version will end up with both
+    packages installed, and removal of libapache2-mod-webauthldap will do
+    the right thing.  Additional cleanup would only be needed for people
+    upgrading from experimental versions of libapache2-mod-webauth who do
+    not install libapache2-mod-webauthldap and doesn't seem worth the
+    complexity.
+  * Add proper Breaks/Replaces for the Apache module package renaming.
+  * Pass LDFLAGS from the main build to the Perl module build so that the
+    hardening flags are set properly.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 02 Jun 2013 12:12:40 -0700
+
+webauth (4.5.3-2) unstable; urgency=low
+
+  * Upload to unstable.
+  * Now that dh_apache2 has an option to not enable the modules by
+    default, let it handle all module setup for libapache2-mod-webauth
+    except for the Apache restart and remove the now-unnecessary prerm
+    script.
+  * Simplify libcgi-application-perl Depends and Build-Depends by dropping
+    the alternatives that were required for squeeze.
+  * Add build dependency on dh-apache2 per the dh_apache2 manual page.
+
+ -- Russ Allbery <rra@debian.org>  Thu, 30 May 2013 19:43:23 -0700
+
 webauth (4.5.3-1~sbp60+1) stable; urgency=low
 
   * Backport to squeeze, preserving changes from the previous backport.
@@ -13,6 +104,7 @@ webauth (4.5.3-1) experimental; urgency=low
       $REMUSER_REDIRECT (not the default).  The vulnerability was
       introduced in WebAuth 4.4.1.  All versions of WebAuth with this
       vulnerability were only uploaded to Debian experimental.
+      (CVE-2013-2106)
 
  -- Russ Allbery <rra@debian.org>  Wed, 15 May 2013 13:57:37 -0700
 

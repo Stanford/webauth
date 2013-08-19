@@ -16,6 +16,8 @@
 #include <portable/system.h>
 
 #include <apr_base64.h>
+#include <apr_lib.h>
+#include <apr_uri.h>
 #include <time.h>
 
 #include <lib/internal.h>
@@ -291,6 +293,49 @@ check_subject_auth(struct webauth_context *ctx, const char *auth)
 
 
 /*
+ * Check a given URL for validity.  URLs are required to be absolute and to
+ * be composed solely of ASCII characters.  Returns a WebAuth error code and
+ * sets the error message if needed.
+ */
+static int
+check_url(struct webauth_context *ctx, const char *url)
+{
+    const char *p;
+    apr_status_t code;
+    apr_uri_t uri;
+
+    /*
+     * Ensure that the return URL is a valid ASCII string.  Non-ASCII
+     * characters in URLs must be encoded according to the protocol and, more
+     * practically, will create errors in WebLogin since the WebLogin code
+     * doesn't decode and encode strings from the WebKDC response and
+     * therefore doesn't properly handle Unicode or other non-ASCII characters
+     * in the URL.
+     */
+    for (p = url; *p != '\0'; p++)
+        if (!apr_isascii(*p)) {
+            wai_error_set(ctx, WA_ERR_CORRUPT,
+                          "non-ASCII characters in URL: %s", url);
+            return WA_ERR_CORRUPT;
+        }
+
+    /* Ensure that the return URL is a valid, absolute URL. */
+    memset(&uri, 0, sizeof(uri));
+    code = apr_uri_parse(ctx->pool, url, &uri);
+    if (code != APR_SUCCESS) {
+        wai_error_set_apr(ctx, WA_ERR_CORRUPT, code, "cannot parse URL: %s",
+                          url);
+        return WA_ERR_CORRUPT;
+    }
+    if (uri.scheme == NULL || uri.hostname == NULL || uri.path == NULL) {
+        wai_error_set(ctx, WA_ERR_CORRUPT, "invalid URL: %s", url);
+        return WA_ERR_CORRUPT;
+    }
+    return WA_ERR_NONE;
+}
+
+
+/*
  * Check an application token for valid data.
  */
 static int
@@ -423,6 +468,9 @@ check_request(struct webauth_context *ctx,
     } else {
         CHECK_STR(request, type);
         CHECK_STR(request, return_url);
+        s = check_url(ctx, request->return_url);
+        if (s != WA_ERR_NONE)
+            return s;
         if (strcmp(request->type, "id") == 0) {
             CHECK_STR(request, auth);
             s = check_subject_auth(ctx, request->auth);

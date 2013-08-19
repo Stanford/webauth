@@ -1,0 +1,13 @@
+libapache2-mod-webauth (4.5.3-3) unstable; urgency=low
+
+  The LDAP module, mod_webauthldap, has been moved to a separate package
+  as part of the Apache 2.4 transition.  If you were using the LDAP
+  module, install libapache2-mod-webauthldap and enable the module with:
+
+      a2enmod webauthldap
+
+  This matches the standard naming scheme of Apache modules and allows
+  better handling of dependencies for the LDAP module.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 02 Jun 2013 10:34:07 -0700
+

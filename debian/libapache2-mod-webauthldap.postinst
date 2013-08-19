@@ -1,0 +1,27 @@
+#! /bin/sh
+
+set -e
+
+# Make sure that /var/lib/webauth exists and is writable by the www-data
+# group, since this is where the Kerberos ticket cache will go.
+if [ ! -d /var/lib/webauth ] ; then
+    mkdir /var/lib/webauth
+fi
+chgrp www-data /var/lib/webauth
+chmod 770 /var/lib/webauth
+
+# dh_apache2 -e currently doesn't add code to restart Apache when a module
+# that isn't enabled by default was enabled and is upgraded.  (#710463)  This
+# code is somewhat odd since the cleanest way to restart Apache on upgrade is
+# to invoke the enmod action, but we must not do that unless the module is
+# already enabled.
+if [ -e /usr/share/apache2/apache2-maintscript-helper ] ; then
+    . /usr/share/apache2/apache2-maintscript-helper
+    if a2query -q -m webauthldap ; then
+        apache2_invoke enmod webauthldap
+    fi
+fi
+
+#DEBHELPER#
+
+exit 0

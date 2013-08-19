@@ -10,6 +10,10 @@
    to 0 if you don't. */
 #undef HAVE_DECL_AP_GET_SERVER_DESCRIPTION
 
+/* Define to 1 if you have the declaration of `ap_hook_check_authn', and to 0
+   if you don't. */
+#undef HAVE_DECL_AP_HOOK_CHECK_AUTHN
+
 /* Define to 1 if you have the declaration of `ap_register_auth_provider', and
    to 0 if you don't. */
 #undef HAVE_DECL_AP_REGISTER_AUTH_PROVIDER
@@ -124,7 +128,7 @@
 /* Define to 1 if you have the `keyutils' library (-lkeyutils). */
 #undef HAVE_LIBKEYUTILS
 
-/* Define to 1 if the system has the type `long long int'. */
+/* Define to 1 if the system has the type 'long long int'. */
 #undef HAVE_LONG_LONG_INT
 
 /* Define to 1 if you have the <memory.h> header file. */
@@ -201,6 +205,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if the system has the type 'unsigned long long int'. */
+#undef HAVE_UNSIGNED_LONG_LONG_INT
 
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL

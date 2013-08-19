@@ -322,8 +322,8 @@ print_rules(\*STDOUT, $source, \%rules);
 __END__
 
 =for stopwords
-WebAuth struct structs Kerberos keyrings encodings timestamps sublicense
-MERCHANTABILITY NONINFRINGEMENT
+Allbery WebAuth struct structs Kerberos keyrings encodings timestamps
+sublicense MERCHANTABILITY NONINFRINGEMENT
 
 =head1 NAME
 

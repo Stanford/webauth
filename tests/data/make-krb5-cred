@@ -68,8 +68,8 @@ if (defined($output)) {
 __END__
 
 =for stopwords
-KRB5CCNAME KDC MERCHANTABILITY NONINFRINGEMENT TGT WebAuth WebAuth-encoded
-kinit make-krb5-cred nul sublicense
+Allbery KRB5CCNAME KDC MERCHANTABILITY NONINFRINGEMENT TGT WebAuth
+WebAuth-encoded kinit make-krb5-cred nul sublicense
 
 =head1 NAME
 

@@ -1,0 +1,19 @@
+#! /bin/sh
+
+set -e
+
+# Remove known files from /var/lib/webauth on purge and try to remove the
+# directory.  Only do so if the directory doesn't exist, since both
+# libapache2-mod-webauth and libapache2-mod-webauthldap create and use that
+# directory and it may have been removed by the other module (or by the local
+# systems administrator).
+if [ "$1" = purge ] ; then
+    rm -f /var/lib/webauth/krb5cc_ldap
+    if [ -d /var/lib/webauth ] ; then
+        rmdir --ignore-fail-on-non-empty /var/lib/webauth
+    fi
+fi
+
+#DEBHELPER#
+
+exit 0

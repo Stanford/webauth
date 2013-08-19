@@ -1,0 +1,84 @@
+Introduction
+------------
+
+This package contains an Apache module to look up user information in an
+LDAP directory using GSS-API binds.  That information can be exported in
+the environment or used for authorization.  It is not useful by itself;
+your site also needs to be running a WebAuth infrastructure including a
+separate WebKDC and weblogin server, and you must be using mod_webauth for
+access control.  See the libapache2-mod-webkdc and webauth-weblogin
+packages for the WebKDC server and weblogin server and
+libapache2-mod-webauth for the authentication module.
+
+You can install the webauth-tests package to get a test suite that you can
+use to verify that your installation is working.  See the documentation of
+that package for more information.
+
+mod_webauthldap.html.en has the formatted manual, but it expects to be
+viewed as part of the Apache documentation tree.  If you wish, you can
+install the apache2-doc package and copy this file to:
+
+    /usr/share/doc/apache2-doc/manual/mod
+
+and you will then be able to read it as intended.
+
+See:
+
+    <http://webauth.stanford.edu/>
+
+for more information about WebAuth, including copies of the module manuals
+and places to contact to get help with the installation.
+
+
+Configuring the LDAP Module
+---------------------------
+
+Several steps required for configuring this module cannot (easily) be
+automated, so it is not active and available immediately after installing
+this package.  You must also do the following:
+
+ 1. Set up libapache2-mod-webauth following its documentation.  This
+    module only works with users authenticated via the mod_webauth module.
+
+ 2. Add the following configuration to:
+
+        /etc/apache2/conf-available/webauth.conf
+
+    (or wherever you put the configuration mentioned above):
+
+        WebAuthLdapHost <ldap-server>
+        WebAuthLdapBase <ldap-base>
+
+    where <ldap-server> is your local LDAP server name and <ldap-base> is
+    the LDAP search base to use (something like dc=example,dc=com).  Your
+    local LDAP administrator will be able to provide this information.
+    The LDAP server must support GSS-API binds using the credentials
+    stored in /etc/webauth/keytab (or a different keytab if you change the
+    default module configuration).
+
+ 3. If you want to use authorization through privilege groups defined by
+    the presence of an LDAP attribute in the record of the authenticated
+    user, also add a line like:
+
+        WebAuthLdapAuthorizationAttribute <attribute>
+
+    where <attribute> is a multivalued attribute in directory entries for
+    your users that contains all of the privilege groups that that user is
+    a member of.
+
+ 4. Enable the WebAuth LDAP module:
+
+        a2enmod webauthldap
+
+    and restart Apache:
+
+        apache2ctl graceful
+
+You may now use the WebAuthLdapAttribute directive in <Location>,
+<Directory>, or <Files> blocks or .htaccess files to request that
+particular LDAP attributes be put into environment variables, and if you
+configured a privgroup attribute, you may now use the "require privgroup"
+command to restrict access to particular web pages to members of that
+privgroup.
+
+ -- Russ Allbery <rra@debian.org>, Sun,  2 Jun 2013 10:22:15 -0700

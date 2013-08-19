@@ -11,7 +11,7 @@
 # vice versa.
 #
 # Written by Roland Schemers
-# Copyright 2003, 2005, 2008, 2009, 2011, 2012
+# Copyright 2003, 2005, 2008, 2009, 2011, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,10 +43,13 @@ use overload '""' => \&to_string, 'cmp' => \&spaceship;
 
 use WebAuth qw(3.02);
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-our $VERSION = '3.04';
+our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
+BEGIN {
+    $VERSION = '4.0504';
+}
 
 # There is intentionally no constructor.  This object is thrown by the WebAuth
 # C API.

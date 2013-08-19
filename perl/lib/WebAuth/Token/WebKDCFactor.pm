@@ -30,10 +30,13 @@ use warnings;
 
 use base qw(WebAuth::Token);
 
-# This version should be increased on any code change to this module.  Always
-# use two digits for the minor version with a leading zero if necessary so
-# that it will sort properly.
-our $VERSION = '1.00';
+our $VERSION;
+
+# This version matches the version of WebAuth with which this module was
+# released, but with two digits for the minor and patch versions.
+BEGIN {
+    $VERSION = '4.0504';
+}
 
 # Accessor methods.
 sub subject    { my $t = shift; $t->_attr ('subject',    @_) }

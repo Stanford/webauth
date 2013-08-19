@@ -1,5 +1,5 @@
-WebAuth for Debian
-------------------
+Introduction
+------------
 
 This package contains the Apache 2.x modules for the WebAuth
 authentication system.  It is not useful by itself; your site also needs
@@ -25,11 +25,11 @@ for more information about WebAuth, including copies of the module manuals
 and places to contact to get help with the installation.
 
 
-Installing WebAuth
-------------------
+Configuring WebAuth
+-------------------
 
-There are several steps in installing WebAuth that cannot (easily) be
-automated, so WebAuth is not active and available immediately after
+There are several steps in configuring WebAuth that cannot (easily) be
+automated, so this module is not active and available immediately after
 installing this package.  You must also do the following:
 
  1. Determine your local site WebAuth configuration.  You need to know
@@ -137,4 +137,4 @@ configured a privgroup attribute, you may now use the "require privgroup"
 command to restrict access to particular web pages to members of that
 privgroup.
 
- -- Russ Allbery <rra@debian.org>, Mon,  9 Oct 2006 14:24:51 z
+ -- Russ Allbery <rra@debian.org>, Sun, 18 Aug 2013 18:25:00 -0700

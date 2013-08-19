@@ -55,9 +55,9 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
 	perl/t/data/pages/login/pass-required-not-error			    \
 	perl/t/data/pages/login/rejected				    \
 	perl/t/data/pages/login/remote-user perl/t/data/pages/pwchange/bare \
-	perl/t/data/pages/pwchange/cpt perl/t/data/templates/confirm.tmpl   \
-	perl/t/data/templates/error.tmpl perl/t/data/templates/login.tmpl   \
-	perl/t/data/templates/logout.tmpl				    \
+	perl/t/data/pages/pwchange/cpt perl/t/data/perl.conf		    \
+	perl/t/data/templates/confirm.tmpl perl/t/data/templates/error.tmpl \
+	perl/t/data/templates/login.tmpl perl/t/data/templates/logout.tmpl  \
 	perl/t/data/templates/pwchange.tmpl perl/t/data/token.acl	    \
 	perl/t/data/webkdc.conf perl/t/docs/pod-spelling.t		    \
 	perl/t/docs/pod.t perl/t/kerberos/changepw.t perl/t/kerberos/krb5.t \
@@ -111,8 +111,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	tests/data/service-token tests/data/tokens tests/data/tokens.conf   \
 	tests/data/valgrind.supp tests/data/xml tests/docs/pod-spelling-t   \
 	tests/docs/pod-t tests/mod_webauth tests/perl/critic-t		    \
-	tests/perl/minimum-version-t tests/perl/strict-t		    \
-	tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm			    \
+	tests/perl/minimum-version-t tests/perl/module-version-t	    \
+	tests/perl/strict-t tests/tap/libtap.sh tests/tap/perl/Test/RRA.pm  \
 	tests/tap/perl/Test/RRA/Automake.pm				    \
 	tests/tap/perl/Test/RRA/Config.pm tests/tools/wa_keyring-t	    \
 	tests/util/xmalloc-t tools/wa_keyring.pod tools/weblogin-passcheck  \
@@ -269,7 +269,7 @@ endif
 # CFLAGS and LDFLAGS to pass to the Perl build.
 PERL_CFLAGS = -I$(abs_top_builddir) -I$(abs_top_srcdir) \
 	-I$(abs_top_srcdir)/include $(CPPFLAGS) $(APR_CPPFLAGS)
-PERL_LDFLAGS_FULL = -L$(abs_top_builddir)/lib/.libs $(PERL_LDFLAGS)
+PERL_LDFLAGS_FULL = -L$(abs_top_builddir)/lib/.libs $(PERL_LDFLAGS) $(LDFLAGS)
 
 # The following section sets up the Perl module build properly.  Most of the
 # complexity is here to handle building outside of the source directory, in
@@ -286,6 +286,7 @@ perl/lib/WebAuth.o: $(srcdir)/perl/Build.PL $(srcdir)/perl/lib/WebAuth.pm \
 		cp "$(srcdir)/$$f" "$(builddir)/$$f" ;			\
 	    done							\
 	fi
+	cp -R $(srcdir)/tests/tap/perl/* perl/t/lib/
 	rm -f perl/lib/WebAuth.o
 	cd perl && perl Build.PL					\
 	    --config lddlflags='$(PERL_LDFLAGS_FULL)'			\
@@ -302,7 +303,9 @@ install-data-local-perl: perl/lib/WebAuth.o
 all-local: $(BINDINGS) $(MODULES)
 install-exec-local: $(BINDINGS_INSTALL)
 
-CLEANFILES = lib/libwebauth.pc perl/t/data/keyring perl/t/data/tokens.conf
+CLEANFILES = lib/libwebauth.pc perl/t/data/keyring perl/t/data/tokens.conf \
+	perl/t/lib/Test/RRA.pm perl/t/lib/Test/RRA/Automake.pm		   \
+	perl/t/lib/Test/RRA/Config.pm
 DISTCLEANFILES = include/webauth/defines.h
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	 \
 	configure docs/protocol.html docs/protocol.txt lib/rules-cache.c \
@@ -404,9 +407,9 @@ tests_lib_krb5_cred_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_cred_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
 tests_lib_krb5_tgt_t_CPPFLAGS = $(APRUTIL_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS)
+tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a portable/libportable.la $(APRUTIL_LIBS)
+	util/libutil.a portable/libportable.la $(APRUTIL_LIBS) $(KRB5_LIBS)
 tests_lib_userinfo_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_userinfo_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_userinfo_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
@@ -429,9 +432,9 @@ tests_lib_webkdc_krb_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_krb_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
 tests_lib_webkdc_login_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
-tests_lib_webkdc_login_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
+tests_lib_webkdc_login_t_LDFLAGS = $(APR_LDFLAGS)
 tests_lib_webkdc_login_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
-	util/libutil.a portable/libportable.la $(APR_LIBS) $(KRB5_LIBS)
+	util/libutil.a portable/libportable.la $(APR_LIBS)
 tests_lib_webkdc_mf_t_CPPFLAGS = $(APR_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_webkdc_mf_t_LDFLAGS = $(APR_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_webkdc_mf_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
