@@ -1,6 +1,14 @@
 webauth (4.5.4-1~bpo60+1) squeeze-backports; urgency=low
 
-  * Backport to squeeze, preserving changes from the previous backport.
+  * Backport to squeeze.
+  * Revert the changes to README.Debian.
+  * Remove AM_PROG_AR from configure.ac.  This is not available with the
+    squeeze versions of Autoconf and Automake, and was only added for Hurd
+    portability (which isn't important for backports).
+  * Revert transition to Apache 2.4, use of the new Apache module helper
+    functions, and multi-arch.
+  * Drop dh_autoreconf --as-needed flag, which is not supported by the
+    version of dh_autoreconf in squeeze.
 
  -- Russ Allbery <rra@debian.org>  Sun, 18 Aug 2013 18:43:16 -0700
 
@@ -89,13 +97,6 @@ webauth (4.5.3-2) unstable; urgency=low
 
  -- Russ Allbery <rra@debian.org>  Thu, 30 May 2013 19:43:23 -0700
 
-webauth (4.5.3-1~sbp60+1) stable; urgency=low
-
-  * Backport to squeeze, preserving changes from the previous backport.
-  * Revert the changes to README.Debian.
-
- -- Russ Allbery <rra@debian.org>  Tue, 14 May 2013 20:06:52 -0700
-
 webauth (4.5.3-1) experimental; urgency=low
 
   * New upstream release.
@@ -122,15 +123,6 @@ webauth (4.5.2-1) experimental; urgency=low
     conf-available and a2enconf instead of /etc/apache2/conf.d.
 
  -- Russ Allbery <rra@debian.org>  Tue, 14 May 2013 19:15:35 -0700
-
-webauth (4.5.1-1~sbp60+1) stable; urgency=low
-
-  * Backport to squeeze, preserving changes from the previous backport.
-  * Remove AM_PROG_AR from configure.ac.  This is not available with the
-    squeeze versions of Autoconf and Automake, and was only added for Hurd
-    portability (which isn't important for backports).
-
- -- Russ Allbery <rra@debian.org>  Wed, 01 May 2013 16:20:04 -0700
 
 webauth (4.5.1-1) experimental; urgency=low
 
@@ -301,12 +293,6 @@ webauth (4.4.0-1) experimental; urgency=low
 
  -- Russ Allbery <rra@debian.org>  Wed, 19 Dec 2012 20:57:09 -0800
 
-webauth (4.3.3-1~sbp60+1) stable; urgency=low
-
-  * Backport to squeeze, preserving changes from the previous backport.
-
- -- Russ Allbery <rra@debian.org>  Mon, 05 Nov 2012 13:47:57 -0800
-
 webauth (4.3.3-1) experimental; urgency=low
 
   * New upstream release.
@@ -324,12 +310,6 @@ webauth (4.3.3-1) experimental; urgency=low
 
  -- Russ Allbery <rra@debian.org>  Mon, 05 Nov 2012 12:43:48 -0800
 
-webauth (4.3.2-1~sbp60+1) stable; urgency=low
-
-  * Backport to squeeze, preserving changes from the previous backport.
-
- -- Russ Allbery <rra@debian.org>  Thu, 27 Sep 2012 20:48:03 -0700
-
 webauth (4.3.2-1) experimental; urgency=low
 
   * New upstream release.
@@ -337,18 +317,6 @@ webauth (4.3.2-1) experimental; urgency=low
       it from obtaining a service token from the WebKDC.
 
  -- Russ Allbery <rra@debian.org>  Thu, 27 Sep 2012 19:43:24 -0700
-
-webauth (4.3.1-1~sbp60+1) stable; urgency=low
-
-  * Backport to squeeze.
-  * Cherry-pick upstream changes from 4.4.0:
-    - [f1231440] WebLogin: set single sign-on cookies on error
-  * Revert transition to Apache 2.4, use of the new Apache module helper
-    functions, and multi-arch.
-  * Drop dh_autoreconf --as-needed flag, which is not supported by the
-    version of dh_autoreconf in squeeze.
-
- -- Russ Allbery <rra@debian.org>  Thu, 06 Sep 2012 16:59:33 -0700
 
 webauth (4.3.1-1) experimental; urgency=low
 
