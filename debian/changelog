@@ -1,3 +1,9 @@
+webauth (4.5.4-1~bpo60+2) squeeze-backports; urgency=low
+
+  * Fix the dependencies of libwebkdc-perl for squeeze.
+
+ -- Russ Allbery <rra@debian.org>  Mon, 19 Aug 2013 20:02:08 -0700
+
 webauth (4.5.4-1~bpo60+1) squeeze-backports; urgency=low
 
   * Backport to squeeze.

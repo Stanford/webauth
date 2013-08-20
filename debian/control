@@ -102,11 +102,16 @@ Package: libwebkdc-perl
 Section: perl
 Architecture: all
 Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.5.0),
- libcgi-application-perl, libcgi-application-plugin-autorunmode-perl,
- libcgi-application-plugin-forward-perl,
- libcgi-application-plugin-tt-perl, libcgi-fast-perl,
- libio-socket-ssl-perl, libtemplate-perl, liburi-perl, libwww-perl,
- libxml-parser-perl
+ libcgi-application-perl (>= 4.50) |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-autorunmode-perl |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-forward-perl |
+ libcgi-application-basic-plugin-bundle-perl,
+ libcgi-application-plugin-tt-perl |
+ libcgi-application-extra-plugin-bundle-perl,
+ libcgi-fast-perl, libio-socket-ssl-perl, libtemplate-perl, liburi-perl,
+ libwww-perl, libxml-parser-perl
 Suggests: libcache-memcached-perl, libnet-remctl-perl,
  libtime-duration-perl, libtimedate-perl
 Breaks: webauth-weblogin (<< 4.5.0)
