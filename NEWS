@@ -1,5 +1,11 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.5.5 (unreleased)
+
+    If the login was rejected by the user information service, WebLogin
+    now displays a more specific error instead of the generic "something
+    went wrong" error page.
+
 WebAuth 4.5.4 (2013-08-16)
 
     If the user presents a login token for one user and a webkdc-proxy

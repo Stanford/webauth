@@ -1839,9 +1839,10 @@ sub handle_login_error {
         return $self->print_error_page;
 
     # The authentication was rejected, probably by the user information
-    # service, with a custom error message from the WebKDC.  We should have a
-    # custom error page to display to the user.
-    } elsif ($status == WK_ERR_AUTH_REJECTED) {
+    # service.  We may have a custom error message from the WebKDC and
+    # therefore a custom error page to display to the user.
+    } elsif ($status == WK_ERR_AUTH_REJECTED
+             || $status == WK_ERR_LOGIN_REJECTED) {
         if ($error->data) {
             $self->template_params ({err_html => $error->data});
         } else {
