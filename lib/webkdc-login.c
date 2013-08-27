@@ -249,7 +249,7 @@ parse_token_webkdc_service(struct webauth_context *ctx, const char *data,
     key_data = state->service->session_key;
     s = webauth_key_create(ctx, WA_KEY_AES, size, key_data, &key);
     if (s != WA_ERR_NONE) {
-        wai_log_error(ctx, s, WA_LOG_WARN,
+        wai_log_error(ctx, WA_LOG_WARN, s,
                       "invalid session key in webkdc-service token");
         wai_error_set(ctx, WA_PEC_SERVICE_TOKEN_INVALID, NULL);
         return WA_PEC_SERVICE_TOKEN_INVALID;
