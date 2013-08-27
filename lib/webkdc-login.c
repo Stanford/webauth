@@ -637,8 +637,15 @@ do_logins(struct webauth_context *ctx, struct wai_webkdc_login_state *state)
             s = do_login_otp(ctx, state, &token->token.login);
         else
             s = do_login_krb(ctx, state, &token->token.login);
-        if (s != WA_ERR_NONE)
+
+        /*
+         * If the login fails, store the user corresponding to the failed
+         * login token in the state struct for logging purposes.
+         */
+        if (s != WA_ERR_NONE) {
+            state->login_subject = token->token.login.username;
             return s;
+        }
     }
     return WA_ERR_NONE;
 }
@@ -1644,6 +1651,14 @@ encode_response(struct webauth_context *ctx,
     s = encode_webkdc_proxy(ctx, state->wkproxy, response, ring);
     if (s != WA_ERR_NONE)
         return s;
+
+    /*
+     * If there were no webkdc-proxy token, but we do have a subject from a
+     * failed login token, use that as the response token.  This is primarily
+     * for better logging of failures.
+     */
+    if (state->wkproxy == NULL && state->login_subject != NULL)
+        response->subject = state->login_subject;
     return WA_ERR_NONE;
 }
 
