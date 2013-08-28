@@ -11,6 +11,9 @@ WebAuth 4.5.5 (unreleased)
     the error message is provided to the template, rather than taking the
     user to a dead-end error page with a generic error.
 
+    If enabled, rate limiting and replay detection are also applied to the
+    multifactor login page in addition to the password login page.
+
 WebAuth 4.5.4 (2013-08-16)
 
     If the user presents a login token for one user and a webkdc-proxy
