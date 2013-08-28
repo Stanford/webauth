@@ -238,6 +238,9 @@ struct wai_webkdc_login_state {
     /* True if there was a login token and a successful authentication. */
     bool did_login;
 
+    /* Set to the login token subject if there was an unsuccessful login. */
+    const char *login_subject;
+
     /* Merged webkdc-proxy and webkdc-factor tokens created by the login. */
     struct webauth_token *wkproxy;
     struct webauth_token *wkfactor;

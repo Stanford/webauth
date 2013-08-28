@@ -68,7 +68,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0504';
+    $VERSION = '4.0505';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -1601,9 +1601,6 @@ sub setup_kdc_request {
     # For the initial login page and password change page, we may need to map
     # the username.  For OTP, we've already done this, so we don't need to do
     # it again.
-    #
-    # Also check here for replays or rate limiting of failed authentications
-    # and reject them if so.
     if ($q->param ('password') && $q->param ('username')) {
         my $username = $q->param ('username');
         if (defined (&WebKDC::Config::map_username)) {
@@ -1618,6 +1615,14 @@ sub setup_kdc_request {
             $status = WK_ERR_LOGIN_FAILED;
         }
         $q->param ('username', $username);
+    }
+    $self->{request}->user ($q->param ('username')) if $q->param ('username');
+
+    # Check for replays or rate limiting of failed authentications for both
+    # the initial login page and the multifactor login page.
+    if ($q->param ('username')
+          && ($q->param ('password') || $q->param ('otp'))) {
+        my $username = $q->param ('username');
 
         # Check for replay.  The request token won't exist if we're processing
         # a password change instead of an authentication.
@@ -1634,7 +1639,6 @@ sub setup_kdc_request {
             $status = WK_ERR_AUTH_LOCKOUT;
         }
     }
-    $self->{request}->user ($q->param ('username')) if $q->param ('username');
 
     # Also pass to the WebKDC any proxy tokens we have from cookies.
     # Enumerate all cookies that start with webauth_wpt (WebAuth Proxy Token)
@@ -1839,9 +1843,10 @@ sub handle_login_error {
         return $self->print_error_page;
 
     # The authentication was rejected, probably by the user information
-    # service, with a custom error message from the WebKDC.  We should have a
-    # custom error page to display to the user.
-    } elsif ($status == WK_ERR_AUTH_REJECTED) {
+    # service.  We may have a custom error message from the WebKDC and
+    # therefore a custom error page to display to the user.
+    } elsif ($status == WK_ERR_AUTH_REJECTED
+             || $status == WK_ERR_LOGIN_REJECTED) {
         if ($error->data) {
             $self->template_params ({err_html => $error->data});
         } else {
@@ -2143,6 +2148,7 @@ sub multifactor : Runmode {
         if ($status == WK_SUCCESS) {
             print STDERR "WebKDC::make_request_token_request success\n"
                 if $self->param ('debug');
+            $self->register_auth ($req->request_token, $resp->subject);
             return $self->print_confirm_page;
         } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
             print STDERR "additional multifactor required\n"
@@ -2151,6 +2157,12 @@ sub multifactor : Runmode {
             print STDERR "multifactor failed: $error ($status)\n"
                 if $self->param ('logging');
             $self->template_params ({err_multifactor_invalid => 1});
+            $self->register_auth_fail ($req->user);
+        } elsif ($status == WK_ERR_LOGIN_REJECTED) {
+            my $message = $resp->user_message;
+            print STDERR "multifactor rejected: $error ($status): $message\n"
+                if $self->param ('logging');
+            $self->register_auth_fail ($req->user);
         } else {
             # Hopefully this is close enough that we can just use the default
             # error handling code.
