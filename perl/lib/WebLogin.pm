@@ -2152,6 +2152,10 @@ sub multifactor : Runmode {
             print STDERR "multifactor failed: $error ($status)\n"
                 if $self->param ('logging');
             $self->template_params ({err_multifactor_invalid => 1});
+        } elsif ($status == WK_ERR_LOGIN_REJECTED) {
+            my $message = $resp->user_message;
+            print STDERR "multifactor rejected: $error ($status): $message\n"
+                if $self->param ('logging');
         } else {
             # Hopefully this is close enough that we can just use the default
             # error handling code.

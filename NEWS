@@ -2,9 +2,14 @@
 
 WebAuth 4.5.5 (unreleased)
 
-    If the login was rejected by the user information service, WebLogin
-    now displays a more specific error instead of the generic "something
-    went wrong" error page.
+    If the login is rejected by the user information service, WebLogin now
+    displays a more specific error instead of the generic "something went
+    wrong" error page.
+
+    If a multifactor authentication is rejected by the validation service,
+    the user is now returned to the multifactor authentication screen and
+    the error message is provided to the template, rather than taking the
+    user to a dead-end error page with a generic error.
 
 WebAuth 4.5.4 (2013-08-16)
 
