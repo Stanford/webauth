@@ -10,7 +10,7 @@ webauth (4.5.5-1~bpo60+1) squeeze-backports; urgency=low
   * Drop dh_autoreconf --as-needed flag, which is not supported by the
     version of dh_autoreconf in squeeze.
 
- -- Russ Allbery <rra@debian.org>  Sun, 18 Aug 2013 18:43:16 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 22:02:39 -0700
 
 webauth (4.5.5-1) experimental; urgency=low
 
