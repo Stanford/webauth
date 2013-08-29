@@ -36,8 +36,9 @@ webauth (4.5.5-1) experimental; urgency=low
     - Better error display for multifactor authentication errors.
     - Rate limiting and replay detection are now also applied to the
       multifactor login page.
+    - Fix replay detection by correcting choice of memcached keys.
 
- -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 19:56:26 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 21:08:10 -0700
 
 webauth (4.5.3-5) unstable; urgency=low
 
