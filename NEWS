@@ -2,6 +2,10 @@
 
 WebAuth 4.5.5 (2013-08-28)
 
+    Fix replay detection in WebLogin to use the same memcached object
+    naming convention when registering authentications and when checking
+    for a previous authentication.
+
     If the login is rejected by the user information service, WebLogin now
     displays a more specific error instead of the generic "something went
     wrong" error page.

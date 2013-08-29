@@ -1500,7 +1500,7 @@ sub is_replay {
     if (!$self->{memcache} || !$WebKDC::Config::REPLAY_TIMEOUT) {
         return;
     }
-    my $hash = Digest::SHA::sha512_base64($rt);
+    my $hash = Digest::SHA::sha512_base64 ($rt);
     print STDERR "Looking up request token hash $hash\n"
         if $self->param ('debug');
     my $seen = $self->{memcache}->get ("rt:$hash");
@@ -1542,12 +1542,12 @@ sub register_auth {
     if (!$self->{memcache} || !$WebKDC::Config::REPLAY_TIMEOUT) {
         return;
     }
-    my $hash = Digest::SHA::sha512_base64($rt);
+    my $hash = Digest::SHA::sha512_base64 ($rt);
     print STDERR "Storing request token hash $hash\n"
         if $self->param ('debug');
     my $now = time;
     my $timeout = $now + $WebKDC::Config::REPLAY_TIMEOUT;
-    $self->{memcache}->set ($hash, $now, $timeout);
+    $self->{memcache}->set ("rt:$hash", $now, $timeout);
     if ($WebKDC::Config::RATE_LIMIT_THRESHOLD) {
         $self->{memcache}->delete ("fail:$username");
     }
