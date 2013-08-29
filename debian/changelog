@@ -51,8 +51,11 @@ webauth (4.5.5-1) experimental; urgency=low
     - Rate limiting and replay detection are now also applied to the
       multifactor login page.
     - Fix replay detection by correcting choice of memcached keys.
+    - Support staying on the code entry page after an error when using an
+      SMS method for multifactor.  Local template changes are required to
+      take advantage of this feature.
 
- -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 21:08:10 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 22:02:11 -0700
 
 webauth (4.5.3-5) unstable; urgency=low
 
