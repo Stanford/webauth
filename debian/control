@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Russ Allbery <rra@debian.org>
 Build-Depends: debhelper (>= 9), apache2-threaded-dev (>= 2.2),
  dh-autoreconf, libapr1-dev, libaprutil1-dev, libcgi-application-perl,
- libcgi-application-perl, libcgi-application-plugin-autorunmode-perl,
+ libcgi-application-plugin-autorunmode-perl,
  libcgi-application-plugin-forward-perl,
  libcgi-application-plugin-tt-perl, libcgi-fast-perl,
  libcurl4-openssl-dev, libipc-run-perl, libkrb5-dev, libldap2-dev,
