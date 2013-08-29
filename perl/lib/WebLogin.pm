@@ -1618,10 +1618,13 @@ sub setup_kdc_request {
     }
     $self->{request}->user ($q->param ('username')) if $q->param ('username');
 
-    # Check for replays or rate limiting of failed authentications for both
-    # the initial login page and the multifactor login page.
+    # Check for replays or rate limiting of failed authentications for the
+    # initial login page, the multifactor login page, and the multifactor_send
+    # page.
     if ($q->param ('username')
-          && ($q->param ('password') || $q->param ('otp'))) {
+          && ($q->param ('password') || $q->param ('otp')
+              || ($q->param ('rm')
+                  && $q->param ('rm') eq 'multifactor_sendauth'))) {
         my $username = $q->param ('username');
 
         # Check for replay.  The request token won't exist if we're processing
@@ -2189,7 +2192,16 @@ sub multifactor_sendauth : Runmode {
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.
     my %cart = CGI::Cookie->fetch;
-    $self->setup_kdc_request (%cart);
+    my $status = $self->setup_kdc_request (%cart);
+
+    # Check for replays and authentication rate limiting
+    if ($status == WK_ERR_AUTH_REPLAY) {
+        $self->template_params ({err_replay => 1});
+        return $self->print_error_page;
+    } elsif ($status == WK_ERR_AUTH_LOCKOUT) {
+        $self->template_params ({err_lockout => 1});
+        return $self->print_error_page;
+    }
 
     # Error if we don't have the setup configured.
     if (!$WebKDC::Config::MULTIFACTOR_SERVER
