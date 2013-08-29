@@ -309,6 +309,11 @@ WebLogin:
    cookies should *not* be retained on this system, remember that choice
    and change the default.
 
+ * There should be a better way of distinguishing between fatal OTP
+   validation errors and transient OTP validation errors so that WebLogin
+   can choose whether to put up a dead-end error page or to return the
+   multifactor login page again.  Currently, it always does the latter.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*

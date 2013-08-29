@@ -592,7 +592,11 @@ check_login_response(struct webauth_context *ctx,
     }
     if (i == 0) {
         ok(response->proxies == NULL, "... has no webkdc-proxy tokens");
-        is_string(NULL, response->subject, "... subject");
+        if (test->request.logins[0].username == NULL)
+            is_string(NULL, response->subject, "... subject");
+        else
+            is_string(subst(ctx, test->request.logins[0].username, krbconf),
+                      response->subject, "... subject");
     } else if (response->proxies == NULL) {
         is_int(i, 0, "... correct number of webkdc-proxy tokens");
         is_string(subst(ctx, test->response.proxies[0].subject, krbconf),
