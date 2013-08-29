@@ -1,15 +1,4 @@
-webauth (4.5.5-1) UNRELEASED; urgency=low
-
-  * New upstream release.
-    - Better error display for logins rejected by the user information
-      service.
-    - Better error display for multifactor authentication errors.
-    - Rate limiting and replay detection are now also applied to the
-      multifactor login page.
-
- -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 15:00:12 -0700
-
-webauth (4.5.4-1) unstable; urgency=low
+webauth (4.5.5-1) experimental; urgency=low
 
   * New upstream release.
     - Warn about mismatched webkdc-proxy tokens but no longer treat them
@@ -42,8 +31,13 @@ webauth (4.5.4-1) unstable; urgency=low
     - Correctly diagnose a missing service token in a WebLogin request and
       report the correct error instead of an internal error.
     - Make the version of all Perl modules match the WebAuth release.
+    - Better error display for logins rejected by the user information
+      service.
+    - Better error display for multifactor authentication errors.
+    - Rate limiting and replay detection are now also applied to the
+      multifactor login page.
 
- -- Russ Allbery <rra@debian.org>  Fri, 16 Aug 2013 15:15:12 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 19:56:26 -0700
 
 webauth (4.5.3-5) unstable; urgency=low
 
