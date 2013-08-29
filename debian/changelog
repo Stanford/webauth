@@ -4,7 +4,7 @@ webauth (4.5.5-1~bpo70+1) wheezy-backports; urgency=low
   * Revert the migration to Apache 2.4 and restore Apache 2.2 handling of
     module installation and enabling, but keep the new package names.
 
- -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 15:05:11 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 20:05:10 -0700
 
 webauth (4.5.5-1) experimental; urgency=low
 
