@@ -18,6 +18,12 @@ WebAuth 4.5.5 (2013-08-28)
     If enabled, rate limiting and replay detection are also applied to the
     multifactor login page in addition to the password login page.
 
+    Support remembering that the user has been sent an SMS message already
+    when redisplaying the multifactor login page after an error.  For this
+    to work properly, local templates will have to be updated to set the
+    form parameter multifactor_sentauth if an SMS message has already been
+    sent.  See the sample multifactor.tmpl file for an example.
+
 WebAuth 4.5.4 (2013-08-16)
 
     If the user presents a login token for one user and a webkdc-proxy

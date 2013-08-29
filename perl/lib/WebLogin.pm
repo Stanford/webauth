@@ -2175,6 +2175,9 @@ sub multifactor : Runmode {
         $self->template_params ({err_otp_missing => 1});
     }
 
+    if ($q->param ('multifactor_sentauth')) {
+        $self->template_params ({multifactor_sentauth => 1});
+    }
     my $req = $self->{request};
     return $self->print_multifactor_page ($req->request_token,
                                           $req->service_token);

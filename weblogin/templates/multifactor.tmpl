@@ -114,6 +114,9 @@ works of this work.
                        value="[% factor_type FILTER html %]">
                 <input type="hidden" name="remember_login"
                        value="[% remember_login FILTER html %]">
+                [% IF factor_type == "o2" && multifactor_sentauth %]
+                  <input type="hidden" name="multifactor_sentauth" value="1">
+                [% END %]
                 <table>
                   <tr>
                     <td><strong>One-Time Password (OTP):</strong></td>
