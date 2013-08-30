@@ -1,5 +1,10 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.5.6 (unreleased)
+
+    Set the correct template variable when the code field is left blank on
+    the WebLogin multifactor form.
+
 WebAuth 4.5.5 (2013-08-28)
 
     Fix replay detection in WebLogin to use the same memcached object

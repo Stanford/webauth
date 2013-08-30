@@ -2172,7 +2172,7 @@ sub multifactor : Runmode {
             return $self->handle_login_error ($status, $error);
         }
     } else {
-        $self->template_params ({err_otp_missing => 1});
+        $self->template_params ({err_multifactor_missing => 1});
     }
 
     if ($q->param ('multifactor_sentauth')) {
