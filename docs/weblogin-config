@@ -100,6 +100,8 @@ Templates
 
       permitted_authz   List (for FOREACH) of possible authorization ids
 
+      user_message      Raw HTML returned by the user information service
+
   token_rights will be a list, each member of which is a hash.  The keys
   of the hash are listed under token_rights above.  principal, instance,
   and realm will only be set if type is "krb5".  See the WebKDC manual
@@ -149,6 +151,7 @@ Templates
       err_multifactor_invalid  If set, could not validate a submitted OTP
       multifactor_required     Set to site-required mf when user mf too low
       multifactor_configured   Set to user mf when user mf too low for site
+      user_message             Raw HTML from the user information service
 
   Finally, the logout script uses a simple template with only one
   variable:
