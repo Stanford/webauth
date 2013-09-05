@@ -327,14 +327,16 @@ static int
 translate_error(struct webauth_context *ctx, krb5_error_code code)
 {
     switch (code) {
-    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
     case KRB5KDC_ERR_PREAUTH_FAILED:
     case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
         ctx->status = WA_PEC_LOGIN_FAILED;
         break;
     case KRB5KDC_ERR_KEY_EXP:
         ctx->status = WA_PEC_CREDS_EXPIRED;
         break;
+    case KRB5_REALM_CANT_RESOLVE:
+    case KRB5_REALM_UNKNOWN:
     case KRB5KDC_ERR_POLICY:
     case KRB5KDC_ERR_NAME_EXP:
         ctx->status = WA_PEC_USER_REJECTED;
