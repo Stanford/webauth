@@ -44,7 +44,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0506';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
