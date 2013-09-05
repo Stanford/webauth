@@ -10,6 +10,9 @@ WebAuth 4.5.6 (unreleased)
     will display a more accurate error message to the user of WebLogin
     instead of a generic internal error message.
 
+    Log a more detailed error message on WebAuth exceptions during
+    WebLogin password change.
+
 WebAuth 4.5.5 (2013-08-28)
 
     Fix replay detection in WebLogin to use the same memcached object

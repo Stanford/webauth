@@ -1325,7 +1325,7 @@ sub change_user_password {
             print STDERR $e->message(), "\n" if $self->param ('logging');
             return ($e->status(), $msg);
         } elsif (ref $e and $e->isa('WebAuth::Exception')) {
-            print STDERR "WebAuth exception $e->{detail} $e->{status}\n"
+            print STDERR "WebAuth exception while changing password: $e\n"
                 if $self->param ('logging');
             if ($e->{status} == WA_ERR_TOKEN_EXPIRED) {
                 $msg = "failed to change password for $username:"
