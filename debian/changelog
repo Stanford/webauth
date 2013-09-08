@@ -1,3 +1,9 @@
+webauth (4.5.5-2) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 08 Sep 2013 10:51:03 -0700
+
 webauth (4.5.5-1) experimental; urgency=low
 
   * New upstream release.
