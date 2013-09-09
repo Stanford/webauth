@@ -8,7 +8,7 @@
  * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2006, 2007, 2009, 2011, 2012
+ * Copyright 2006, 2007, 2009, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -97,7 +97,7 @@ remctld_stop(void)
 
 /*
  * Read the PID of remctld from a file.  This is necessary when running under
- * fakeroot or valgrind to get the actual PID of the remctld process.
+ * fakeroot to get the actual PID of the remctld process.
  */
 static long
 read_pidfile(const char *path)
@@ -128,9 +128,6 @@ read_pidfile(const char *path)
  * ending with a NULL.  Returns the PID of the running remctld process.  If
  * anything fails, calls bail.
  *
- * If VALGRIND is set in the environment, starts remctld under the program
- * given in that environment variable, assuming valgrind arguments.
- *
  * The path to remctld is obtained from the PATH_REMCTLD #define.  If this is
  * not set, remctld_start_internal calls skip_all.
  *
@@ -160,18 +157,20 @@ remctld_start_internal(struct kerberos_config *krbconf, const char *config,
     if (remctld != 0)
         bail("remctld already running (PID %lu)", (unsigned long) remctld);
 
-    /* Set up the arguments and run remctld. */
+    /* Create a path for the PID file for remctld and remove any old one. */
     tmpdir_pid = test_tmpdir();
     basprintf(&pidfile, "%s/remctld.pid", tmpdir_pid);
     if (access(pidfile, F_OK) == 0)
         if (unlink(pidfile) != 0)
             sysbail("cannot delete %s", pidfile);
+
+    /* Find the configuration file path. */
     confpath = test_file_path(config);
     if (confpath == NULL)
         bail("cannot find remctld config %s", config);
+
+    /* Set up the arguments. */
     length = 11;
-    if (getenv("VALGRIND") != NULL)
-        length += 3;
     if (fakeroot)
         length += 2;
     va_copy(args_copy, args);
@@ -180,17 +179,12 @@ remctld_start_internal(struct kerberos_config *krbconf, const char *config,
     va_end(args_copy);
     argv = bmalloc(length * sizeof(const char *));
     i = 0;
-    if (getenv("VALGRIND") != NULL) {
-        argv[i++] = "valgrind";
-        argv[i++] = "--log-file=valgrind.%p";
-        argv[i++] = "--leak-check=full";
-    }
     if (fakeroot) {
         argv[i++] = path_fakeroot;
         argv[i++] = "--";
     }
     argv[i++] = path_remctld;
-    argv[i++] = "-mdSF";
+    argv[i++] = "-mSF";
     argv[i++] = "-p";
     argv[i++] = "14373";
     argv[i++] = "-s";
@@ -202,47 +196,49 @@ remctld_start_internal(struct kerberos_config *krbconf, const char *config,
     while ((arg = va_arg(args, const char *)) != NULL)
         argv[i++] = arg;
     argv[i] = NULL;
+
+    /* Run remctld. */
     remctld = fork();
     if (remctld < 0)
         sysbail("fork failed");
     else if (remctld == 0) {
-        if (getenv("VALGRIND") != NULL)
-            execv(getenv("VALGRIND"), (char * const *) argv);
-        else if (fakeroot)
+        if (fakeroot)
             execv(path_fakeroot, (char * const *) argv);
         else
             execv(path_remctld, (char * const *) argv);
         sysbail("exec failed");
-    } else {
-        free(argv);
-        test_file_path_free(confpath);
-        for (n = 0; n < 100 && access(pidfile, F_OK) != 0; n++) {
-            tv.tv_sec = 0;
-            tv.tv_usec = 100000;
-            select(0, NULL, NULL, NULL, &tv);
-        }
-        if (access(pidfile, F_OK) != 0) {
-            kill(remctld, SIGTERM);
-            alarm(5);
-            waitpid(remctld, NULL, 0);
-            alarm(0);
-            bail("cannot start remctld");
-        }
-
-        /*
-         * When running under fakeroot, there may be internal forks that
-         * change the PID of the final running process, and when running under
-         * valgrind, we want to grab the final PID.
-         */
-        if (fakeroot || getenv("VALGRIND") != NULL) {
-            remctld = read_pidfile(pidfile);
-            is_child = false;
-        }
-        free(pidfile);
-        if (atexit(remctld_stop) != 0)
-            sysdiag("cannot register cleanup function");
-        return remctld;
     }
+    free(argv);
+    test_file_path_free(confpath);
+
+    /* In the master, wait for remctld to start. */
+    for (n = 0; n < 100 && access(pidfile, F_OK) != 0; n++) {
+        tv.tv_sec = 0;
+        tv.tv_usec = 100000;
+        select(0, NULL, NULL, NULL, &tv);
+    }
+    if (access(pidfile, F_OK) != 0) {
+        kill(remctld, SIGTERM);
+        alarm(5);
+        waitpid(remctld, NULL, 0);
+        alarm(0);
+        bail("cannot start remctld");
+    }
+
+    /*
+     * When running under fakeroot, there may be internal forks that change
+     * the PID of the final running process.
+     */
+    if (fakeroot) {
+        remctld = read_pidfile(pidfile);
+        is_child = false;
+    }
+    free(pidfile);
+
+    /* Register the handler to stop remctld at the end of the test. */
+    if (atexit(remctld_stop) != 0)
+        sysdiag("cannot register cleanup function");
+    return remctld;
 }
 
 
