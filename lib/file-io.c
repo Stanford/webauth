@@ -2,7 +2,7 @@
  * Internal functions for file input/output.
  *
  * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2012
+ * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -72,7 +72,7 @@ wai_file_read(struct webauth_context *ctx, const char *path,
         wai_error_set_apr(ctx, s, code, "%s", path);
         goto done;
     }
-    if (size != finfo.size) {
+    if ((apr_off_t) size != finfo.size) {
         s = WA_ERR_FILE_READ;
         wai_error_set(ctx, s, "%s modified during read", path);
         goto done;
