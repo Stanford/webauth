@@ -43,7 +43,7 @@ is_token_creation(time_t wanted, time_t seen, const char *format, ...)
 
     if (wanted == 0) {
         now = time(NULL);
-        okay = (seen >= now - 5 && seen <= now + 1);
+        okay = (seen >= now - 10 && seen <= now + 1);
     } else {
         okay = (wanted == seen);
     }
@@ -580,15 +580,16 @@ check_login_response(struct webauth_context *ctx,
         pd = &APR_ARRAY_IDX(response->proxies, i,
                             struct webauth_webkdc_proxy_data);
         is_string(test->response.proxies[i].proxy_type, pd->type,
-                  "... type of webkdc-proxy token %d", i);
+                  "... type of webkdc-proxy token %lu", (unsigned long) i);
         type = WA_TOKEN_WEBKDC_PROXY;
         s = webauth_token_decode(ctx, type, pd->token, ring, &token);
-        is_int(WA_ERR_NONE, s, "... webkdc-proxy %d decodes", i);
+        is_int(WA_ERR_NONE, s, "... webkdc-proxy %lu decodes",
+               (unsigned long) i);
         wanted = build_token_webkdc_proxy(ctx, &test->response.proxies[i],
                                           now, krbconf);
         is_token_webkdc_proxy(&wanted->token.webkdc_proxy,
                               &token->token.webkdc_proxy,
-                              "... webkdc-proxy %d", i);
+                              "... webkdc-proxy %lu", (unsigned long) i);
     }
     if (i == 0) {
         ok(response->proxies == NULL, "... has no webkdc-proxy tokens");
@@ -630,7 +631,8 @@ check_login_response(struct webauth_context *ctx,
                "... expiration of webkdc-factor token");
         type = WA_TOKEN_WEBKDC_FACTOR;
         s = webauth_token_decode(ctx, type, fd->token, ring, &token);
-        is_int(WA_ERR_NONE, s, "... webkdc-factor %d decodes", i);
+        is_int(WA_ERR_NONE, s, "... webkdc-factor %lu decodes",
+               (unsigned long) i);
         is_token_webkdc_factor(&wanted->token.webkdc_factor,
                                &token->token.webkdc_factor,
                                "... webkdc-factor");
@@ -713,11 +715,11 @@ check_login_response(struct webauth_context *ctx,
             continue;
         login = &APR_ARRAY_IDX(response->logins, i, struct webauth_login);
         is_string(test->response.logins[i].ip, login->ip,
-                  "... login %d ip", i);
+                  "... login %lu ip", (unsigned long) i);
         is_string(test->response.logins[i].hostname, login->hostname,
-                  "... login %d hostname", i);
+                  "... login %lu hostname", (unsigned long) i);
         is_int(test->response.logins[i].timestamp, login->timestamp,
-               "... login %d timestamp", i);
+               "... login %lu timestamp", (unsigned long) i);
     }
     if (i == 0)
         ok(response->logins == NULL, "... has no login information");
@@ -739,7 +741,7 @@ check_login_response(struct webauth_context *ctx,
             continue;
         authz = APR_ARRAY_IDX(response->permitted_authz, i, const char *);
         is_string(test->response.permitted_authz[i], authz,
-                  "... permitted authz %d", i);
+                  "... permitted authz %lu", (unsigned long) i);
     }
     if (i == 0)
         ok(response->permitted_authz == NULL, "... has no permitted authz");
