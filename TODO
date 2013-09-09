@@ -97,6 +97,9 @@ General:
    will also allow us to enable the modules by default when installed as
    Debian packages.
 
+ * WEBAUTH-171: Update all cache suppression to use a standard
+   Cache-Control header.
+
 libwebauth:
 
  * WEBAUTH-41: Add locking to the code reading and writing keyrings so
@@ -140,6 +143,13 @@ libwebauth:
 
  * WEBAUTH-144: Add the necessary Autoconf glue to allow us to use bool in
    public headers.
+
+ * WEBAUTH-165: Move token ACL handling into libwebauth.
+
+ * WEBAUTH-172: Use krb5_chpw_message to decode the password change error
+   message from Active Directory servers.
+
+ * WEBAUTH-174: Use JSON to communicate with the user information service.
 
 mod_webauth:
 
@@ -191,6 +201,9 @@ mod_webauth:
    that they can be used with the new authorization math support in Apache
    2.4.
 
+ * WEBAUTH-173: Move setting of environment variables to fixups so that it
+   works properly with WebAuthOptional in Apache 2.4.
+
 mod_webauthldap:
 
  * WEBAUTH-55: User request: There's no inherent reason why
@@ -215,6 +228,8 @@ mod_webauthldap:
 
  * WEBAUTH-124: Clean up the Apache 2.4 support and improve the way that
    the Apache version conditionals are handled.
+
+ * WEBAUTH-169: Replace Kerberos code with use of libwebauth.
 
 mod_webkdc:
 
@@ -249,18 +264,22 @@ mod_webkdc:
    the WebLogin server can choose whether to tell the user about them.
    This will let us remove the token.acl parser in WebLogin.
 
- * Fix the logic for required session factors to work properly when the
-   initial authentication factor is not password.  For example, a
-   combination of X.509 and OTP authentication should satisfy a
+ * WEBAUTH-161: Fix the logic for required session factors to work
+   properly when the initial authentication factor is not password.  For
+   example, a combination of X.509 and OTP authentication should satisfy a
    requirement for a session "m" factor, but currently mod_webkdc will
    return a forced authentication error, which WebLogin will turn into a
    password prompt.
 
- * In some cases, such as when the user entered a non-ASCII username, the
-   error reply from the WebKDC is invalid XML because it contains
-   non-ASCII characters that aren't encoded in UTF-8.  Figure out
+ * WEBAUTH-162: In some cases, such as when the user entered a non-ASCII
+   username, the error reply from the WebKDC is invalid XML because it
+   contains non-ASCII characters that aren't encoded in UTF-8.  Figure out
    something reasonable to do in this case so that the WebKDC always
    generates valid XML.
+
+ * WEBAUTH-166: Return token ACL information to WebLogin over protocol so
+   that WebLogin doesn't have to have its own parser to figure out which
+   service tickets may be delegated.
 
 WebLogin:
 
@@ -309,10 +328,13 @@ WebLogin:
    cookies should *not* be retained on this system, remember that choice
    and change the default.
 
- * There should be a better way of distinguishing between fatal OTP
-   validation errors and transient OTP validation errors so that WebLogin
-   can choose whether to put up a dead-end error page or to return the
-   multifactor login page again.  Currently, it always does the latter.
+ * WEBAUTH-163: There should be a better way of distinguishing between
+   fatal OTP validation errors and transient OTP validation errors so that
+   WebLogin can choose whether to put up a dead-end error page or to
+   return the multifactor login page again.  Currently, it always does the
+   latter.
+
+ * WEBAUTH-175: Ignore whitespace around the username.
 
 Perl Modules:
 
@@ -326,6 +348,8 @@ Perl Modules:
  * WEBAUTH-137: Include in the distribution as much as possible of the
    Stanford user information service implementation as a basis upon which
    other sites can write their own.
+
+ * WEBAUTH-168: Replace XML parsing with XML::TreeBuilder.
 
 Scripts:
 
@@ -371,7 +395,10 @@ Test Suite:
  * WEBAUTH-151: Script the analysis of valgrind output from
    check-valgrind.
 
- * Add tests for the info logging in the token merge functions.
+ * WEBAUTH-164: Add tests for the info logging in the token merge
+   functions.
+
+ * WEBAUTH-167: Test more attribute encoding edge cases.
 
 Documentation:
 
@@ -411,6 +438,8 @@ Documentation:
  * WEBAUTH-154: Write XML schemas for all of the XML documents that the
    WebAuth components exchange, including the interactions with the user
    information service.
+
+ * WEBAUTH-170: Copy how mod_fcgid handles manual section links.
 
 Style:
 
