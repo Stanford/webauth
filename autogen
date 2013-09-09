@@ -35,7 +35,11 @@ lib/encoding-rules include/webauth/tokens.h                     \
     webauth_token_webkdc_proxy webauth_token_webkdc_service     \
     > lib/rules-tokens.c
 
-# Generate protocol documentation.
-cd docs
-xml2rfc protocol.xml protocol.html
-xml2rfc protocol.xml protocol.txt
+# Generate protocol documentation if xml2rfc is available.
+if command -v xml2rfc 2>&1 >/dev/null ; then
+    cd docs
+    xml2rfc protocol.xml protocol.html
+    xml2rfc protocol.xml protocol.txt
+else
+    echo 'xml2rfc not found, not building protocol documentation' >&2
+fi
