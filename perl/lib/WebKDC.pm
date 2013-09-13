@@ -303,7 +303,7 @@ sub request_token_request {
 
     # Parse the response.  For some reason, XML::Parser exceptions tend to
     # start with a newline.
-    $root = eval { WebKDC::XmlElement->new ($http_res->content) };
+    $root = eval { WebKDC::XmlElement->new ($content) };
     if ($@) {
         my $error = $@;
         $error =~ s{ \A \s+ }{}xms;
