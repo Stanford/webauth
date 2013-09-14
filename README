@@ -215,8 +215,8 @@ SUPPORT
   webauth-info.  The newsgroup additionally gets all messages to
   webauth-announce as well.
 
-  For Stanford affiliates, the WebAuth modules are a supported product of
-  the ITSS Infrastructure Services team.  You can report problems or
+  For Stanford affiliates, the WebAuth modules are a supported product
+  of the ITS Infrastructure Delivery Group.  You can report problems or
   request help with WebAuth by submitting a HelpSU ticket at:
 
       <https://remedyweb.stanford.edu/helpsu/helpsu>
@@ -289,7 +289,8 @@ LICENSE
   statement and license:
 
     Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
-      2012 The Board of Trustees of the Leland Stanford Junior University
+      2012, 2013
+      The Board of Trustees of the Leland Stanford Junior University
 
     Permission is hereby granted, free of charge, to any person obtaining
     a copy of this software and associated documentation files (the
