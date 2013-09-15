@@ -57,7 +57,8 @@ check_status(struct webauth_context *ctx, int s, const char *message,
 /*
  * Obtain Kerberos credentials from the configured keytab, but set addresses
  * on the ticket.  This tests encoding of tickets with addresses (which has
- * had bugs in the past).  Returns the path to a new Kerberos cache.
+ * had bugs in the past).  Returns the path to a new Kerberos cache or NULL if
+ * we can't get tickets because the KDC won't let us.
  */
 static char *
 kinit_with_addresses(struct kerberos_config *config)
@@ -103,7 +104,15 @@ kinit_with_addresses(struct kerberos_config *config)
         bail_krb5(ctx, code, "cannot open keytab %s", config->keytab);
     code = krb5_get_init_creds_keytab(ctx, &creds, kprinc, keytab, 0, krbtgt,
                                       opts);
-    if (code != 0)
+
+    /*
+     * If the return status is KRB5KRB_AP_ERR_BADADDR, the KDC is enforcing a
+     * requirement that we only get our own ticket addresses, so we can't run
+     * this check.
+     */
+    if (code == KRB5KRB_AP_ERR_BADADDR)
+        return NULL;
+    else if (code != 0)
         bail_krb5(ctx, code, "cannot get Kerberos tickets");
 
     /* Store them in the ticket cache. */
@@ -287,16 +296,20 @@ main(void)
 
     /* Test getting a ticket with addresses and then exporting it. */
     cache = kinit_with_addresses(config);
-    s = webauth_krb5_new(ctx, &kc);
-    CHECK(ctx, s, "Creating a new context");
-    s = webauth_krb5_init_via_cache(ctx, kc, cache);
-    CHECK(ctx, s, "Initializing from a cache of address-locked tickets");
-    tgt = NULL;
-    s = webauth_krb5_export_cred(ctx, kc, NULL, &tgt, &tgtlen, NULL);
-    CHECK(ctx, s, "Exporting a TGT");
-    ok(tgt != NULL, "...and the TGT is not NULL");
-    free(cache);
-    webauth_krb5_free(ctx, kc);
+    if (cache == NULL)
+        skip_block(4, "Cannot get tickets with a specific address");
+    else {
+        s = webauth_krb5_new(ctx, &kc);
+        CHECK(ctx, s, "Creating a new context");
+        s = webauth_krb5_init_via_cache(ctx, kc, cache);
+        CHECK(ctx, s, "Initializing from a cache of address-locked tickets");
+        tgt = NULL;
+        s = webauth_krb5_export_cred(ctx, kc, NULL, &tgt, &tgtlen, NULL);
+        CHECK(ctx, s, "Exporting a TGT");
+        ok(tgt != NULL, "...and the TGT is not NULL");
+        free(cache);
+        webauth_krb5_free(ctx, kc);
+    }
 
     /* Test specifying an explicit cache file and getting it back. */
     s = webauth_krb5_new(ctx, &kc);
