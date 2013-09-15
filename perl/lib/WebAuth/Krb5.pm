@@ -92,12 +92,6 @@ identity and its corresponding ticket cache.  A context is normally
 initiated with credentials from a username and password, a keytab, an
 existing ticket cache, or an exported credential.
 
-A WebAuth::Krb5 object will be destroyed when the WebAuth context used to
-create it is destroyed, and subsequent accesses to it may cause memory
-access errors or other serious bugs.  Be careful not to retain a copy of a
-WebAuth::Krb5 object after the WebAuth object that created it has been
-destroyed.
-
 =head1 CLASS METHODS
 
 As with WebAuth module functions, failures are signaled by throwing
@@ -229,6 +223,17 @@ value in a list context will be a two-element list containing the
 principal and the decrypted data.
 
 =back
+
+=head1 CAVEATS
+
+A WebAuth::Krb5 object will retain a reference to the WebAuth object that
+was used to create it and will prevent the WebAuth context from being
+freed until the WebAuth::Krb5 object can be freed.  This ensures that
+objects don't disappear at inappropriate times, but it also means that no
+memory allocated in the WebAuth context, even if unrelated to the
+WebAuth::Krb5 object, will be freed until all objects created from it are
+freed.  Creating and holding on to references to WebAuth::Krb5 objects for
+long periods may therefore result in unexpected memory usage.
 
 =head1 AUTHOR
 

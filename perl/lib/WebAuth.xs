@@ -48,14 +48,15 @@ typedef const struct webauth_keyring_entry *    WebAuth__KeyringEntry;
 /*
  * For WebAuth::Keyring and WebAuth::Krb5, we need to stash a copy of the
  * parent context somewhere so that we don't require it as an argument to all
- * methods.
+ * methods and so that we can keep a reference to it so that the context is
+ * not garbage-collected until all of its objects are out of scope.
  */
 typedef struct {
     struct webauth_context *ctx;
     struct webauth_keyring *ring;
 } *WebAuth__Keyring;
 typedef struct {
-    struct webauth_context *ctx;
+    SV *ctx;
     struct webauth_krb5 *kc;
 } *WebAuth__Krb5;
 
@@ -336,6 +337,25 @@ map_hash_to_token(struct token_mapping mapping[], HV *hash, const void *token)
 
 
 /*
+ * Given an SV representing a WebAuth object, return the underlying struct
+ * webauth_context pointer for use with direct WebAuth calls.  Takes the type
+ * of object from which the context is being retrieved for error reporting.
+ */
+static struct webauth_context *
+get_ctx(SV *ctx_sv, const char *type)
+{
+    IV ctx_iv;
+    struct webauth_context *ctx;
+
+    if (ctx_sv == NULL)
+        croak("no WebAuth context in %s object", type);
+    ctx_iv = SvIV(ctx_sv);
+    ctx = INT2PTR(struct webauth_context *, ctx_iv);
+    return ctx;
+}
+
+
+/*
  * Turn a WebAuth error into a Perl exception.
  */
 static void __attribute__((__noreturn__))
@@ -599,7 +619,8 @@ krb5_new(self)
     status = webauth_krb5_new(self, &krb5->kc);
     if (status != WA_ERR_NONE)
         webauth_croak(self, "webauth_krb5_new", status);
-    krb5->ctx = self;
+    krb5->ctx = SvRV(ST(0));
+    SvREFCNT_inc_simple_void_NN(krb5->ctx);
     RETVAL = krb5;
 }
   OUTPUT:
@@ -956,11 +977,15 @@ MODULE = WebAuth  PACKAGE = WebAuth::Krb5
 void
 DESTROY(self)
     WebAuth::Krb5 self
+  PREINIT:
+    struct webauth_context *ctx;
   CODE:
 {
     if (self == NULL)
         return;
-    webauth_krb5_free(self->ctx, self->kc);
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
+    webauth_krb5_free(ctx, self->kc);
+    SvREFCNT_dec(self->ctx);
     free(self);
 }
 
@@ -971,14 +996,16 @@ init_via_cache(self, cache = NULL)
     const char *cache
   PREINIT:
     int status;
+    struct webauth_context *ctx;
   CODE:
 {
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "init_via_cache");
     if (cache != NULL && cache[0] == '\0')
         cache = NULL;
-    status = webauth_krb5_init_via_cache(self->ctx, self->kc, cache);
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
+    status = webauth_krb5_init_via_cache(ctx, self->kc, cache);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_init_via_cache", status);
+        webauth_croak(ctx, "webauth_krb5_init_via_cache", status);
 }
 
 
@@ -990,15 +1017,17 @@ init_via_keytab(self, keytab, server = NULL, cache = NULL)
     const char *cache
   PREINIT:
     int status;
+    struct webauth_context *ctx;
   CODE:
 {
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "init_via_keytab");
     if (server != NULL && server[0] == '\0')
        server = NULL;
-    status = webauth_krb5_init_via_keytab(self->ctx, self->kc, keytab, server,
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
+    status = webauth_krb5_init_via_keytab(ctx, self->kc, keytab, server,
                                           cache);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_init_via_keytab", status);
+        webauth_croak(ctx, "webauth_krb5_init_via_keytab", status);
 }
 
 
@@ -1015,6 +1044,7 @@ init_via_password(self, username, password, principal = NULL, keytab = NULL, \
   PREINIT:
     char *servername;
     int status;
+    struct webauth_context *ctx;
   CODE:
 {
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "init_via_password");
@@ -1022,11 +1052,12 @@ init_via_password(self, username, password, principal = NULL, keytab = NULL, \
        principal = NULL;
     if (server != NULL && server[0] == '\0')
        server = NULL;
-    status = webauth_krb5_init_via_password(self->ctx, self->kc, username,
-                                            password, principal, keytab,
-                                            server, cache, &servername);
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
+    status = webauth_krb5_init_via_password(ctx, self->kc, username, password,
+                                            principal, keytab, server, cache,
+                                            &servername);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_init_via_password", status);
+        webauth_croak(ctx, "webauth_krb5_init_via_password", status);
     else if (principal == NULL && keytab != NULL)
         RETVAL = servername;
     else
@@ -1047,14 +1078,16 @@ export_cred(self, principal = NULL)
     time_t expiration;
     SV *out;
     int status;
+    struct webauth_context *ctx;
 
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "export_cred");
     if (principal != NULL && principal[0] == '\0')
         principal = NULL;
-    status = webauth_krb5_export_cred(self->ctx, self->kc, principal, &cred,
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
+    status = webauth_krb5_export_cred(ctx, self->kc, principal, &cred,
                                       &cred_len, &expiration);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_export_cred", status);
+        webauth_croak(ctx, "webauth_krb5_export_cred", status);
 
     /*
      * Return just the exported cred in scalar context, and an array of the
@@ -1082,14 +1115,15 @@ import_cred(self, cred, cache = NULL)
     const void *data;
     size_t length;
     int status;
+    struct webauth_context *ctx;
   CODE:
 {
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "import_cred");
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
     data = SvPV(cred, length);
-    status = webauth_krb5_import_cred(self->ctx, self->kc, data, length,
-                                      cache);
+    status = webauth_krb5_import_cred(ctx, self->kc, data, length, cache);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_import_cred", status);
+        webauth_croak(ctx, "webauth_krb5_import_cred", status);
 }
 
 
@@ -1100,13 +1134,14 @@ get_principal(self, canon = 0)
   PREINIT:
     int status;
     char *principal;
+    struct webauth_context *ctx;
   CODE:
 {
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "get_principal");
-    status = webauth_krb5_get_principal(self->ctx, self->kc, &principal,
-                                        canon);
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
+    status = webauth_krb5_get_principal(ctx, self->kc, &principal, canon);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_get_principal", status);
+        webauth_croak(ctx, "webauth_krb5_get_principal", status);
     RETVAL = principal;
 }
   OUTPUT:
@@ -1126,15 +1161,17 @@ make_auth(self, server, data = NULL)
     const void *in_data = NULL;
     size_t in_length = 0;
     int status;
+    struct webauth_context *ctx;
 
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "make_auth");
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
     if (data != NULL)
         in_data = SvPV(data, in_length);
-    status = webauth_krb5_make_auth_data(self->ctx, self->kc, server, &req,
-                                         &length, in_data, in_length,
-                                         &out_data, &out_length);
+    status = webauth_krb5_make_auth_data(ctx, self->kc, server, &req, &length,
+                                         in_data, in_length, &out_data,
+                                         &out_length);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_make_auth_data", status);
+        webauth_croak(ctx, "webauth_krb5_make_auth_data", status);
 
     /*
      * Return just the authenticator in scalar context, and an array of the
@@ -1174,18 +1211,20 @@ read_auth(self, request, keytab, server = NULL, canon = 0, data = NULL)
     char *client;
     SV *out;
     int status;
+    struct webauth_context *ctx;
 
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "read_auth");
+    if (server != NULL && server[0] == '\0')
+       server = NULL;
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
     req = SvPV(request, req_len);
     if (data != NULL)
         in_data = SvPV(data, in_len);
-    if (server != NULL && server[0] == '\0')
-       server = NULL;
-    status = webauth_krb5_read_auth_data(self->ctx, self->kc, req, req_len,
-                                         keytab, server, NULL, &client, canon,
+    status = webauth_krb5_read_auth_data(ctx, self->kc, req, req_len, keytab,
+                                         server, NULL, &client, canon,
                                          in_data, in_len, &out_data, &out_len);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_read_auth_data", status);
+        webauth_croak(ctx, "webauth_krb5_read_auth_data", status);
 
     /*
      * Return just the client identity in scalar context, and an array of the
@@ -1211,12 +1250,14 @@ change_password(self, password)
     const char *password
   PREINIT:
     int status;
+    struct webauth_context *ctx;
   CODE:
 {
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "change_password");
-    status = webauth_krb5_change_password(self->ctx, self->kc, password);
+    ctx = get_ctx(self->ctx, "WebAuth::Krb5");
+    status = webauth_krb5_change_password(ctx, self->kc, password);
     if (status != WA_ERR_NONE)
-        webauth_croak(self->ctx, "webauth_krb5_change_password", status);
+        webauth_croak(ctx, "webauth_krb5_change_password", status);
 }
 
 
