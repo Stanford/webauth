@@ -23,7 +23,7 @@
  * An address list for testing.  The data structure is completely different
  * between MIT and Heimdal.
  */
-static const unsigned char test_addr_data[4] = { 171, 67, 225, 134 };
+static const unsigned char test_addr_data[4] = { 192, 0, 2, 10 };
 #ifdef HAVE_KRB5_MIT
 static const krb5_address test_addr = {
     KV5M_ADDRESS, ADDRTYPE_INET, 4, (unsigned char *) test_addr_data
