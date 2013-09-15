@@ -75,38 +75,77 @@ $weblogin->query->param ('password', $password);
 $weblogin->query->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
 my ($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
-is ($error, undef, '... with no error');
-ok (verify_password ($username, $newpassword), '... and password was changed');
 
-# And undo it.
-$weblogin->query->param ('password', $newpassword);
-$weblogin->query->param ('new_passwd1', $password);
-($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
-is ($error, undef, '... with no error');
-ok (verify_password ($username, $password), '... and password was changed');
+# If this test is being run behind NAT, the Kerberos password change protocol
+# may fail.  MIT returns "Incorrect net address" and Heimdal returns "Unable
+# to reach any changepw server".  Detect those errors and skip the remaining
+# tests that require talking to the server.
+#
+# It looks like the password is often changed despite the error reported to
+# the client, so if this looks like what happened, also change the password
+# back just in case.
+SKIP: {
+    if ($error &&
+        ($error =~ /Incorrect net address/
+         || $error =~ /Unable to reach any changepw server/)) {
+        $weblogin->query->param ('password', $newpassword);
+        $weblogin->query->param ('new_passwd1', $password);
+        ($status, $error) = $weblogin->change_user_password;
+        skip 'Password change fails (behind NAT?)', 13;
+    }
 
-# Test going to change_user_password with password but not CPT (should work)
-$weblogin->param ('CPT', '');
-$query = new CGI;
-$weblogin->query ($query);
-$weblogin->query->param ('username', $username);
-$weblogin->query->param ('password', $password);
-$weblogin->query->param ('new_passwd1', $newpassword);
-($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS,
-    'changing the password with old password but no CPT works');
-is ($error, undef, '... with no error');
-ok (verify_password ($username, $newpassword), '... and password was changed');
+    is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
+    is ($error, undef, '... with no error');
+    ok (verify_password ($username, $newpassword),
+        '... and password was changed');
 
-# And undo it.
-$weblogin->query->param ('password', $newpassword);
-$weblogin->query->param ('new_passwd1', $password);
-($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
-is ($error, undef, '... with no error');
-ok (verify_password ($username, $password), '... and password was changed');
+    # And undo it.
+    $weblogin->query->param ('password', $newpassword);
+    $weblogin->query->param ('new_passwd1', $password);
+    ($status, $error) = $weblogin->change_user_password;
+    is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
+    is ($error, undef, '... with no error');
+    ok (verify_password ($username, $password),
+        '... and password was changed');
+
+    # Test going to change_user_password with password but not CPT (should
+    # work)
+    $weblogin->param ('CPT', '');
+    $query = new CGI;
+    $weblogin->query ($query);
+    $weblogin->query->param ('username', $username);
+    $weblogin->query->param ('password', $password);
+    $weblogin->query->param ('new_passwd1', $newpassword);
+    ($status, $error) = $weblogin->change_user_password;
+    is ($status, WebKDC::WK_SUCCESS,
+        'changing the password with old password but no CPT works');
+    is ($error, undef, '... with no error');
+    ok (verify_password ($username, $newpassword),
+        '... and password was changed');
+
+    # And undo it.
+    $weblogin->query->param ('password', $newpassword);
+    $weblogin->query->param ('new_passwd1', $password);
+    ($status, $error) = $weblogin->change_user_password;
+    is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
+    is ($error, undef, '... with no error');
+    ok (verify_password ($username, $password),
+        '... and password was changed');
+
+    # Test trying a simple password 'abc' (should not work)
+    # FIXME: Test exact error code, not isn't.  Allow success or failure if
+    # it's not strong enough password (and if success, change the password
+    # back).
+    $query = new CGI;
+    $weblogin->query ($query);
+    $weblogin->query->param ('username', $username);
+    $weblogin->query->param ('password', $password);
+    $weblogin->query->param ('new_passwd1', 'cat');
+    $weblogin->add_changepw_token;
+    ($status, $error) = $weblogin->change_user_password;
+    isnt ($status, WebKDC::WK_SUCCESS,
+          'changing the password to dictionary word fails');
+}
 
 # Test going to change_user_password no CPT or password (should not work).
 $query = new CGI;
@@ -117,19 +156,6 @@ $weblogin->param ('CPT', '');
 ($status, $error) = $weblogin->change_user_password;
 isnt ($status, WebKDC::WK_SUCCESS,
       'changing the password without password or CPT fails');
-
-# Test trying a simple password 'abc' (should not work)
-# FIXME: Test exact error code, not isn't.  Allow success or failure if it's
-# not strong enough password (and if success, change the password back).
-$query = new CGI;
-$weblogin->query ($query);
-$weblogin->query->param ('username', $username);
-$weblogin->query->param ('password', $password);
-$weblogin->query->param ('new_passwd1', 'cat');
-$weblogin->add_changepw_token;
-($status, $error) = $weblogin->change_user_password;
-isnt ($status, WebKDC::WK_SUCCESS,
-    'changing the password to dictionary word fails');
 
 # Test creating CPT, then sending different username to change_user_password
 # (should not work)
