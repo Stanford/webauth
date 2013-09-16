@@ -461,10 +461,18 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
     krb5_error_code code;
     int s;
 
-    /* Initialize arguments and set up ticket cache. */
+    /*
+     * Initialize arguments and set up ticket cache.  Translate malformed
+     * principal errors into WA_PEC_USER_REJECTED instead of generic Kerberos
+     * errors.
+     */
     code = krb5_parse_name(kc->ctx, username, &kc->princ);
-    if (code != 0)
-        return error_set(ctx, kc, code, "cannot parse principal %s", username);
+    if (code != 0) {
+        s = error_set(ctx, kc, code, "cannot parse principal %s", username);
+        if (code == KRB5_PARSE_MALFORMED)
+            s = wai_error_change(ctx, s, WA_PEC_USER_REJECTED);
+        return s;
+    }
     s = setup_cache(ctx, kc, cache);
     if (s != WA_ERR_NONE)
         return s;

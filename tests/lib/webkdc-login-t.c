@@ -83,6 +83,39 @@ static const struct wat_login_test tests_login[] = {
         },
     },
 
+    /* Attempt a login with a malformatted principal. */
+    {
+        "Login with malformatted principal",
+        WA_PEC_USER_REJECTED,
+        "Kerberos error",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "example\\", "testpassword", NULL, NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, "data", 4, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
     /* Pass in a webkdc-proxy token and obtain an id token. */
     {
         "webkdc-proxy authentication",

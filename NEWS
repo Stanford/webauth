@@ -5,10 +5,11 @@ WebAuth 4.5.6 (unreleased)
     Set the correct template variable when the code field is left blank on
     the WebLogin multifactor form.
 
-    Map unknown realm errors during Kerberos authentication in mod_webkdc
-    to WA_PEC_USER_REJECTED instead of a generic Kerberos error.  This
-    will display a more accurate error message to the user of WebLogin
-    instead of a generic internal error message.
+    Map unknown realm and invalid principal errors during Kerberos
+    authentication in mod_webkdc to WA_PEC_USER_REJECTED instead of a
+    generic Kerberos error.  This will display a more accurate error
+    message to the user of WebLogin instead of a generic internal error
+    message.
 
     Correct a bug in the workaround for parsing of invalid XML from the
     WebKDC in WebLogin that caused it to not be effective.
