@@ -68,6 +68,39 @@ static const struct wat_login_test tests_no_local[] = {
         },
     },
 
+    /* Basic test for login failure with a valid username and bad password. */
+    {
+        "Login with incorrect password",
+        WA_PEC_LOGIN_FAILED,
+        "Kerberos error",
+        {
+            { "<krb5-principal>", 0, 0 },
+            {
+                { "<userprinc>", "BAD<password>", NULL, NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, "data", 4, "https://example.com/", NULL,
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
     /*
      * The same, but with forced authentication and explicitly requesting a
      * Kerberos authenticator.  Also check that multiple request options are

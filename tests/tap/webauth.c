@@ -774,7 +774,7 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     struct webauth_webkdc_login_response *response;
     struct webauth_webkdc_proxy_data *pd;
     apr_array_header_t *wkproxies, *wkfactors, *logins;
-    char *wanted;
+    char *wanted, *seen, *p;
     const char *message;
     const char **encoded;
     int s;
@@ -873,7 +873,9 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
     /*
      * Check the WebAuth status code and message.  We need a better templating
      * system for the login message; in the meantime, recognize the one
-     * substitution we need to make.
+     * substitution we need to make and, if there is no parenthetical in the
+     * desired error message, strip off the parenthetical in the seen error
+     * message.
      */
     if (s != WA_ERR_NONE && test->status == WA_ERR_NONE)
         diag("%s", webauth_error_message(ctx, s));
@@ -887,6 +889,12 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
         is_string(wanted, webauth_error_message(ctx, s),
                   "... and error message");
         free(wanted);
+    } else if (test->error != NULL && strchr(test->error, '(') == NULL) {
+        seen = bstrdup(webauth_error_message(ctx, s));
+        p = strchr(seen, '(');
+        if (p != NULL && p > seen)
+            *(p - 1) = '\0';
+        is_string(test->error, seen, "... and error message");
     } else {
         message = webauth_error_message(ctx, s);
         is_string(test->error, message, "... and error message");
