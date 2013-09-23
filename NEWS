@@ -2,6 +2,12 @@
 
 WebAuth 4.5.6 (unreleased)
 
+    Be even more thorough in telling browsers not to cache responses from
+    WebLogin, redirects and logout pages from mod_webauth, and any page
+    marked with WebAuthDontCache.  Add private and max-age=0 to the
+    existing Cache-Control headers, add Vary: *, and (for WebLogin pages)
+    set an expiration time in the past.
+
     Set the correct template variable when the code field is left blank on
     the WebLogin multifactor form.
 

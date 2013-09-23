@@ -97,9 +97,6 @@ General:
    will also allow us to enable the modules by default when installed as
    Debian packages.
 
- * WEBAUTH-171: Update all cache suppression to use a standard
-   Cache-Control header.
-
 libwebauth:
 
  * WEBAUTH-41: Add locking to the code reading and writing keyrings so

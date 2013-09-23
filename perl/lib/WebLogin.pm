@@ -440,15 +440,19 @@ sub print_headers {
         push (@ca, $cookie);
     }
 
-    # Now, print out the page header with the appropriate cookies.
+    # Now, print out the page header with the appropriate cookies and with all
+    # the HTTP headers required to tell all browser to, no, really, don't
+    # cache.
     my @params;
     if ($return_url) {
         push (@params, -location => $return_url,
               -status => $use_303 ? '303 See Also' : '302 Moved');
     }
     push (@params, -cookie => [@ca]) if @ca;
-    $self->header_props (-type => 'text/html', -Pragma => 'no-cache',
-                         -Cache_Control => 'no-cache, no-store', @params);
+    my $cache_control = 'private, no-cache, no-store, max-age=0';
+    $self->header_props (-type => 'text/html', -expires => '-1d',
+                         -Pragma => 'no-cache', -Vary => '*',
+                         -Cache_Control => $cache_control, @params);
     return '';
 }
 
@@ -668,7 +672,6 @@ sub print_error_page {
     # Print out the error page.
     my %args = (cookies => $resp->cookies);
     $self->print_headers (\%args);
-    $self->header_add (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
