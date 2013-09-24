@@ -24,6 +24,9 @@
 
 APLOG_USE_MODULE(webauth);
 
+#if MODULE_MAGIC_NUMBER_MAJOR >= 20111201
+#define HTTPD24 1
+#endif
 
 static void
 dont_cache(MWA_REQ_CTXT *rc)
@@ -468,6 +471,35 @@ mod_webauth_child_init(apr_pool_t *p UNUSED, server_rec *s UNUSED)
     /* nothing for now */
 }
 
+static int mod_webauth_create_request(request_rec *r)
+{
+    MWA_REQ_CTXT *rc;
+    rc = apr_pcalloc(r->pool, sizeof(MWA_REQ_CTXT));
+    if (!rc)
+        return HTTP_INTERNAL_SERVER_ERROR;
+    rc->r = r;
+    ap_set_module_config(r->request_config, &webauth_module, rc);
+    return OK;
+}
+
+/*
+ * Used to allocate mod_webauth's context
+ * In the 2.2 httpd, called from access_checker,
+ * in the 2.4 httpd, called from post_perdir_config
+ */
+static int mod_webauth_post_config(request_rec *r) {
+    MWA_REQ_CTXT *rc = (MWA_REQ_CTXT *)
+        ap_get_module_config(r->request_config, &webauth_module);
+    rc->dconf = ap_get_module_config(r->per_dir_config, &webauth_module);
+    rc->sconf = ap_get_module_config(r->server->module_config, &webauth_module);
+#ifdef HTTPD24
+    // post_perdir_config says:
+    return OK;
+#else
+    // access_checker says:
+    return DECLINED;
+#endif
+}
 
 static const char *
 status_check_access(const char *path, apr_int32_t flag, request_rec *r)
@@ -1916,12 +1948,12 @@ check_user_id_hook(request_rec *r)
     char *wte, *wtc, *wtlu, *wif, *wsf, *wloa;
     const char *subject, *authz;
     bool trust_authz;
-    MWA_REQ_CTXT rc;
+    MWA_REQ_CTXT *rc;
     int status;
 
-    memset(&rc, 0, sizeof(rc));
-    rc.r = r;
-    status = webauth_context_init_apr(&rc.ctx, rc.r->pool);
+    rc = ap_get_module_config(r->request_config, &webauth_module);
+
+    status = webauth_context_init_apr(&rc->ctx, rc->r->pool);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
                      "mod_webauth: webauth_context_init failed: %s",
@@ -1929,25 +1961,23 @@ check_user_id_hook(request_rec *r)
         return DECLINED;
     }
 
-    rc.dconf = ap_get_module_config(r->per_dir_config, &webauth_module);
-    rc.sconf = ap_get_module_config(r->server->module_config, &webauth_module);
-    if (rc.sconf->debug)
+    if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                      "mod_webauth: in check_user_id hook(%s)",
-                     rc.r->unparsed_uri != NULL ?
-                     rc.r->unparsed_uri : "null-uri");
+                     rc->r->unparsed_uri != NULL ?
+                     rc->r->unparsed_uri : "null-uri");
 
     if ((at == NULL) ||
         ((strcmp(at, "WebAuth") != 0) &&
-         (rc.sconf->auth_type == NULL ||
-          strcmp(at, rc.sconf->auth_type) != 0))) {
+         (rc->sconf->auth_type == NULL ||
+          strcmp(at, rc->sconf->auth_type) != 0))) {
         return DECLINED;
     }
 
     /* check to see if SSL is required */
-    if (rc.sconf->require_ssl && !is_https(r)) {
-        if (rc.sconf->ssl_redirect) {
-            return ssl_redirect(&rc);
+    if (rc->sconf->require_ssl && !is_https(r)) {
+        if (rc->sconf->ssl_redirect) {
+            return ssl_redirect(rc);
         } else {
             ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
                          "mod_webauth: connection is not https, "
@@ -1959,15 +1989,15 @@ check_user_id_hook(request_rec *r)
     /* first check if we've already validated the user */
     subject = mwa_get_note(r, N_SUBJECT);
     if (subject == NULL) {
-        int code = gather_tokens(&rc);
+        int code = gather_tokens(rc);
 
         if (code != OK)
             return code;
-        if (rc.at != NULL) {
+        if (rc->at != NULL) {
             /* stick it in note for future reference */
-            subject = rc.at->subject;
-            authz = rc.at->authz_subject;
-            if (rc.sconf->debug)
+            subject = rc->at->subject;
+            authz = rc->at->authz_subject;
+            if (rc->sconf->debug)
                 ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                              "mod_webauth: stash note, user(%s), authz(%s)",
                              subject, authz == NULL ? "" : authz);
@@ -1977,14 +2007,14 @@ check_user_id_hook(request_rec *r)
         }
     } else {
         authz = mwa_get_note(r, N_AUTHZ_SUBJECT);
-        if (rc.sconf->debug)
+        if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                          "mod_webauth: found note, user(%s), authz(%s)",
                          subject, authz == NULL ? "" : authz);
     }
 
     /* If WebAuth is optional and the user isn't authenticated, we're done. */
-    if (subject == NULL && rc.at == NULL && rc.dconf->optional)
+    if (subject == NULL && rc->at == NULL && rc->dconf->optional)
         return OK;
 
     /*
@@ -1992,7 +2022,7 @@ check_user_id_hook(request_rec *r)
      * gather_tokens should set us up for a redirect and not return OK.  We
      * put this here as a safety net.
      */
-    if (subject == NULL && rc.at == NULL) {
+    if (subject == NULL && rc->at == NULL) {
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
                      "mod_webauth: check_user_id_hook subject still NULL!");
         return HTTP_UNAUTHORIZED;
@@ -2003,9 +2033,9 @@ check_user_id_hook(request_rec *r)
      * authorization identity if there is one.  Otherwise, set it to the
      * authentication identity.
      */
-    trust_authz = rc.dconf->trust_authz_identity_set
-        ? rc.dconf->trust_authz_identity
-        : rc.sconf->trust_authz_identity;
+    trust_authz = rc->dconf->trust_authz_identity_set
+        ? rc->dconf->trust_authz_identity
+        : rc->sconf->trust_authz_identity;
     if (trust_authz && authz != NULL) {
         ap_log_error(APLOG_MARK, APLOG_INFO, 0, r->server,
                      "mod_webauth: user %s authorized as %s", subject, authz);
@@ -2014,7 +2044,7 @@ check_user_id_hook(request_rec *r)
         r->user = (char *) subject;
     }
     r->ap_auth_type = (char *) at;
-    if (rc.sconf->debug)
+    if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                      "mod_webauth: check_user_id_hook setting user(%s)",
                      r->user);
@@ -2027,48 +2057,48 @@ check_user_id_hook(request_rec *r)
      * FIXME: This is only run when we have an app token, which means that if
      * we get the identity from a note, we skip all of that.  Is that correct?
      */
-    mwa_setenv(&rc, ENV_WEBAUTH_USER, subject);
+    mwa_setenv(rc, ENV_WEBAUTH_USER, subject);
     if (authz != NULL)
-        mwa_setenv(&rc, ENV_WEBAUTH_AUTHZ_USER, authz);
-    if (rc.at != NULL) {
-        wte = rc.at->expiration ?
-            apr_psprintf(rc.r->pool, "%d", (int) rc.at->expiration) : NULL;
-        wtc = rc.at->creation ?
-            apr_psprintf(rc.r->pool, "%d", (int) rc.at->creation) : NULL;
-        wtlu = rc.at->last_used ?
-            apr_psprintf(rc.r->pool, "%d", (int) rc.at->last_used) : NULL;
-        wif = rc.at->initial_factors != NULL ?
-            apr_pstrdup(rc.r->pool, rc.at->initial_factors) : NULL;
-        wsf = rc.at->session_factors != NULL ?
-            apr_pstrdup(rc.r->pool, rc.at->session_factors) : NULL;
-        wloa = rc.at->loa > 0 ?
-            apr_psprintf(rc.r->pool, "%lu", (unsigned long) rc.at->loa) : NULL;
+        mwa_setenv(rc, ENV_WEBAUTH_AUTHZ_USER, authz);
+    if (rc->at != NULL) {
+        wte = rc->at->expiration ?
+            apr_psprintf(rc->r->pool, "%d", (int) rc->at->expiration) : NULL;
+        wtc = rc->at->creation ?
+            apr_psprintf(rc->r->pool, "%d", (int) rc->at->creation) : NULL;
+        wtlu = rc->at->last_used ?
+            apr_psprintf(rc->r->pool, "%d", (int) rc->at->last_used) : NULL;
+        wif = rc->at->initial_factors != NULL ?
+            apr_pstrdup(rc->r->pool, rc->at->initial_factors) : NULL;
+        wsf = rc->at->session_factors != NULL ?
+            apr_pstrdup(rc->r->pool, rc->at->session_factors) : NULL;
+        wloa = rc->at->loa > 0 ?
+            apr_psprintf(rc->r->pool, "%lu", (unsigned long) rc->at->loa) : NULL;
 
         if (wte != NULL)
-            mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_EXPIRATION, wte);
+            mwa_setenv(rc, ENV_WEBAUTH_TOKEN_EXPIRATION, wte);
         if (wtc != NULL)
-            mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_CREATION, wtc);
+            mwa_setenv(rc, ENV_WEBAUTH_TOKEN_CREATION, wtc);
         if (wtlu != NULL)
-            mwa_setenv(&rc, ENV_WEBAUTH_TOKEN_LASTUSED, wtlu);
+            mwa_setenv(rc, ENV_WEBAUTH_TOKEN_LASTUSED, wtlu);
         if (wif != NULL)
-            mwa_setenv(&rc, ENV_WEBAUTH_FACTORS_INITIAL, wif);
+            mwa_setenv(rc, ENV_WEBAUTH_FACTORS_INITIAL, wif);
         if (wsf != NULL)
-            mwa_setenv(&rc, ENV_WEBAUTH_FACTORS_SESSION, wsf);
+            mwa_setenv(rc, ENV_WEBAUTH_FACTORS_SESSION, wsf);
         if (wloa != NULL)
-            mwa_setenv(&rc, ENV_WEBAUTH_LOA, wloa);
+            mwa_setenv(rc, ENV_WEBAUTH_LOA, wloa);
     }
 
-    if (rc.dconf->dont_cache_set && rc.dconf->dont_cache)
-        dont_cache(&rc);
+    if (rc->dconf->dont_cache_set && rc->dconf->dont_cache)
+        dont_cache(rc);
 
 #ifndef NO_STANFORD_SUPPORT
 
-    if (rc.dconf->su_authgroups != NULL) {
+    if (rc->dconf->su_authgroups != NULL) {
         /* always deny access in this case */
         ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
                      "mod_webauth: denying access due to use of unsupported "
                      "StanfordAuthGroups directive: %s",
-                     rc.dconf->su_authgroups);
+                     rc->dconf->su_authgroups);
         return HTTP_UNAUTHORIZED;
     }
 
@@ -2077,27 +2107,27 @@ check_user_id_hook(request_rec *r)
                      "AuthType StanfordAuth (URL: %s) is deprecated and"
                      " will be removed in a subsequent release",
                      r->uri == NULL ? "UNKNOWN" : r->uri);
-        mwa_setenv(&rc, "SU_AUTH_USER", r->user);
-        if (rc.at != NULL && rc.at->creation > 0) {
-            time_t age = time(NULL) - rc.at->creation;
+        mwa_setenv(rc, "SU_AUTH_USER", r->user);
+        if (rc->at != NULL && rc->at->creation > 0) {
+            time_t age = time(NULL) - rc->at->creation;
             if (age < 0)
                 age = 0;
-            mwa_setenv(&rc, "SU_AUTH_AGE",
-                       apr_psprintf(rc.r->pool, "%d", (int) age));
+            mwa_setenv(rc, "SU_AUTH_AGE",
+                       apr_psprintf(rc->r->pool, "%d", (int) age));
         }
     }
 #endif
 
-    if (rc.sconf->debug) {
+    if (rc->sconf->debug) {
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
                      "mod_webauth: check_user_id_hook: no_cache(%d) dont_cache(%d) dont_cache_ex(%d)", r->no_cache,
-                     rc.dconf->dont_cache, rc.dconf->dont_cache_set);
+                     rc->dconf->dont_cache, rc->dconf->dont_cache_set);
     }
 
     if (r->proxyreq != PROXYREQ_NONE) {
         /* make sure any webauth_* cookies don't end up proxied */
         /* also strip out stuff from Referer */
-        strip_webauth_info(&rc);
+        strip_webauth_info(rc);
     }
 
     return OK;
@@ -2230,32 +2260,24 @@ translate_name_hook(request_rec *r)
 static int
 fixups_hook(request_rec *r)
 {
-    MWA_REQ_CTXT rc;
+    MWA_REQ_CTXT *rc;
     int status;
 
-    memset(&rc, 0, sizeof(rc));
-    rc.r = r;
-    status = webauth_context_init_apr(&rc.ctx, rc.r->pool);
-    if (status != WA_ERR_NONE) {
-        ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
-                     "mod_webauth: webauth_context_init failed: %s",
-                     webauth_error_message(NULL, status));
-        return DECLINED;
-    }
-    rc.sconf = ap_get_module_config(r->server->module_config, &webauth_module);
+    rc = ap_get_module_config(r->request_config, &webauth_module);
 
     /*
      * Reportedly with Solaris 10 x86's included Apache (2.0.63),
      * r->per_dir_config may not always be set.  If it isn't set, assume
      * that we're not doing logout.
+     * UVMXXX - do we still need to worry about this case?
      */
     if (r->per_dir_config != NULL)
-        rc.dconf = ap_get_module_config(r->per_dir_config, &webauth_module);
-    if (rc.dconf != NULL && rc.dconf->do_logout) {
-        nuke_all_webauth_cookies(&rc);
-        dont_cache(&rc);
+        rc->dconf = ap_get_module_config(r->per_dir_config, &webauth_module);
+    if (rc->dconf != NULL && rc->dconf->do_logout) {
+        nuke_all_webauth_cookies(rc);
+        dont_cache(rc);
     } else {
-        set_pending_cookies(&rc);
+        set_pending_cookies(rc);
     }
     return DECLINED;
 }
@@ -2269,11 +2291,22 @@ register_hooks(apr_pool_t *p UNUSED)
 
     ap_hook_post_config(mod_webauth_init, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_child_init(mod_webauth_child_init, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_create_request(mod_webauth_create_request, NULL, NULL,
+                           APR_HOOK_MIDDLE);
 
     /* we need to get run before anyone else, so we can clean up the URL
        if need be */
     ap_hook_translate_name(translate_name_hook, NULL, NULL,
                            APR_HOOK_REALLY_FIRST);
+#ifdef HTTPD24
+    ap_hook_check_access_ex(mod_webauth_check_access, NULL, NULL, APR_HOOK_LAST,
+                            AP_AUTH_INTERNAL_PER_CONF);
+    ap_hook_post_perdir_config(mod_webauth_post_config, NULL, NULL,
+                               APR_HOOK_MIDDLE);
+#else
+    ap_hook_access_checker(mod_webauth_post_config, NULL, NULL, APR_HOOK_MIDDLE);
+#endif
+
 
     /* The core authentication hook. */
     ap_hook_check_authn(check_user_id_hook, NULL, mods, APR_HOOK_MIDDLE,
