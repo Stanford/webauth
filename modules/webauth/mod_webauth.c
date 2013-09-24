@@ -1940,37 +1940,23 @@ gather_tokens(MWA_REQ_CTXT *rc)
     return OK;
 }
 
-
-static int
-check_user_id_hook(request_rec *r)
+static int mod_webauth_check_access(request_rec *r)
 {
-    const char *at = ap_auth_type(r);
-    char *wte, *wtc, *wtlu, *wif, *wsf, *wloa;
-    const char *subject, *authz;
-    bool trust_authz;
     MWA_REQ_CTXT *rc;
+    const char *at = ap_auth_type(r);
+    const char *subject = NULL, *authz;
     int status;
 
     rc = ap_get_module_config(r->request_config, &webauth_module);
+
+    if (!at || strcmp(at, "WebAuth") != 0)
+        return DECLINED;
 
     status = webauth_context_init_apr(&rc->ctx, rc->r->pool);
     if (status != WA_ERR_NONE) {
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
                      "mod_webauth: webauth_context_init failed: %s",
                      webauth_error_message(NULL, status));
-        return DECLINED;
-    }
-
-    if (rc->sconf->debug)
-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
-                     "mod_webauth: in check_user_id hook(%s)",
-                     rc->r->unparsed_uri != NULL ?
-                     rc->r->unparsed_uri : "null-uri");
-
-    if ((at == NULL) ||
-        ((strcmp(at, "WebAuth") != 0) &&
-         (rc->sconf->auth_type == NULL ||
-          strcmp(at, rc->sconf->auth_type) != 0))) {
         return DECLINED;
     }
 
@@ -1986,36 +1972,71 @@ check_user_id_hook(request_rec *r)
         }
     }
 
-    /* first check if we've already validated the user */
-    subject = mwa_get_note(r, N_SUBJECT);
-    if (subject == NULL) {
-        int code = gather_tokens(rc);
+    status = gather_tokens(rc);
+            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
+                         "mod_webauth: gather_tokens returns %d ", status);
 
-        if (code != OK)
-            return code;
-        if (rc->at != NULL) {
-            /* stick it in note for future reference */
-            subject = rc->at->subject;
-            authz = rc->at->authz_subject;
-            if (rc->sconf->debug)
-                ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
-                             "mod_webauth: stash note, user(%s), authz(%s)",
-                             subject, authz == NULL ? "" : authz);
-            mwa_setn_note(r, N_SUBJECT, NULL, "%s", subject);
-            if (authz != NULL)
-                mwa_setn_note(r, N_AUTHZ_SUBJECT, NULL, "%s", authz);
-        }
-    } else {
-        authz = mwa_get_note(r, N_AUTHZ_SUBJECT);
+    if (status != OK)
+        return status;
+
+    if (rc->at != NULL) {
+        /* stick it in note for future reference */
+        subject = rc->at->subject;
+        authz = rc->at->authz_subject;
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
-                         "mod_webauth: found note, user(%s), authz(%s)",
+                         "mod_webauth: stash note, user(%s), authz(%s)",
                          subject, authz == NULL ? "" : authz);
+        mwa_setn_note(r, N_SUBJECT, NULL, "%s", subject);
+        if (authz != NULL)
+            mwa_setn_note(r, N_AUTHZ_SUBJECT, NULL, "%s", authz);
     }
 
-    /* If WebAuth is optional and the user isn't authenticated, we're done. */
+    /* If WebAuth is optional and the user isn't authenticated, skip check_user_id */
     if (subject == NULL && rc->at == NULL && rc->dconf->optional)
         return OK;
+
+    return DECLINED;
+}
+
+static int
+check_user_id_hook(request_rec *r)
+{
+    const char *at = ap_auth_type(r);
+    char *wte, *wtc, *wtlu, *wif, *wsf, *wloa;
+    const char *subject, *authz;
+    bool trust_authz;
+    MWA_REQ_CTXT *rc;
+    int status;
+
+    rc = ap_get_module_config(r->request_config, &webauth_module);
+
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+                     "mod_webauth: in check_user_id hook(%s)",
+                     rc->r->unparsed_uri != NULL ?
+                     rc->r->unparsed_uri : "null-uri");
+
+    if ((at == NULL) ||
+        ((strcmp(at, "WebAuth") != 0) &&
+         (rc->sconf->auth_type == NULL ||
+          strcmp(at, rc->sconf->auth_type) != 0))) {
+        return DECLINED;
+    }
+
+#ifndef HTTPD24
+    status = mod_webauth_check_access(r);
+    if (status != DECLINED)
+        return status;
+#endif
+
+    /* first check if we've already validated the user */
+    subject = mwa_get_note(r, N_SUBJECT);
+    authz = mwa_get_note(r, N_AUTHZ_SUBJECT);
+    if (rc->sconf->debug)
+        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, r->server,
+                     "mod_webauth: found note, user(%s), authz(%s)",
+                     subject, authz == NULL ? "" : authz);
 
     /*
      * This should never get called, since if WebAuth is not optional,
