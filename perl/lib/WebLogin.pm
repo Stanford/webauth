@@ -374,8 +374,7 @@ sub print_headers {
         my $cookie;
 
         # Expire the cookies with no values.
-        if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft')
-              && $value eq '') {
+        if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft') && !$value) {
             $cookie = $self->expire_cookie ($name, $secure);
 
         # If told not to remember the login, expire the SSO cookies on display
