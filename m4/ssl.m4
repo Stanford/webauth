@@ -117,9 +117,9 @@ AC_DEFUN([RRA_LIB_SSL],
  AC_CHECK_LIB([crypto], [AES_cbc_encrypt], [CRYPTO_LIBS=-lcrypto],
     [AC_MSG_ERROR([cannot find usable OpenSSL crypto library])])
  AS_IF([test x"$rra_reduced_depends" = xtrue],
+    [AC_CHECK_LIB([ssl], [SSL_library_init], [SSL_LIBS=-lssl],
+        [AC_MSG_ERROR([cannot find usable OpenSSL library])])],
     [AC_CHECK_LIB([ssl], [SSL_library_init], [SSL_LIBS="-lssl $CRYPTO_LIBS"],
         [AC_MSG_ERROR([cannot find usable OpenSSL library])],
-        [$CRYPTO_LIBS])],
-    [AC_CHECK_LIB([ssl], [SSL_library_init], [SSL_LIBS=-lssl],
-        [AC_MSG_ERROR([cannot find usable OpenSSL library])])])
+        [$CRYPTO_LIBS])])
  RRA_LIB_SSL_RESTORE])
