@@ -12,13 +12,13 @@ dnl libraries, saving the current values first, and RRA_LIB_CURL_RESTORE to
 dnl restore those settings to before the last RRA_LIB_CURL_SWITCH.
 dnl
 dnl Depends on RRA_SET_LDFLAGS and RRA_ENABLE_REDUCED_DEPENDS and may depend
-dnl on RRA_LIB_SSL.
+dnl on RRA_LIB_OPENSSL.
 dnl
 dnl The canonical version of this file is maintained in the rra-c-util
 dnl package, available at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 dnl
 dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2010
+dnl Copyright 2010, 2013
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl This file is free software; the authors give unlimited permission to copy
@@ -66,12 +66,14 @@ AC_DEFUN([_RRA_LIB_CURL_REDUCED],
 dnl Does the appropriate library checks for cURL linkage without curl-config
 dnl or reduced dependencies.
 AC_DEFUN([_RRA_LIB_CURL_MANUAL],
-[AC_REQUIRE([RRA_LIB_SSL])
+[AC_REQUIRE([RRA_LIB_OPENSSL])
  RRA_LIB_CURL_SWITCH
  AC_CHECK_LIB([z], [inflate], [CURL_LIBS=-lz])
- AC_CHECK_LIB([curl], [curl_easy_init], [CURL_LIBS="-lcurl $CURL_LIBS"],
+ AC_CHECK_LIB([curl], [curl_easy_init],
+    [CURL_LDFLAGS="$CURL_LDFLAGS OPENSSL_LDFLAGS"
+     CURL_LIBS="-lcurl $CURL_LIBS $OPENSSL_LIBS"],
     [AC_MSG_ERROR([cannot find usable cURL library])],
-    [$CURL_LIBS $SSL_LDFLAGS $SSL_LIBS])
+    [$CURL_LIBS $OPENSSL_LDFLAGS $OPENSSL_LIBS])
  RRA_LIB_CURL_RESTORE])
 
 dnl Sanity-check the results of curl-config and be sure we can really link a

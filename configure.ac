@@ -114,7 +114,7 @@ AS_IF([test x"$rra_use_remctl" = x"true"],
     [RRA_LIB_REMCTL_SWITCH
      AC_CHECK_FUNCS([remctl_set_ccache remctl_set_timeout])
      RRA_LIB_REMCTL_RESTORE])
-RRA_LIB_SSL
+RRA_LIB_OPENSSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
 
