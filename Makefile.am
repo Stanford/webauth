@@ -307,11 +307,11 @@ install-exec-local: $(BINDINGS_INSTALL)
 CLEANFILES = lib/libwebauth.pc perl/t/data/keyring perl/t/data/tokens.conf \
 	perl/t/lib/Test/RRA.pm perl/t/lib/Test/RRA/Automake.pm		   \
 	perl/t/lib/Test/RRA/Config.pm
-DISTCLEANFILES = include/webauth/defines.h
-MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	 \
-	configure docs/protocol.html docs/protocol.txt lib/rules-cache.c \
-	lib/rules-keyring.c lib/rules-krb5.c lib/rules-tokens.c		 \
-	m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4	 \
+DISTCLEANFILES = config.h.in~ include/webauth/defines.h
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in configure	\
+	docs/protocol.html docs/protocol.txt lib/rules-cache.c		\
+	lib/rules-keyring.c lib/rules-krb5.c lib/rules-tokens.c		\
+	m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4	\
 	m4/lt~obsolete.m4 tools/wa_keyring.1
 
 # Clean up the results of running the test suite under gcov.  Also run make
@@ -325,6 +325,7 @@ clean-local:
 
 # Remove the Perl files we copied over if srcdir != builddir.
 distclean-local:
+	rm -rf autom4te.cache
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then	\
 	    for f in $(PERL_FILES) ; do				\
 		rm -f "$(builddir)/$$f" ;			\
