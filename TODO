@@ -333,6 +333,12 @@ WebLogin:
 
  * WEBAUTH-175: Ignore whitespace around the username.
 
+ * WEBAUTH-183: The WebLogin server currently leaks memory.  Locate the
+   source of that leak and stop it.
+
+ * WEBAUTH-185: Simplify the various ways REMOTE_USER can be supported
+   into a single or small number of straightforward configurations.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
@@ -347,6 +353,10 @@ Perl Modules:
    other sites can write their own.
 
  * WEBAUTH-168: Replace XML parsing with XML::TreeBuilder.
+
+ * WEBAUTH-180: Do proper reference counting of the WebAuth context in all
+   Perl objects so that the context will live until all objects derived
+   from it have been garbage-collected.
 
 Scripts:
 
@@ -366,6 +376,15 @@ Scripts:
 
  * WEBAUTH-155: Provide a script that generates the HTML pages for all
    WebLogin page flow paths.
+
+ * WEBAUTH-176: Provide a script to analyze WebKDC logs and determine peak
+   usage patterns.
+
+Build System:
+
+ * WEBAUTH-182: Support --enable-rpath to force the RPATH of built
+   libraries and binaries to include the paths of required libraries.
+   Figure out how to pass this down correctly to the Perl module build.
 
 Test Suite:
 
@@ -437,6 +456,11 @@ Documentation:
    information service.
 
  * WEBAUTH-170: Copy how mod_fcgid handles manual section links.
+
+ * WEBAUTH-183: Document and name the WebLogin UI components.
+
+ * WEBAUTH-187: Collect all token lifetime information together in one
+   place in the WebAuth documentation.
 
 Style:
 
