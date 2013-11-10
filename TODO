@@ -34,8 +34,9 @@ Protocol:
    tickets, thus letting the Kerberos library do the encoding and decoding
    for us.
 
- * WEBAUTH-30: Use a better key for the HMAC than the encryption key of
-   the token.
+ * WEBAUTH-30: Instead of using the same key for both the HMAC and the
+   encryption key, use a channel key and derive both the HMAC and
+   encryption keys from it.
 
  * WEBAUTH-31: Redo the WebKDC XML protocol to look more like a modern web
    services interface.
@@ -58,6 +59,10 @@ Protocol:
 
  * WEBAUTH-39: Change encoded timestamps on the wire to be 64-bit times so
    that we don't have a year 2038 problem.
+
+ * WEBAUTH-188: Support negotiation of the encryption cipher and HMAC for
+   WebAuth tokens so that obsolete ciphers can be swapped out for newer
+   ones.  Use that support to switch to a better HMAC than SHA-1.
 
 General:
 
@@ -96,6 +101,9 @@ General:
    should accept the configuration but reject any use of the module.  This
    will also allow us to enable the modules by default when installed as
    Debian packages.
+
+ * WEBAUTH-190: Implement separate memory pools for keys and aggressively
+   wipe them as soon as they are no longer in use.
 
 libwebauth:
 
@@ -461,6 +469,13 @@ Documentation:
 
  * WEBAUTH-187: Collect all token lifetime information together in one
    place in the WebAuth documentation.
+
+ * WEBAUTH-189: Add a Security Considerations section to the WebAuth
+   protocol specification.  Mention cipher agility, hash agility, reuse of
+   the AES encryption key as the HMAC key, use of SHA-1 as a cipher,
+   reliance on cookie security, lack of a logout mechanism, implications
+   of authenticating and then encrypting for tokens, and use of random
+   nonces that are not protected against reuse.
 
 Style:
 
