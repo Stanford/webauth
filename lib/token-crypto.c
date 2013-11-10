@@ -35,8 +35,10 @@
 #include <webauth/tokens.h>
 
 /*
- * An ivec to pass to the AES encryption function.  This is always 0 since we
- * use nonce as ivec.
+ * An IV to pass to the AES encryption function.  Since the first block of any
+ * token is a random nonce, this is uninteresting and therefore always set to
+ * all zeroes.  The random nonce will randomize the rest of the CBC mode
+ * encryption.
  */
 static unsigned char aes_ivec[AES_BLOCK_SIZE] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0

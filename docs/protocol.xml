@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='April' year='2013' />
+    <date month='November' year='2013' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1597,7 +1597,7 @@
         </figure>
 
         <t>Everything except {key-hint} is encrypted using 128-bit AES in
-        CBC mode.</t>
+        CBC mode with an all-zero IV.</t>
 
         <t>{key-hint} is a four-byte Unix UTC time stored in network byte
         order.  It is not encrypted and is used only as a hint for the
@@ -1608,16 +1608,20 @@
         <t>{nonce} is 16 random bytes and is encrypted with the rest of
         the data in the token.  It is used to ensure that two tokens with
         the same data and same encryption key don't encrypt to the same
-        value.</t>
+        value.  All WebAuth protocol keys MUST be rotated frequently
+        enough to ensure that the chances of a nonce collision between two
+        tokens encrypted with the same key are sufficiently low to be
+        ignorable, since reuse of the nonce may expose similarities in the
+        plaintext.</t>
 
-        <t>{hmac} is the SHA1 HMAC of the actual data including the
+        <t>{hmac} is the SHA-1 HMAC of the actual data including the
         padding (in other words, the pre-encryption concatenation of
         {token-attributes} and {padding}).  The key used with HMAC is the
         AES private key.  (A better solution would be to use a different
         key, but that requires having two keys or using a key-derivation
         function to derive the HMAC key from the AES key.  One possible
         future approach would be to use a key-derivation function like TLS
-        uses.</t>
+        uses.)</t>
 
         <t>{token-attributes} is a sequence of name=value pairs, separated
         by a ';' character.  Names must be one or more ASCII alphanumeric
@@ -2643,6 +2647,11 @@
           <t hangText='3.5.1 (2013-09-26, rra)'>
           <vspace blankLines='0'/>Be explicit that token encryption is
           128-bit AES in CBC mode.</t>
+
+          <t hangText='3.5.2 (2013-11-09, rra)'>
+          <vspace blankLines='0'/>Document the IV used for token
+          encryption and be explicit about the security requirements for
+          nonces and key rotation.</t>
         </list>
       </t>
     </section>
