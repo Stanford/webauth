@@ -464,16 +464,6 @@ mod_webauth_init(apr_pool_t *pconf, apr_pool_t *plog UNUSED,
 
 
 /*
- * called once per-child
- */
-static void
-mod_webauth_child_init(apr_pool_t *p UNUSED, server_rec *s UNUSED)
-{
-    /* nothing for now */
-}
-
-
-/*
  * Called when a new request is created.  Initialize our per-request data
  * structure and store it in the request.
  */
@@ -2350,7 +2340,6 @@ register_hooks(apr_pool_t *p UNUSED)
     static const char * const mods[]={ "mod_access.c", "mod_auth.c", NULL };
 
     ap_hook_post_config(mod_webauth_init, NULL, NULL, APR_HOOK_MIDDLE);
-    ap_hook_child_init(mod_webauth_child_init, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_create_request(mod_webauth_create_request, NULL, NULL,
                            APR_HOOK_MIDDLE);
 
