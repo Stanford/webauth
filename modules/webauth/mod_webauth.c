@@ -25,8 +25,9 @@
 APLOG_USE_MODULE(webauth);
 
 #if MODULE_MAGIC_NUMBER_MAJOR >= 20111201
-#define HTTPD24 1
+# define HTTPD24 1
 #endif
+
 
 static void
 dont_cache(MWA_REQ_CTXT *rc)
@@ -471,35 +472,47 @@ mod_webauth_child_init(apr_pool_t *p UNUSED, server_rec *s UNUSED)
     /* nothing for now */
 }
 
-static int mod_webauth_create_request(request_rec *r)
+
+/*
+ * Called when a new request is created.  Initialize our per-request data
+ * structure and store it in the request.
+ */
+static int
+mod_webauth_create_request(request_rec *r)
 {
     MWA_REQ_CTXT *rc;
+
     rc = apr_pcalloc(r->pool, sizeof(MWA_REQ_CTXT));
-    if (!rc)
-        return HTTP_INTERNAL_SERVER_ERROR;
     rc->r = r;
     ap_set_module_config(r->request_config, &webauth_module, rc);
     return OK;
 }
 
+
 /*
- * Used to allocate mod_webauth's context
- * In the 2.2 httpd, called from access_checker,
- * in the 2.4 httpd, called from post_perdir_config
+ * Finish setting up the WebAuth request context by retrieving the module
+ * configuration information.
+ *
+ * In the 2.2 httpd, called from access_checker.
+ * in the 2.4 httpd, called from post_perdir_config.
  */
-static int mod_webauth_post_config(request_rec *r) {
-    MWA_REQ_CTXT *rc = (MWA_REQ_CTXT *)
-        ap_get_module_config(r->request_config, &webauth_module);
+static int
+mod_webauth_post_config(request_rec *r) {
+    MWA_REQ_CTXT *rc;
+
+    rc = ap_get_module_config(r->request_config, &webauth_module);
     rc->dconf = ap_get_module_config(r->per_dir_config, &webauth_module);
     rc->sconf = ap_get_module_config(r->server->module_config, &webauth_module);
+
 #ifdef HTTPD24
-    // post_perdir_config says:
+    /* post_perdir_config says: */
     return OK;
 #else
-    // access_checker says:
+    /* access_checker says: */
     return DECLINED;
 #endif
 }
+
 
 static const char *
 status_check_access(const char *path, apr_int32_t flag, request_rec *r)
@@ -1940,7 +1953,22 @@ gather_tokens(MWA_REQ_CTXT *rc)
     return OK;
 }
 
-static int mod_webauth_check_access(request_rec *r)
+
+/*
+ * This hook gathers authentication information if the user is already
+ * authenticated and stashes it in a note.  If the user is not already
+ * authenticated, this is where we force the redirect to WebLogin.  This hook
+ * also handles checking for SSL if SSL is required and redirecting if
+ * configured to do so.
+ *
+ * If the user is not authenticated but WebAuthOptional is enabled, return OK
+ * here to bypass the check_id hook and not attempt to authenticate the user.
+ *
+ * Run via ap_hook_check_access_ex for Apache 2.4 and called directly from the
+ * check_user_id hook for Apache 2.2.
+ */
+static int
+mod_webauth_check_access(request_rec *r)
 {
     MWA_REQ_CTXT *rc;
     const char *at = ap_auth_type(r);
@@ -1972,10 +2000,8 @@ static int mod_webauth_check_access(request_rec *r)
         }
     }
 
+    /* Get user authentication or redirect the user. */
     status = gather_tokens(rc);
-            ap_log_error(APLOG_MARK, APLOG_WARNING, 0, r->server,
-                         "mod_webauth: gather_tokens returns %d ", status);
-
     if (status != OK)
         return status;
 
@@ -1992,13 +2018,26 @@ static int mod_webauth_check_access(request_rec *r)
             mwa_setn_note(r, N_AUTHZ_SUBJECT, NULL, "%s", authz);
     }
 
-    /* If WebAuth is optional and the user isn't authenticated, skip check_user_id */
+    /*
+     * If WebAuth is optional and the user isn't authenticated, skip
+     * check_user_id by returning OK, which bypasses any subsequent need for
+     * authentication.
+     */
     if (subject == NULL && rc->at == NULL && rc->dconf->optional)
         return OK;
 
     return DECLINED;
 }
 
+
+/*
+ * Normally, the hook that authenticates the user.  However, most of the work
+ * is currently done in mod_webauth_check_access, which runs before this hook
+ * in Apache 2.4 and is called explicitly below in Apache 2.2.
+ *
+ * This hook does the work of setting the environment variables and request
+ * state to reflect the successful authentication.
+ */
 static int
 check_user_id_hook(request_rec *r)
 {
@@ -2320,14 +2359,14 @@ register_hooks(apr_pool_t *p UNUSED)
     ap_hook_translate_name(translate_name_hook, NULL, NULL,
                            APR_HOOK_REALLY_FIRST);
 #ifdef HTTPD24
-    ap_hook_check_access_ex(mod_webauth_check_access, NULL, NULL, APR_HOOK_LAST,
-                            AP_AUTH_INTERNAL_PER_CONF);
+    ap_hook_check_access_ex(mod_webauth_check_access, NULL, NULL,
+                            APR_HOOK_LAST, AP_AUTH_INTERNAL_PER_CONF);
     ap_hook_post_perdir_config(mod_webauth_post_config, NULL, NULL,
                                APR_HOOK_MIDDLE);
 #else
-    ap_hook_access_checker(mod_webauth_post_config, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_access_checker(mod_webauth_post_config, NULL, NULL,
+                           APR_HOOK_MIDDLE);
 #endif
-
 
     /* The core authentication hook. */
     ap_hook_check_authn(check_user_id_hook, NULL, mods, APR_HOOK_MIDDLE,

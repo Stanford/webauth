@@ -209,6 +209,12 @@ mod_webauth:
  * WEBAUTH-173: Move setting of environment variables to fixups so that it
    works properly with WebAuthOptional in Apache 2.4.
 
+ * Run the check_access hook directly in Apache 2.2 instead of via the
+   get_user_id hook to make the code consistent.
+
+ * Separate the function of checking for existing authentication from the
+   function of redirecting the user to WebLogin.
+
 mod_webauthldap:
 
  * WEBAUTH-55: User request: There's no inherent reason why
