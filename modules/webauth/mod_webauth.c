@@ -1313,7 +1313,7 @@ check_url(MWA_REQ_CTXT *rc, int *in_url)
     char *wr, *ws;
     struct webauth_key *key = NULL;
 
-    wr = mwa_remove_note(rc->r, N_WEBAUTHR);
+    wr = mwa_get_note(rc->r, N_WEBAUTHR);
     if (wr == NULL) {
         *in_url = 0;
         return OK;
@@ -1326,7 +1326,7 @@ check_url(MWA_REQ_CTXT *rc, int *in_url)
                      "mod_webauth: check_url: found  WEBAUTHR");
 
     /* see if we have WEBAUTHS, which has the session key to use */
-    ws = mwa_remove_note(rc->r, N_WEBAUTHS);
+    ws = mwa_get_note(rc->r, N_WEBAUTHS);
 
     if (ws != NULL) {
         /* don't have to free key, its allocated from a pool */
