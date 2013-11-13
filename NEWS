@@ -2,6 +2,15 @@
 
 WebAuth 4.5.6 (unreleased)
 
+    WebAuthOptional should now work properly with Apache 2.4.  Thanks to
+    Benjamin Coddington for the patches.
+
+    Don't delete notes in mod_webauth after using them for authentication
+    in case the authentication is happening in a subrequest and the parent
+    request has not yet completed.  Deleting the note could cause two
+    redirects to WebLogin due to an ordering issue when processing notes
+    and subrequests.  Patch from Benjamin Coddington.
+
     Be even more thorough in telling browsers not to cache responses from
     WebLogin, redirects and logout pages from mod_webauth, and any page
     marked with WebAuthDontCache.  Add private and max-age=0 to the
