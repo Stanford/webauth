@@ -1310,25 +1310,28 @@ parse_returned_token(char *token, struct webauth_key *key, MWA_REQ_CTXT *rc)
 static int
 check_url(MWA_REQ_CTXT *rc, int *in_url)
 {
+    const char *note;
     char *wr, *ws;
     struct webauth_key *key = NULL;
 
-    wr = mwa_get_note(rc->r, N_WEBAUTHR);
-    if (wr == NULL) {
+    note = mwa_get_note(rc->r, N_WEBAUTHR);
+    if (note == NULL) {
         *in_url = 0;
         return OK;
     } else {
         *in_url = 1;
     }
+    wr = apr_pstrdup(rc->r->pool, note);
 
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: check_url: found  WEBAUTHR");
 
     /* see if we have WEBAUTHS, which has the session key to use */
-    ws = mwa_get_note(rc->r, N_WEBAUTHS);
+    note = mwa_get_note(rc->r, N_WEBAUTHS);
+    if (note != NULL) {
+        ws = apr_pstrdup(rc->r->pool, note);
 
-    if (ws != NULL) {
         /* don't have to free key, its allocated from a pool */
         key = get_session_key(ws, rc);
         if (key == NULL)
@@ -2036,7 +2039,9 @@ check_user_id_hook(request_rec *r)
     const char *subject, *authz;
     bool trust_authz;
     MWA_REQ_CTXT *rc;
+#ifndef HTTPD24
     int status;
+#endif
 
     rc = ap_get_module_config(r->request_config, &webauth_module);
 
@@ -2311,7 +2316,6 @@ static int
 fixups_hook(request_rec *r)
 {
     MWA_REQ_CTXT *rc;
-    int status;
 
     rc = ap_get_module_config(r->request_config, &webauth_module);
 
