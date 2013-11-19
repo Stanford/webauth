@@ -292,6 +292,11 @@ mod_webkdc:
    that WebLogin doesn't have to have its own parser to figure out which
    service tickets may be delegated.
 
+ * Logging of failed password or OTP logins is a bit too aggressive right
+   now, producing four lines of output (one from libwebauth, two from
+   mod_webkdc, and one from WebLogin).  Two, one from mod_webkdc and one
+   from WebLogin, would be sufficient.
+
 WebLogin:
 
  * WEBAUTH-65: When going to a site with multiple pieces of content
