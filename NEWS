@@ -17,6 +17,11 @@ WebAuth 4.5.6 (unreleased)
     existing Cache-Control headers, add Vary: *, and (for WebLogin pages)
     set an expiration time in the past.
 
+    Use the authenticated identity returned by the WebKDC as the username
+    for multifactor authentication in WebLogin rather than preserving what
+    the user originally typed.  The WebKDC may have done Kerberos
+    canonicalization and aname to localname mapping.
+
     Set the correct template variable when the code field is left blank on
     the WebLogin multifactor form.
 

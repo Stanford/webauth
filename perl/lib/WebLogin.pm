@@ -1809,15 +1809,16 @@ sub handle_login_error {
         return $self->print_login_page ($status, $req->request_token,
                                         $req->service_token);
 
-    # Multifactor was required and the KDC says the user can give it.  If we
-    # got here because the user already had a proxy token, we may not know
-    # what the username is, so get it from the response.
+    # Multifactor was required and the KDC says the user can give it.  If the
+    # WebKDC knows who the user is, always use the authenticated identity from
+    # the WebKDC, rather than whatever the user typed, since we may have done
+    # Kerberos canonicalization during the authentication.
     } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
         print STDERR "multifactor required for login\n"
             if $self->param ('debug');
 
         my $req = $self->{request};
-        unless ($q->param ('username')) {
+        if (defined $resp->subject) {
             $q->param ('username', $resp->subject);
         }
         return $self->print_multifactor_page ($req->request_token,
