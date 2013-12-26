@@ -7,8 +7,8 @@
  * The canonical version of this file is maintained in the rra-c-util package,
  * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
- * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2006, 2007, 2009, 2011, 2012
+ * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2006, 2007, 2009, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,9 @@ BEGIN_DECLS
  *
  * remctl_stop can be called explicitly to stop remctld and clean up, but it's
  * also registered as an atexit handler, so tests that only start and stop the
- * server once can just let cleanup happen automatically.
+ * server once can just let cleanup happen automatically.  Its argument is
+ * ignored (only present in order to satisfy the requirements for C TAP
+ * Harness test cleanup functions).
  *
  * PATH_REMCTLD must be defined, either with explicit compiler options or in
  * config.h.  If it's not defined, remctld_start calls skip_all, assuming that
@@ -60,7 +62,7 @@ BEGIN_DECLS
  */
 pid_t remctld_start(struct kerberos_config *, const char *config, ...)
     __attribute__((__nonnull__(1, 2)));
-void remctld_stop(void);
+void remctld_stop(int);
 
 /*
  * Like remctld_start, but run remctld under fakeroot.  Calls skip_all if

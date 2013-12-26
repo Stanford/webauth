@@ -7,7 +7,7 @@
  * The canonical version of this file is maintained in the rra-c-util package,
  * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2006, 2007, 2009, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
@@ -33,15 +33,18 @@
 #include <config.h>
 #include <portable/system.h>
 
+#include <fcntl.h>
 #include <signal.h>
 #ifdef HAVE_SYS_SELECT_H
 # include <sys/select.h>
 #endif
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
+#include <tests/tap/macros.h>
 #include <tests/tap/remctl.h>
 #include <tests/tap/string.h>
 
@@ -60,18 +63,20 @@
  * the child is still running and will just have to kill and hope.
  */
 static pid_t remctld = 0;
-static char *tmpdir_pid = NULL;
+static char *tmpdir_log = NULL;
 static bool is_child = true;
 
 
 /*
  * Stop remctld.  Normally called via an atexit handler.  We give remctld at
- * most five seconds to exit before we commit suicide with an alarm.
+ * most five seconds to exit before we commit suicide with an alarm.  The
+ * argument indicates whether the tests failed or succeeded, but we do the
+ * same thing either way.
  */
 void
-remctld_stop(void)
+remctld_stop(int passed UNUSED)
 {
-    char *pidfile;
+    char *pidfile, *logfile;
 
     diag("remctld_stop called with pid %lu", (unsigned long) remctld);
     if (remctld == 0)
@@ -87,17 +92,21 @@ remctld_stop(void)
         alarm(0);
     }
     remctld = 0;
-    basprintf(&pidfile, "%s/remctld.pid", tmpdir_pid);
+    basprintf(&pidfile, "%s/remctld.pid", tmpdir_log);
     unlink(pidfile);
     free(pidfile);
-    test_tmpdir_free(tmpdir_pid);
-    tmpdir_pid = NULL;
+    basprintf(&logfile, "%s/remctld.log", tmpdir_log);
+    diag_file_remove(logfile);
+    unlink(logfile);
+    free(logfile);
+    test_tmpdir_free(tmpdir_log);
+    tmpdir_log = NULL;
 }
 
 
 /*
  * Read the PID of remctld from a file.  This is necessary when running under
- * fakeroot to get the actual PID of the remctld process.
+ * fakeroot or valgrind to get the actual PID of the remctld process.
  */
 static long
 read_pidfile(const char *path)
@@ -128,6 +137,9 @@ read_pidfile(const char *path)
  * ending with a NULL.  Returns the PID of the running remctld process.  If
  * anything fails, calls bail.
  *
+ * If VALGRIND is set in the environment, starts remctld under the program
+ * given in that environment variable, assuming valgrind arguments.
+ *
  * The path to remctld is obtained from the PATH_REMCTLD #define.  If this is
  * not set, remctld_start_internal calls skip_all.
  *
@@ -139,13 +151,13 @@ remctld_start_internal(struct kerberos_config *krbconf, const char *config,
                        va_list args, bool fakeroot)
 {
     va_list args_copy;
-    char *pidfile, *confpath;
+    char *pidfile, *logfile, *confpath;
     struct timeval tv;
-    size_t n, i;
+    size_t n, i, length;
     const char *arg, **argv;
-    size_t length;
     const char *path_fakeroot = PATH_FAKEROOT;
     const char *path_remctld = PATH_REMCTLD;
+    int fd;
 
     /* Check prerequisites. */
     if (path_remctld[0] == '\0')
@@ -157,20 +169,19 @@ remctld_start_internal(struct kerberos_config *krbconf, const char *config,
     if (remctld != 0)
         bail("remctld already running (PID %lu)", (unsigned long) remctld);
 
-    /* Create a path for the PID file for remctld and remove any old one. */
-    tmpdir_pid = test_tmpdir();
-    basprintf(&pidfile, "%s/remctld.pid", tmpdir_pid);
+    /* Set up the arguments and run remctld. */
+    tmpdir_log = test_tmpdir();
+    basprintf(&pidfile, "%s/remctld.pid", tmpdir_log);
     if (access(pidfile, F_OK) == 0)
         if (unlink(pidfile) != 0)
             sysbail("cannot delete %s", pidfile);
-
-    /* Find the configuration file path. */
+    basprintf(&logfile, "%s/remctld.log", tmpdir_log);
     confpath = test_file_path(config);
     if (confpath == NULL)
         bail("cannot find remctld config %s", config);
-
-    /* Set up the arguments. */
     length = 11;
+    if (getenv("VALGRIND") != NULL)
+        length += 3;
     if (fakeroot)
         length += 2;
     va_copy(args_copy, args);
@@ -179,12 +190,17 @@ remctld_start_internal(struct kerberos_config *krbconf, const char *config,
     va_end(args_copy);
     argv = bmalloc(length * sizeof(const char *));
     i = 0;
+    if (getenv("VALGRIND") != NULL) {
+        argv[i++] = "valgrind";
+        argv[i++] = "--log-file=valgrind.%p";
+        argv[i++] = "--leak-check=full";
+    }
     if (fakeroot) {
         argv[i++] = path_fakeroot;
         argv[i++] = "--";
     }
     argv[i++] = path_remctld;
-    argv[i++] = "-mSF";
+    argv[i++] = "-mdSF";
     argv[i++] = "-p";
     argv[i++] = "14373";
     argv[i++] = "-s";
@@ -196,49 +212,54 @@ remctld_start_internal(struct kerberos_config *krbconf, const char *config,
     while ((arg = va_arg(args, const char *)) != NULL)
         argv[i++] = arg;
     argv[i] = NULL;
-
-    /* Run remctld. */
     remctld = fork();
     if (remctld < 0)
         sysbail("fork failed");
     else if (remctld == 0) {
-        if (fakeroot)
+        fd = open(logfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd < 0)
+            sysbail("cannot open %s", logfile);
+        if (dup2(fd, STDOUT_FILENO) < 0)
+            sysbail("cannot redirect standard output");
+        if (dup2(fd, STDERR_FILENO) < 0)
+            sysbail("cannot redirect standard error");
+        if (getenv("VALGRIND") != NULL)
+            execv(getenv("VALGRIND"), (char * const *) argv);
+        else if (fakeroot)
             execv(path_fakeroot, (char * const *) argv);
         else
             execv(path_remctld, (char * const *) argv);
         sysbail("exec failed");
-    }
-    free(argv);
-    test_file_path_free(confpath);
+    } else {
+        free(argv);
+        test_file_path_free(confpath);
+        for (n = 0; n < 100 && access(pidfile, F_OK) != 0; n++) {
+            tv.tv_sec = 0;
+            tv.tv_usec = 100000;
+            select(0, NULL, NULL, NULL, &tv);
+        }
+        if (access(pidfile, F_OK) != 0) {
+            kill(remctld, SIGTERM);
+            alarm(5);
+            waitpid(remctld, NULL, 0);
+            alarm(0);
+            bail("cannot start remctld");
+        }
 
-    /* In the master, wait for remctld to start. */
-    for (n = 0; n < 100 && access(pidfile, F_OK) != 0; n++) {
-        tv.tv_sec = 0;
-        tv.tv_usec = 100000;
-        select(0, NULL, NULL, NULL, &tv);
+        /*
+         * When running under fakeroot, there may be internal forks that
+         * change the PID of the final running process.  When running under
+         * valgrind, we want to grab the final PID.
+         */
+        if (fakeroot || getenv("VALGRIND") != NULL) {
+            remctld = read_pidfile(pidfile);
+            is_child = false;
+        }
+        free(pidfile);
+        diag_file_add(logfile);
+        test_cleanup_register(remctld_stop);
+        return remctld;
     }
-    if (access(pidfile, F_OK) != 0) {
-        kill(remctld, SIGTERM);
-        alarm(5);
-        waitpid(remctld, NULL, 0);
-        alarm(0);
-        bail("cannot start remctld");
-    }
-
-    /*
-     * When running under fakeroot, there may be internal forks that change
-     * the PID of the final running process.
-     */
-    if (fakeroot) {
-        remctld = read_pidfile(pidfile);
-        is_child = false;
-    }
-    free(pidfile);
-
-    /* Register the handler to stop remctld at the end of the test. */
-    if (atexit(remctld_stop) != 0)
-        sysdiag("cannot register cleanup function");
-    return remctld;
 }
 
 
