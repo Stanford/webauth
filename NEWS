@@ -40,6 +40,13 @@ WebAuth 4.5.6 (unreleased)
     Fix configure probes for OpenSSL on platforms without transitive
     shared library dependencies.
 
+    Update to C TAP Harness 2.4:
+
+    * Add new diag_file_add and _remove API to the C TAP library.
+    * Add new test_cleanup_register API to the C TAP library.
+    * Suppress lazy plans and test summaries if the test failed with bail.
+    * Add warn_unused_result gcc attributes to relevant functions.
+
 WebAuth 4.5.5 (2013-08-28)
 
     Fix replay detection in WebLogin to use the same memcached object
