@@ -895,6 +895,7 @@ run_login_test(struct webauth_context *ctx, const struct wat_login_test *test,
         if (p != NULL && p > seen)
             *(p - 1) = '\0';
         is_string(test->error, seen, "... and error message");
+        free(seen);
     } else {
         message = webauth_error_message(ctx, s);
         is_string(test->error, message, "... and error message");
