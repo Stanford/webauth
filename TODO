@@ -19,7 +19,7 @@ Protocol:
    that query from the WebAuth server).
 
  * WEBAUTH-28: In the meantime, having the WebAuth logout handler
-   automatically redirect to the weblogin logout page might ameliorate
+   automatically redirect to the WebLogin logout page might ameliorate
    some of the problems.
 
  * WEBAUTH-6: Allow a WebAuth Application Server to specify that
@@ -39,7 +39,10 @@ Protocol:
    encryption keys from it.
 
  * WEBAUTH-31: Redo the WebKDC XML protocol to look more like a modern web
-   services interface.
+   services interface.  A new WebAuth token representation using JSON
+   should be defined, and the messages and replies from the WebKDC should
+   themselves be defined as WebAuth tokens, including the encryption and
+   integrity protection requirements.
 
  * WEBAUTH-32: User request: Currently, WebAuth always appends ?WEBAUTHR
    even if there's already an ? in the URL, which means that applications
@@ -63,6 +66,11 @@ Protocol:
  * WEBAUTH-188: Support negotiation of the encryption cipher and HMAC for
    WebAuth tokens so that obsolete ciphers can be swapped out for newer
    ones.  Use that support to switch to a better HMAC than SHA-1.
+
+ * WEBAUTH-191: For better bootstrapping of authentications, provide the
+   WebKDC interface to WebAuth application servers over remctl instead of
+   HTTPS.  This would avoid the bizarre dance with Kerberos authenticators
+   and rely directly on GSS-API.
 
 General:
 
@@ -104,6 +112,11 @@ General:
 
  * WEBAUTH-190: Implement separate memory pools for keys and aggressively
    wipe them as soon as they are no longer in use.
+
+ * WEBAUTH-196: Implement a standardized logging format across all of the
+   WebAuth components.  This will also mean switching WebLogin to using
+   syslog for logging instead of relying on the FastCGI handler to do
+   logging.
 
 libwebauth:
 
@@ -153,8 +166,6 @@ libwebauth:
 
  * WEBAUTH-172: Use krb5_chpw_message to decode the password change error
    message from Active Directory servers.
-
- * WEBAUTH-174: Use JSON to communicate with the user information service.
 
 mod_webauth:
 
@@ -209,11 +220,11 @@ mod_webauth:
  * WEBAUTH-173: Move setting of environment variables to fixups so that it
    works properly with WebAuthOptional in Apache 2.4.
 
- * Run the check_access hook directly in Apache 2.2 instead of via the
-   get_user_id hook to make the code consistent.
+ * WEBAUTH-192: Run the check_access hook directly in Apache 2.2 instead
+   of via the get_user_id hook to make the code consistent.
 
- * Separate the function of checking for existing authentication from the
-   function of redirecting the user to WebLogin.
+ * WEBAUTH-193: Separate the function of checking for existing
+   authentication from the function of redirecting the user to WebLogin.
 
 mod_webauthldap:
 
@@ -292,10 +303,10 @@ mod_webkdc:
    that WebLogin doesn't have to have its own parser to figure out which
    service tickets may be delegated.
 
- * Logging of failed password or OTP logins is a bit too aggressive right
-   now, producing four lines of output (one from libwebauth, two from
-   mod_webkdc, and one from WebLogin).  Two, one from mod_webkdc and one
-   from WebLogin, would be sufficient.
+ * WEBAUTH-194: Logging of failed password or OTP logins is a bit too
+   aggressive right now, producing four lines of output (one from
+   libwebauth, two from mod_webkdc, and one from WebLogin).  Two, one from
+   mod_webkdc and one from WebLogin, would be sufficient.
 
 WebLogin:
 
@@ -487,6 +498,9 @@ Documentation:
    reliance on cookie security, lack of a logout mechanism, implications
    of authenticating and then encrypting for tokens, and use of random
    nonces that are not protected against reuse.
+
+ * WEBAUTH-195: Document the trust relationships between the WebAuth
+   components.
 
 Style:
 
