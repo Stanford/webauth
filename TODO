@@ -217,9 +217,6 @@ mod_webauth:
    that they can be used with the new authorization math support in Apache
    2.4.
 
- * WEBAUTH-173: Move setting of environment variables to fixups so that it
-   works properly with WebAuthOptional in Apache 2.4.
-
  * WEBAUTH-192: Run the check_access hook directly in Apache 2.2 instead
    of via the get_user_id hook to make the code consistent.
 
