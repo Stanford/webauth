@@ -1062,6 +1062,88 @@ WebAuthCredCacheDir conf/webauth/credcache
 
 
   <directivesynopsis>
+    <name>WebAuthCookiePath</name>
+    <description>
+      Path scope of cookies set by the module
+    </description>
+    <syntax>WebAuthCookiePath <em>scope</em></syntax>
+    <default>/</default>
+    <contextlist>
+      <context>directory</context>
+      <context>.htaccess</context>
+    </contextlist>
+
+    <usage>
+      <p>
+        Normally, all WebAuth cookies use a path of "/" and will be sent
+        by the browser for all requests to that server or virtual host.
+        This setting can be used to restrict the scope of cookies (which
+        include app, proxy, and cred cookies) to a particular URL path
+        prefix.  This may be useful if different sections of a virtual
+        host must be handled differently by user information service
+        policy and therefore must use separate credential sets.  It allows
+        different portions of the same virtual host to be treated as
+        separate destination "sites" from the perspective of single
+        sign-on and browser authentication credential management.
+      </p>
+      <p>
+        The <em>scope</em> argument should be the URL or a prefix of the
+        URL by which the resource affected by this directive is accessed.
+        The module has no way of checking this, so use care in setting the
+        scope.  An incorrect scope may result in cookies being set but not
+        returned by the browser, which can cause a redirect loop between
+        the WebAuth-protected site and the WebLogin service.
+      </p>
+      <p>
+        The <em>scope</em> argument follows the normal rules for
+        path-based scope for cookies using the "path=" cookie parameter as
+        described in <a href="http://tools.ietf.org/search/rfc6265">RFC
+        6265</a>.
+      </p>
+
+      <note>
+        <title>Warning</title>
+        <p>
+          Currently, the mod_webauth module does not deal properly with
+          requests containing multiple cookies of the same name.  The
+          first cookie will be used and the rest ignored, which results in
+          undefined behavior since the order of cookies is not
+          deterministic.  Therefore, if the
+          <directive>WebAuthCookiePath</directive> directive is used
+          within a virtual host, all WebAuth-protected URLs in that
+          virtual host should use this directive and all protected URLs
+          should be within one and only one path scope.  In other words,
+          ensure that the browser will know that only one set of cookies
+          could apply to any given URL so that it will never send more than
+          one cookie with the same name.
+        </p>
+        <p>
+          This restriction will hopefully be lifted in future versions of
+          WebAuth.
+        </p>
+      </note>
+
+      <example>
+        <title>Example</title>
+# In the following example, no other URLs in this virtual host should be
+# protected by WebAuth to avoid creating potentially conflicting cookies
+# with a path scope of /.
+&lt;Location "/content"&gt;
+  AuthType WebAuth
+  Require vald-user
+  WebAuthCookiePath /content
+&lt;/Location&gt;
+&lt;Location "/manage"&gt;
+  AuthType WebAuth
+  Require user admin1 admin2
+  WebAuthCookiePath /manage
+&lt;/Location&gt;
+      </example>
+    </usage>
+  </directivesynopsis>
+
+
+  <directivesynopsis>
     <name>WebAuthDebug</name>
     <description>Turn on extra debugging in Apache error log</description>
     <syntax>WebAuthDebug on|off</syntax>

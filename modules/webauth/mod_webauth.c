@@ -2,7 +2,7 @@
  * Core WebAuth Apache module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013
+ * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -196,7 +196,8 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
         return;
 
     cookie = apr_psprintf(rc->r->pool,
-                          "%s=; path=/; expires=%s;%s",
+                          "%s=; path=%s; expires=%s;%s",
+                          rc->dconf->cookie_path,
                           name,
                           "Thu, 26-Mar-1998 00:00:01 GMT",
                           is_https(rc->r) ? "secure" : "");
@@ -251,19 +252,27 @@ set_pending_cookies(MWA_REQ_CTXT *rc)
 
 
 /*
- * stores a cookie that will get set in fixups
+ * Stores a cookie that will get set later by the fixup handler.  Takes the
+ * name of the cookie, the value, and optionally the path, which may be NULL
+ * to use a path of /.  The secure flag is always set if the request came in
+ * via SSL, and the HttpOnly flag is set based on the server configuration.
  */
 static void
-fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value)
+fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value,
+                const char *path)
 {
+    if (path == NULL)
+        path = "/";
     ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
-                 "mod_webauth: setting pending %s cookie", name);
+                 "mod_webauth: setting pending %s cookie (path %s)", name,
+                 path);
     mwa_setn_note(rc->r,
                   "mod_webauth_COOKIE_",
                   name,
-                  "%s=%s; path=/%s%s",
+                  "%s=%s; path=%s%s%s",
                   name,
                   value,
+                  path,
                   is_https(rc->r) ? "; secure" : "",
                   rc->sconf->httponly ? "; HttpOnly" : "");
 }
@@ -304,12 +313,15 @@ nuke_all_webauth_cookies(MWA_REQ_CTXT *rc)
     for (i = 0; i < cookies->nelts; i++) {
         char *cookie, *val;
 
+        /*
+         * Nuke all WebAuth cookies except for the ones used by WebLogin.  The
+         * latter may appear if the same virtual host is used as both a
+         * WebAuth Application Server and a WebLogin server.
+         */
         cookie = APR_ARRAY_IDX(cookies, i, char *);
         val = ap_strchr(cookie, '=');
         if (val != NULL) {
             *val++ = '\0';
-            /* don't nuke any webkdc cookies, which noramlly wouldn't
-               show up, but due during development */
             if (strncmp(cookie, "webauth_wpt", 11) != 0
                 && strncmp(cookie, "webauth_wft", 11) != 0) {
                 nuke_cookie(rc, cookie, 1);
@@ -699,7 +711,7 @@ handler_hook(request_rec *r)
     if (st == NULL) {
         ap_rputs("<dd>"
                  "service_token is NULL. This usually indicates a permissions "
-                 "problem with the service token cache and/or keytab file ."
+                 "problem with the service token cache and/or keytab file."
                  "</dd>", r);
     } else {
         dd_dir_time("created", st->created, r);
@@ -807,7 +819,8 @@ make_proxy_cookie(const char *proxy_type,
         return 0;
     }
     rc->pt = pt;
-    fixup_setcookie(rc, proxy_cookie_name(proxy_type, rc), token);
+    fixup_setcookie(rc, proxy_cookie_name(proxy_type, rc), token,
+                    rc->dconf->cookie_path);
     return 1;
 }
 
@@ -833,7 +846,8 @@ make_cred_cookie(struct webauth_token_cred *ct, MWA_REQ_CTXT *rc)
                               "webauth_token_encode_cred", ct->subject);
         return 0;
     }
-    fixup_setcookie(rc, cred_cookie_name(ct->type, ct->service, rc), token);
+    fixup_setcookie(rc, cred_cookie_name(ct->type, ct->service, rc), token,
+                    rc->dconf->cookie_path);
     return 1;
 }
 
@@ -890,7 +904,7 @@ make_app_cookie(const char *subject,
         return 0;
     }
     rc->at = app;
-    fixup_setcookie(rc, app_cookie_name(), token);
+    fixup_setcookie(rc, app_cookie_name(), token, rc->dconf->cookie_path);
     return 1;
 }
 
@@ -1002,7 +1016,7 @@ parse_app_token_cookie(MWA_REQ_CTXT *rc)
 
     if (!parse_app_token(cval, rc)) {
         /* we coudn't use the cookie, lets set it up to be nuked */
-        fixup_setcookie(rc, cname, "");
+        fixup_setcookie(rc, cname, "", rc->dconf->cookie_path);
         return 0;
     }  else {
         if (rc->sconf->debug)
@@ -1040,7 +1054,7 @@ parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
 
 
 /*
- * check cookie for valid proxy-token. If an epxired one is found,
+ * check cookie for valid proxy-token. If an expired one is found,
  * do a Set-Cookie to blank it out.
  */
 static struct webauth_token_proxy *
@@ -1059,7 +1073,7 @@ parse_proxy_token_cookie(MWA_REQ_CTXT *rc, char *proxy_type)
 
     if (pt == NULL) {
         /* we coudn't use the cookie, lets set it up to be nuked */
-        fixup_setcookie(rc, cname, "");
+        fixup_setcookie(rc, cname, "", rc->dconf->cookie_path);
     }  else {
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
@@ -1615,7 +1629,7 @@ parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
 
     if (ct == NULL) {
         /* we coudn't use the cookie, lets set it up to be nuked */
-        fixup_setcookie(rc, cname, "");
+        fixup_setcookie(rc, cname, "", rc->dconf->cookie_path);
     }  else {
         if (rc->sconf->debug)
             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,

@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebAuth module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012, 2013
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -136,6 +136,7 @@ struct server_config {
 /* The same, but for the directory configuration. */
 struct dir_config {
     unsigned long app_token_lifetime;
+    const char *cookie_path;
     bool do_logout;
     bool dont_cache;
     bool extra_redirect;

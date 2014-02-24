@@ -1,6 +1,19 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.5.6 (unreleased)
+WebAuth 4.6.0 (unreleased)
+
+    mod_webauth supports a new configuration directive, WebAuthCookiePath,
+    which scopes all cookies set by mod_webauth to the given path.  This
+    allows separate sections of the same virtual host to be treated as
+    independent for authentication purposes.  This can be useful when
+    controlling factor restrictions via the user information service.
+    When using this directive with a logout link, be sure that the logout
+    configuration (WebAuthDoLogout) is subject to the same
+    WebAuthCookiePath directive or it will not work properly.  Be aware
+    that the current version of mod_webauth does not correctly handle
+    receiving multiple cookies with the same name from the browser.  When
+    using this directive, ensure that all WebAuth-protected portions of
+    the site use this directive and none of the scopes are overlapping.
 
     WebAuthOptional should now work properly with Apache 2.4.  Thanks to
     Benjamin Coddington for the patches.
