@@ -1,7 +1,7 @@
 # An object encapsulating a request to a WebKDC.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2005, 2009, 2012, 2013
+# Copyright 2002, 2003, 2005, 2009, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -108,6 +108,7 @@ __END__
 
 =for stopwords
 WebAuth WebKDC login IP otp username decrypt WebLogin Allbery multifactor
+ADDR
 
 =head1 NAME
 
