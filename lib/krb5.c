@@ -19,7 +19,7 @@
  * both.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2007, 2009, 2010, 2011, 2012, 2013
+ * Copyright 2002, 2003, 2006, 2007, 2009, 2010, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -30,6 +30,10 @@
 #include <portable/krb5.h>
 #include <portable/system.h>
 
+#ifdef HAVE_REMCTL
+# include <remctl.h>
+#endif
+
 #include <lib/internal.h>
 #include <util/macros.h>
 #include <webauth/basic.h>
@@ -37,13 +41,15 @@
 
 /*
  * A WebAuth Kerberos context.  This represents a local identity and set of
- * tickets, along with APR and Kerberos context.
+ * tickets, along with an APR and Kerberos context and configuration for
+ * password change.
  */
 struct webauth_krb5 {
     apr_pool_t *pool;
     krb5_context ctx;
     krb5_ccache cc;
     krb5_principal princ;
+    struct webauth_krb5_change_config change;
 };
 
 /*
@@ -1068,14 +1074,31 @@ done:
 
 
 /*
- * Change a user's password, given context and the new password.  The user to
- * change should be already in the context, which should also have credentials
- * for kadmin/changepw in order to perform the change.
+ * Simpler version of webauth_krb5_read_auth_data without any data.  Most
+ * callers will be able to use this.
  */
 int
-webauth_krb5_change_password(struct webauth_context *ctx,
-                             struct webauth_krb5 *kc,
-                             const char *password)
+webauth_krb5_read_auth(struct webauth_context *ctx, struct webauth_krb5 *kc,
+                       const void *req, size_t length, const char *keytab,
+                       const char *server_principal, char **client_principal,
+                       enum webauth_krb5_canon canon)
+{
+    return webauth_krb5_read_auth_data(ctx, kc, req, length, keytab,
+                                       server_principal, NULL,
+                                       client_principal, canon, NULL, 0,
+                                       NULL, 0);
+}
+
+
+/*
+ * Change a user's password, given context and the new password, using the
+ * kpasswd protocol.  The user to change should be already in the context,
+ * which should also have credentials for kadmin/changepw in order to perform
+ * the change.
+ */
+static int
+kpasswd_change_password(struct webauth_context *ctx, struct webauth_krb5 *kc,
+                        const char *password)
 {
     krb5_error_code code;
     int result_code = 0;
@@ -1159,17 +1182,226 @@ done:
 
 
 /*
- * Simpler version of webauth_krb5_read_auth_data without any data.  Most
- * callers will be able to use this.
+ * Change a user's password, given context and the new password, using the
+ * remctl protocol.  The user to change should be already in the context,
+ * which should also have credentials for the remote server identity (as
+ * configured by kc->change.identity) unless those credentials can be
+ * retrieved with a TGS-REQ.
+ */
+#ifdef HAVE_REMCTL
+static int
+remctl_change_password(struct webauth_context *ctx, struct webauth_krb5 *kc,
+                       const char *password)
+{
+    int s;
+    char *cache;
+    size_t offset;
+    struct remctl *r = NULL;
+    struct remctl_output *out;
+    struct wai_buffer *errors;
+    struct webauth_krb5_change_config *c = &kc->change;
+    const char *command[4];
+
+    /* Initialize the remctl context. */
+    r = remctl_new();
+    if (r == NULL) {
+        s = WA_ERR_NO_MEM;
+        wai_error_set_system(ctx, s, errno, "initializing remctl");
+        return s;
+    }
+
+    /* Point remctl at the ticket cache from the Kerberos context. */
+    s = webauth_krb5_get_cache(ctx, kc, &cache);
+    if (s != WA_ERR_NONE)
+        goto fail;
+    if (!remctl_set_ccache(r, cache)) {
+        if (setenv("KRB5CCNAME", cache, 1) < 0) {
+            s = WA_ERR_NO_MEM;
+            wai_error_set_system(ctx, s, errno,
+                                 "setting KRB5CCNAME for remctl");
+            goto fail;
+        }
+    }
+
+    /* Set a timeout if one was given. */
+    if (c->timeout > 0)
+        remctl_set_timeout(r, c->timeout);
+
+    /* Set up and execute the command. */
+    command[0] = c->command;
+    command[1] = c->subcommand;
+    command[2] = password;
+    command[3] = NULL;
+    if (!remctl_open(r, c->host, c->port, c->identity)) {
+        s = WA_ERR_REMOTE_FAILURE;
+        wai_error_set(ctx, s, "%s", remctl_error(r));
+        goto fail;
+    }
+    if (!remctl_command(r, command)) {
+        s = WA_ERR_REMOTE_FAILURE;
+        wai_error_set(ctx, s, "%s", remctl_error(r));
+        goto fail;
+    }
+
+    /*
+     * Retrieve the results.  Accumulate errors in the errors variable,
+     * although we ignore that stream unless the exit status is non-zero.
+     */
+    errors = wai_buffer_new(ctx->pool);
+    do {
+        out = remctl_output(r);
+        if (out == NULL) {
+            s = WA_ERR_REMOTE_FAILURE;
+            wai_error_set(ctx, s, "%s", remctl_error(r));
+            goto fail;
+        }
+
+        /* Standard output from password change is ignored entirely. */
+        switch (out->type) {
+        case REMCTL_OUT_OUTPUT:
+            switch (out->stream) {
+            case 1:
+                break;
+            default:
+                wai_buffer_append(errors, out->data, out->length);
+                break;
+            }
+            break;
+        case REMCTL_OUT_ERROR:
+            s = WA_ERR_REMOTE_FAILURE;
+            wai_buffer_set(errors, out->data, out->length);
+            wai_error_set(ctx, s, "%s", errors->data);
+            goto fail;
+        case REMCTL_OUT_STATUS:
+            if (out->status != 0) {
+                if (errors->data == NULL)
+                    wai_buffer_append_sprintf(errors,
+                                              "program exited with status %d",
+                                              out->status);
+                if (wai_buffer_find_string(errors, "\n", 0, &offset))
+                    errors->data[offset] = '\0';
+                s = WA_ERR_REMOTE_FAILURE;
+                wai_error_set(ctx, s, "%s", errors->data);
+                goto fail;
+            }
+        case REMCTL_OUT_DONE:
+        default:
+            break;
+        }
+    } while (out->type == REMCTL_OUT_OUTPUT);
+
+    /* Success. */
+    remctl_close(r);
+    return WA_ERR_NONE;
+
+fail:
+    if (r != NULL)
+        remctl_close(r);
+    return s;
+}
+#else /* !HAVE_REMCTL */
+static int
+remctl_generic(struct webauth_context *ctx, struct webauth_krb5 *kc UNUSED,
+               const char *password UNUSED)
+{
+    int s;
+
+    s = WA_ERR_UNIMPLEMENTED;
+    wai_error_set(ctx, s, "not built with remctl support");
+    return s;
+}
+#endif /* !HAVE_REMCTL */
+
+
+/*
+ * Helper function to apr_pstrdup a string if non-NULL or return NULL if the
+ * string is NULL.
+ */
+static const char *
+pstrdup_null(apr_pool_t *pool, const char *string)
+{
+    if (string == NULL)
+        return string;
+    else
+        return apr_pstrdup(pool, string);
+}
+
+
+/*
+ * Configure Kerberos password change.  This does sanity checks on the new
+ * configuration and then copies it into the pool memory used for the Kerberos
+ * context.
  */
 int
-webauth_krb5_read_auth(struct webauth_context *ctx, struct webauth_krb5 *kc,
-                       const void *req, size_t length, const char *keytab,
-                       const char *server_principal, char **client_principal,
-                       enum webauth_krb5_canon canon)
+webauth_krb5_change_config(struct webauth_context *ctx,
+                           struct webauth_krb5 *kc,
+                           struct webauth_krb5_change_config *config)
 {
-    return webauth_krb5_read_auth_data(ctx, kc, req, length, keytab,
-                                       server_principal, NULL,
-                                       client_principal, canon, NULL, 0,
-                                       NULL, 0);
+    int s = WA_ERR_NONE;
+
+    /* Verify that the new configuration is sane. */
+    if (config->protocol == WA_CHANGE_REMCTL) {
+        if (config->host == NULL) {
+            s = WA_ERR_INVALID;
+            wai_error_set(ctx, s, "password change host must be set");
+            return s;
+        }
+        if (config->command == NULL) {
+            s = WA_ERR_INVALID;
+            wai_error_set(ctx, s, "password change command must be set");
+            return s;
+        }
+        if (config->subcommand == NULL) {
+            s = WA_ERR_INVALID;
+            wai_error_set(ctx, s, "password change subcommand must be set");
+            return s;
+        }
+    } else if (config->protocol != WA_CHANGE_KPASSWD) {
+        s = WA_ERR_UNIMPLEMENTED;
+        wai_error_set(ctx, s, "unknown protocol %d", config->protocol);
+        return s;
+    }
+
+    /* Clear everything and return if using the kpasswd protocol. */
+    if (config->protocol == WA_CHANGE_KPASSWD) {
+        memset(&kc->change, 0, sizeof(kc->change));
+        return WA_ERR_NONE;
+    }
+
+    /*
+     * Configuration for the remctl protocol.  Copy the configuration into the
+     * webauth_krb5 struct and the local pool.
+     */
+    kc->change.protocol   = config->protocol;
+    kc->change.host       = apr_pstrdup(kc->pool, config->host);
+    kc->change.port       = config->port;
+    kc->change.identity   = pstrdup_null(kc->pool, config->identity);
+    kc->change.command    = pstrdup_null(kc->pool, config->command);
+    kc->change.subcommand = pstrdup_null(kc->pool, config->subcommand);
+    kc->change.timeout    = config->timeout;
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Public API for password change.  Based on the stored password change
+ * configuration, calls either kpasswd_change_password or
+ * remctl_change_password to do the work.  The webauth_krb5 context should
+ * already contain the appropriate user credentials.
+ */
+int
+webauth_krb5_change_password(struct webauth_context *ctx,
+                             struct webauth_krb5 *kc, const char *password)
+
+{
+    switch (kc->change.protocol) {
+    case WA_CHANGE_KPASSWD:
+        return kpasswd_change_password(ctx, kc, password);
+    case WA_CHANGE_REMCTL:
+        return remctl_change_password(ctx, kc, password);
+    default:
+        /* Should be impossible due to webauth_krb5_change_config checks. */
+        wai_error_set(ctx, WA_ERR_INVALID, "invalid password change protocol");
+        return WA_ERR_INVALID;
+    }
 }

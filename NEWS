@@ -35,6 +35,14 @@ WebAuth 4.6.0 (unreleased)
     the user originally typed.  The WebKDC may have done Kerberos
     canonicalization and aname to localname mapping.
 
+    The WebAuth Kerberos API now supports Kerberos password change via the
+    remctl protocol, which is more robust than the kpasswd protocol when
+    password changes can take some time.  This can be configured via the
+    new webauth_krb5_change_config function.  The remote remctl server
+    must provide a command and subcommand that takes a single argument,
+    the new password, and changes the password for the authenticated
+    principal that sent the command.
+
     Set the correct template variable when the code field is left blank on
     the WebLogin multifactor form.
 

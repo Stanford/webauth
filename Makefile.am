@@ -1,7 +1,7 @@
 # Automake makefile for WebAuth.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009, 2010, 2011, 2012, 2013
+# Copyright 2009, 2010, 2011, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -104,7 +104,7 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	lib/encoding-rules lib/internal.h lib/libwebauth.map		    \
 	lib/libwebauth.pc.in lib/libwebauth.sym perl/MANIFEST		    \
 	perl/MANIFEST.SKIP tests/TESTS tests/config/README		    \
-	tests/data/cmd-webkdc tests/data/creds				    \
+	tests/data/cmd-password tests/data/cmd-webkdc tests/data/creds	    \
 	tests/data/generate-krb5-conf tests/data/id.acl tests/data/keyring  \
 	tests/data/make-krb5-cred tests/data/make-tokens		    \
 	tests/data/perl.conf tests/data/perlcriticrc tests/data/perltidyrc  \
@@ -354,18 +354,19 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/errors-t \
-	tests/lib/factors-t tests/lib/hex-t tests/lib/interval-t	  \
-	tests/lib/keyring-t tests/lib/keys-t tests/lib/krb5-t		  \
-	tests/lib/krb5-cred-t tests/lib/krb5-tgt-t tests/lib/userinfo-t	  \
-	tests/lib/token-crypto-t tests/lib/token-decode-t		  \
-	tests/lib/token-encode-t tests/lib/token-merge-t		  \
-	tests/lib/was-cache-t tests/lib/webkdc-krb-t			  \
-	tests/lib/webkdc-login-t tests/lib/webkdc-mf-t			  \
-	tests/portable/asprintf-t tests/portable/mkstemp-t		  \
-	tests/portable/setenv-t tests/portable/snprintf-t		  \
-	tests/portable/strlcat-t tests/portable/strlcpy-t		  \
-	tests/portable/strndup-t tests/util/messages-t tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/errors-t  \
+	tests/lib/factors-t tests/lib/hex-t tests/lib/interval-t	   \
+	tests/lib/keyring-t tests/lib/keys-t tests/lib/krb5-t		   \
+	tests/lib/krb5-cred-t tests/lib/krb5-remctl-t tests/lib/krb5-tgt-t \
+	tests/lib/userinfo-t tests/lib/token-crypto-t			   \
+	tests/lib/token-decode-t tests/lib/token-encode-t		   \
+	tests/lib/token-merge-t tests/lib/was-cache-t			   \
+	tests/lib/webkdc-krb-t tests/lib/webkdc-login-t			   \
+	tests/lib/webkdc-mf-t tests/portable/asprintf-t			   \
+	tests/portable/mkstemp-t tests/portable/setenv-t		   \
+	tests/portable/snprintf-t tests/portable/strlcat-t		   \
+	tests/portable/strlcpy-t tests/portable/strndup-t		   \
+	tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -408,6 +409,10 @@ tests_lib_krb5_cred_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_krb5_cred_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_cred_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
+tests_lib_krb5_remctl_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_remctl_t_LDFLAGS = $(KRB5_LDFLAGS)
+tests_lib_krb5_remctl_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la $(KRB5_LIBS)
 tests_lib_krb5_tgt_t_CPPFLAGS = $(APRUTIL_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
