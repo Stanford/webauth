@@ -41,7 +41,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0506';
+    $VERSION = '4.0600';
 }
 
 # Constructor.  Requires a WebAuth context and optionally can take an encoded
