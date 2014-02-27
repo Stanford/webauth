@@ -3,7 +3,7 @@
  *
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2012, 2013
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -12,6 +12,8 @@
 #include <config.h>
 #include <portable/krb5.h>
 #include <portable/system.h>
+
+#include <time.h>
 
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
@@ -41,8 +43,15 @@ static krb5_addresses *const test_addrlist_ptr
 #endif
 
 #define CHECK(ctx, s, m) check_status((ctx), (s), (m), __FILE__, __LINE__)
+#define CHECK_CHANGE(ctx, s, m) \
+    check_change((ctx), (s), (m), __FILE__, __LINE__)
 
 
+/*
+ * Check that a WebAuth call succeeded.  If it didn't, display the error
+ * message with diag in addition to reporting a failure.  Normally called via
+ * the CHECK() macro.
+ */
 static void
 check_status(struct webauth_context *ctx, int s, const char *message,
              const char *file, unsigned long line)
@@ -51,6 +60,32 @@ check_status(struct webauth_context *ctx, int s, const char *message,
         diag("webauth call failed %s line %lu: %s (%d)\n", file, line,
              webauth_error_message(ctx, s), s);
     is_int(s, WA_ERR_NONE, "%s", message);
+}
+
+
+/*
+ * Check the result of a password change.
+ *
+ * Unfortunately, the result reporting from the Kerberos password change
+ * protocol does not work properly through NAT (although the password is
+ * changed), so these password changes may fail with "Incorrect net address"
+ * errors.  Detect that case and report it as a skip.
+ */
+static void
+check_change(struct webauth_context *ctx, int s, const char *message,
+             const char *file, unsigned long line)
+{
+    const char *error;
+
+    if (s != WA_ERR_KRB5) {
+        check_status(ctx, s, message, file, line);
+        return;
+    }
+    error = webauth_error_message(ctx, s);
+    if (strstr(error, "Incorrect net address") != NULL)
+        skip("password change status bogus behind NAT");
+    else
+        check_status(ctx, s, message, file, line);
 }
 
 
@@ -144,7 +179,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_krb5 *kc;
     struct kerberos_config *config;
-    char *server, *cp, *prealm, *cache, *tmpdir;
+    char *server, *cp, *prealm, *cache, *tmpdir, *password;
     void *sa, *tgt, *ticket, *tmp;
     size_t salen, tgtlen, ticketlen;
     time_t expiration;
@@ -155,7 +190,7 @@ main(void)
     /* Read the configuration information. */
     config = kerberos_setup(TAP_KRB_NEEDS_BOTH);
     
-    plan(48);
+    plan(53);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -323,6 +358,30 @@ main(void)
     is_string(cache, ccache, "...and the name is correct");
     webauth_krb5_free(ctx, kc);
     ok(access(cache, F_OK) < 0, "...and the cache is destroyed on free");
+
+    /*
+     * Test password change.
+     *
+     * Unfortunately, the Kerberos password change protocol does not work
+     * properly through NAT, so these password changes may fail with
+     * "Incorrect net address" errors.  Detect that case and skip the tests.
+     */
+    s = webauth_krb5_new(ctx, &kc);
+    CHECK(ctx, s, "Creating a new context");
+    s = webauth_krb5_init_via_password(ctx, kc, config->userprinc,
+                                       config->password, "kadmin/changepw",
+                                       NULL, NULL, NULL, NULL);
+    CHECK(ctx, s, "kadmin/changepw initialization from password");
+    basprintf(&password, "%s_tmp%lu", config->password,
+              (unsigned long) time(NULL));
+    s = webauth_krb5_change_password(ctx, kc, password);
+    CHECK_CHANGE(ctx, s, "Password change");
+    s = webauth_krb5_init_via_password(ctx, kc, config->userprinc,
+                                       password, "kadmin/changepw",
+                                       NULL, NULL, NULL, NULL);
+    CHECK(ctx, s, "kadmin/changepw initialization from new password");
+    s = webauth_krb5_change_password(ctx, kc, config->password);
+    CHECK_CHANGE(ctx, s, "Change password back");
 
     /* Clean up. */
     unlink(cache);
