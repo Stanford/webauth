@@ -366,6 +366,15 @@ WebLogin:
  * WEBAUTH-185: Simplify the various ways REMOTE_USER can be supported
    into a single or small number of straightforward configurations.
 
+ * WEBAUTH-199: Support running WebLogin with taint checking enabled.
+
+ * WEBAUTH-200:  The most common problem with multifactor authentication
+   is that people will start sessions to a web site in multiple browser
+   windows simultaneously, and then attempt to authenticate in each window
+   using the same multifactor code. Find some way for WebLogin to detect
+   that an authentication has already happened in a different window and
+   avoid error messages about reusing multifactor codes.
+
 Perl Modules:
 
  * WEBAUTH-105: To the extent that they will survive, all the WebKDC::*
@@ -498,6 +507,11 @@ Documentation:
 
  * WEBAUTH-195: Document the trust relationships between the WebAuth
    components.
+
+ * WEBAUTH-197: Document when Perl APIs were introduced.
+
+ * WEBAUTH-198: Document when Apache configuration directives were
+   introduced.
 
 Style:
 
