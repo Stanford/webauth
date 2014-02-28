@@ -34,6 +34,7 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
 	perl/lib/WebKDC/XmlDoc.pm perl/lib/WebKDC/XmlElement.pm		    \
 	perl/lib/WebLogin.pm perl/t/TODO perl/t/cookies/cookies.t	    \
 	perl/t/cookies/factor-token.t perl/t/data/README		    \
+	perl/t/data/cmd-password perl/t/data/conf-password		    \
 	perl/t/data/pages/confirm/device-expiring			    \
 	perl/t/data/pages/confirm/expired-password			    \
 	perl/t/data/pages/confirm/no-pwexpiration			    \
@@ -487,7 +488,7 @@ check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS $(BINDINGS_CHECK)
 	@set -e; if [ -f perl/Build ] ; then				\
 	    echo '' ;							\
 	    cd perl && LD_LIBRARY_PATH='$(abs_top_builddir)/lib/.libs'	\
-		./Build test ;						\
+		REMCTLD='$(PATH_REMCTLD)' ./Build test ;		\
 	fi
 
 # Used by maintainers to run the main test suite under valgrind.  Suppress

@@ -1243,10 +1243,14 @@ sub add_changepw_token {
     print STDERR "adding a kadmin/changepw cred token for $username\n"
         if $self->param ('debug');
 
-    # Create a ticket for kadmin/changepw with the user name and password.
-    my ($ticket, $expires);
-    my $changepw = 'kadmin/changepw';
-    if ($WebKDC::Config::DEFAULT_REALM) {
+    # Create a ticket for the password change principal with the username and
+    # password.
+    my ($ticket, $expires, $changepw);
+    if ($WebKDC::Config::PASSWORD_CHANGE_SERVER) {
+        $changepw = $WebKDC::Config::PASSWORD_CHANGE_PRINC;
+    }
+    $changepw ||= 'kadmin/changepw';
+    if ($WebKDC::Config::DEFAULT_REALM && $changepw !~ /\@/) {
         $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
     }
     eval {
@@ -1255,8 +1259,8 @@ sub add_changepw_token {
         ($ticket, $expires) = $context->export_cred ($changepw);
     };
     if ($@) {
-        print STDERR "failed to create kadmin/changepw credential for"
-            . " $username: $@\n" if $self->param ('logging');
+        print STDERR "failed to create $changepw credential for $username:"
+            . " $@\n" if $self->param ('logging');
         return;
     }
 
@@ -1354,6 +1358,14 @@ sub change_user_password {
     }
 
     # Change the password and return any error status plus exception object.
+    my $changepw;
+    if ($WebKDC::Config::PASSWORD_CHANGE_SERVER) {
+        $changepw = $WebKDC::Config::PASSWORD_CHANGE_PRINC;
+    }
+    $changepw ||= 'kadmin/changepw';
+    if ($WebKDC::Config::DEFAULT_REALM && $changepw !~ /\@/) {
+        $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
+    }
     eval {
         my $context = $wa->krb5_new;
         $context->import_cred ($token->data);
@@ -1363,7 +1375,7 @@ sub change_user_password {
                 protocol   => 'remctl',
                 host       => $WebKDC::Config::PASSWORD_CHANGE_SERVER,
                 port       => $WebKDC::Config::PASSWORD_CHANGE_PORT,
-                identity   => $WebKDC::Config::PASSWORD_CHANGE_PRINC,
+                identity   => $changepw,
                 command    => $WebKDC::Config::PASSWORD_CHANGE_COMMAND,
                 subcommand => $WebKDC::Config::PASSWORD_CHANGE_SUBCOMMAND,
             };
