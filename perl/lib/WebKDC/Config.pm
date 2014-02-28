@@ -1,7 +1,7 @@
 # Configuration for the WebLogin script.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013
+# Copyright 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -66,6 +66,12 @@ our $MULTIFACTOR_TGT;
 our $MULTIFACTOR_SERVER;
 our $MULTIFACTOR_PORT = 0;
 our $MULTIFACTOR_PRINC = '';
+
+our $PASSWORD_CHANGE_COMMAND;
+our $PASSWORD_CHANGE_PORT = 0;
+our $PASSWORD_CHANGE_PRINC = '';
+our $PASSWORD_CHANGE_SERVER;
+our $PASSWORD_CHANGE_SUBCOMMAND;
 
 our $REMUSER_ENABLED;
 our $REMUSER_EXPIRES = 60 * 60 * 8;

@@ -43,6 +43,15 @@ WebAuth 4.6.0 (unreleased)
     the new password, and changes the password for the authenticated
     principal that sent the command.
 
+    The WebAuth::Krb5 change_password function now takes an optional args
+    parameter that can be used to set the same configuration that can be
+    set with webauth_krb5_change_config.
+
+    WebLogin now supports using the remctl-based password change protocol
+    instead of kpasswd.  This is controlled by setting
+    $PASSWORD_CHANGE_HOST and several other variables in the WebLogin
+    configuration.  See docs/weblogin-config for more information.
+
     Set the correct template variable when the code field is left blank on
     the WebLogin multifactor form.
 

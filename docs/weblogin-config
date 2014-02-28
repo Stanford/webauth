@@ -404,6 +404,30 @@ Configuration
 
       Default: not set.
 
+  $PASSWORD_CHANGE_COMMAND
+  $PASSWORD_CHANGE_PORT
+  $PASSWORD_CHANGE_PRINC
+  $PASSWORD_CHANGE_SERVER
+  $PASSWORD_CHANGE_SUBCOMMAND
+
+      Configuration to use remctl to do password changes instead of using
+      kpasswd.  By default, the normal kpasswd protocol is used for
+      password change, but this is a UDP-based protocol with some known
+      problems and poor behavior if password changes are slow.  If
+      $PASSWORD_CHANGE_SERVER is set, password changes will be done via a
+      remctl protocol instead.  (WebAuth must be built with remctl
+      support.)
+
+      The remaining options configure the service principal to which to
+      authenticate when sending the command (_PRINC), the port to use if
+      not the remctl default (_PORT), and the remctl command and
+      subcommand to send (_COMMAND and _SUBCOMMAND).  The only remaining
+      argument will be the new password.  _COMMAND and _SUBCOMMAND must be
+      set; the other options are all optional and will use remctl defaults
+      if not set.
+
+      Default: not set.
+
   $RATE_LIMIT_INTERVAL
 
       How long failed login attempts are remembered in seconds.  This

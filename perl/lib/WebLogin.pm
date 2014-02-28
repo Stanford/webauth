@@ -4,7 +4,7 @@
 # Extensive updates by Russ Allbery <rra@stanford.edu>
 # Rewritten for CGI::Application by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-#     2013 The Board of Trustees of the Leland Stanford Junior University
+#     2013, 2014 The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -1357,7 +1357,18 @@ sub change_user_password {
     eval {
         my $context = $wa->krb5_new;
         $context->import_cred ($token->data);
-        $context->change_password ($password);
+        my $args = { protocol => 'kpasswd' };
+        if ($WebKDC::Config::PASSWORD_CHANGE_SERVER) {
+            $args = {
+                protocol   => 'remctl',
+                host       => $WebKDC::Config::PASSWORD_CHANGE_SERVER,
+                port       => $WebKDC::Config::PASSWORD_CHANGE_PORT,
+                identity   => $WebKDC::Config::PASSWORD_CHANGE_PRINC,
+                command    => $WebKDC::Config::PASSWORD_CHANGE_COMMAND,
+                subcommand => $WebKDC::Config::PASSWORD_CHANGE_SUBCOMMAND,
+            };
+        }
+        $context->change_password ($password, $args);
     };
     my $e = $@;
     if (ref $e and $e->isa('WebKDC::WebKDCException')) {

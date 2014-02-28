@@ -19,7 +19,7 @@
  *
  * Originally written by Roland Schemers
  * Substantially rewritten by Russ Allbery <rra@stanford.edu>
- * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013
+ * Copyright 2003, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -1245,16 +1245,60 @@ read_auth(self, request, keytab, server = NULL, canon = 0, data = NULL)
 
 
 void
-change_password(self, password)
+change_password(self, password, args = NULL)
     WebAuth::Krb5 self
     const char *password
+    HV *args
   PREINIT:
     int status;
     struct webauth_context *ctx;
+    struct webauth_krb5_change_config config;
+    SV **value;
+    const char *protocol;
   CODE:
 {
     CROAK_NULL_SELF(self, "WebAuth::Krb5", "change_password");
     ctx = get_ctx(self->ctx, "WebAuth::Krb5");
+
+    /*
+     * If there are any arguments, we need to convert those into a
+     * webauth_krb5_change_config struct and set them in the context.  If
+     * there aren't, clear the configuration to force the use of defaults.
+     */
+    memset(&config, 0, sizeof(config));
+    if (args != NULL) {
+        value = hv_fetchs(args, "protocol", 0);
+        protocol = SvPV_nolen(*value);
+        if (strcmp("kpasswd", protocol) == 0)
+            config.protocol = WA_CHANGE_KPASSWD;
+        else if (strcmp("remctl", protocol) == 0)
+            config.protocol = WA_CHANGE_REMCTL;
+        else
+            croak("invalid password change protocol %s", protocol);
+        value = hv_fetchs(args, "host", 0);
+        if (value != NULL)
+            config.host = SvPV_nolen(*value);
+        value = hv_fetchs(args, "port", 0);
+        if (value != NULL)
+            config.port = SvIV(*value);
+        value = hv_fetchs(args, "identity", 0);
+        if (value != NULL)
+            config.identity = SvPV_nolen(*value);
+        value = hv_fetchs(args, "command", 0);
+        if (value != NULL)
+            config.command = SvPV_nolen(*value);
+        value = hv_fetchs(args, "subcommand", 0);
+        if (value != NULL)
+            config.subcommand = SvPV_nolen(*value);
+        value = hv_fetchs(args, "timeout", 0);
+        if (value != NULL)
+            config.timeout = SvIV(*value);
+    }
+    status = webauth_krb5_change_config(ctx, self->kc, &config);
+    if (status != WA_ERR_NONE)
+        webauth_croak(ctx, "webauth_krb5_change_config", status);
+
+    /* Do the actual password change. */
     status = webauth_krb5_change_password(ctx, self->kc, password);
     if (status != WA_ERR_NONE)
         webauth_croak(ctx, "webauth_krb5_change_password", status);

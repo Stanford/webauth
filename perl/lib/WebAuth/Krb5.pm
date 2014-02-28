@@ -6,7 +6,7 @@
 # and provides version and documentation information.
 #
 # Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -63,7 +63,7 @@ sub new {
 =for stopwords
 WebAuth WEBAUTH timestamp Allbery Kerberos username keytab CTX TGT
 canonicalization PRINC SPRINC authenticator EDATA canonicalized
-Kerberos-related decrypted KDC
+Kerberos-related decrypted KDC TGS-REQ kpasswd remctl subcommand
 
 =head1 NAME
 
@@ -113,12 +113,91 @@ WebAuth::Exception rather than by return status.
 
 =over 4
 
-=item change_password (PASSWORD)
+=item change_password (PASSWORD[, ARGS])
 
 Change the password of the user represented by the Kerberos context to
-PASSWORD.  CTX must already contain a kadmin/changepw credential and will
-generally be created with krb5_init_via_password() or read from a context
-created that way using krb5_init_via_cred().
+PASSWORD.  The WebAuth::Krb5 object must already contain the credentials
+required to change a password (normally a kadmin/changepw credential
+created with krb5_init_via_password() or read from a context created that
+way using krb5_init_via_cred()).
+
+By default, the kpasswd protocol is used to do the password change.  This
+behavior can be modified using the optional ARGS argument which, if
+present, should be a reference to a hash with one or more of the following
+keys:
+
+=over 4
+
+=item command
+
+The command to send.  Currently only used for the C<remctl> password
+change protocol.
+
+=item host
+
+The host to which to send the password change.  Currently only used for
+the C<remctl> password change protocol.
+
+=item identity
+
+The Kerberos principal of the password change service to which this
+command will authenticate in order to send the change.  The default
+depends on the protocol.  Currently this is only used for the C<remctl>
+password change protocol, which defaults to the normal principal used by
+remctl clients when sending commands.  However, normally this will be a
+principal that disallows TGS-REQ authentications rather than the remctl
+default.
+
+If this principal disallows TGS-REQ authentications, credentials for this
+principal must already be present in the WebAuth::Krb5 object before
+making this call since they cannot be retrieved from the KDC without
+additional authentication credentials.
+
+=item port
+
+The port on the password change host to contact.  Currently only used for
+the C<remctl> password change protocol.
+
+=item protocol
+
+The password change protocol to use.  Currently supported values are
+C<kpasswd> and C<remctl>.  C<kpasswd> is the default and takes no further
+parameters, so in that case ARGS should normally be omitted.  This key
+should normally always be set.
+
+=item subcommand
+
+The subcommand to send.  Currently only used for the C<remctl> password
+change protocol.
+
+=item timeout
+
+How long to wait, in integer seconds, for a reply before giving up.
+Currently only used for the C<remctl> password change protocol.
+
+=back
+
+An example of doing a password change via the remctl protocol, using
+C<kadmin/changepw> as the service principal and taking the other options
+from global configuration, with a ten-second timeout:
+
+    my $wa = WebAuth->new;
+    my $krb5 = WebAuth::Krb5->new ($wa);
+    $krb5->init_via_password ('user', 'password', 'kadmin/changepw');
+    my $args = {
+        protocol   => 'remctl',
+        host       => $PASSWORD_CHANGE_SERVER,
+        port       => $PASSWORD_CHANGE_PORT,
+        identity   => 'kadmin/changepw',
+        command    => $PASSWORD_CHANGE_COMMAND,
+        subcommand => $PASSWORD_CHANGE_SUBCOMMAND,
+        timeout    => 10,
+    };
+    $krb5->change_password ('new-password', $args);
+
+For the C<remctl> protocol, the server must expose a command and
+subcommand that takes a single argument, the new password, and changes the
+password of the authenticated user.
 
 =item export_cred ([PRINC])
 
