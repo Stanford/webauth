@@ -410,7 +410,7 @@ WebAuth::Krb5:
 =head1 AUTHOR
 
 Roland Schemers, Jon Robertson <jonrober@stanford.edu>, and Russ Allbery
-<rra@stanford.edu>.
+<eagle@eyrie.org>.
 
 =head1 SEE ALSO
 

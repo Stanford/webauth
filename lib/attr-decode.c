@@ -6,7 +6,7 @@
  * tokens and for some other WebAuth persistant data structures, such as
  * service token caches and keyrings.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

@@ -1,7 +1,7 @@
 # WebLogin interactions with the browser for WebAuth
 #
 # Written by Roland Schemers <schemers@stanford.edu>
-# Extensive updates by Russ Allbery <rra@stanford.edu>
+# Extensive updates by Russ Allbery <eagle@eyrie.org>
 # Rewritten for CGI::Application by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
 #     2013, 2014 The Board of Trustees of the Leland Stanford Junior University
@@ -2680,7 +2680,7 @@ This is called from the config screen.
 
 =head1 AUTHORS
 
-Roland Schemers, Russ Allbery <rra@stanford.edu>, and Jon Robertson
+Roland Schemers, Russ Allbery <eagle@eyrie.org>, and Jon Robertson
 <jonrober@stanford.edu>.
 
 =head1 SEE ALSO

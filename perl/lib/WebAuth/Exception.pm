@@ -179,7 +179,7 @@ compare the given string to the verbose error.
 
 =head1 AUTHORS
 
-Roland Schemers and Russ Allbery <rra@stanford.edu>.
+Roland Schemers and Russ Allbery <eagle@eyrie.org>.
 
 =head1 SEE ALSO
 

@@ -10,7 +10,7 @@ Copyright: 2002-2012
 License: Expat
 
 Files: *
-Copyright: 2000-2002, 2004-2012 Russ Allbery <rra@stanford.edu>
+Copyright: 2000-2002, 2004-2012 Russ Allbery <eagle@eyrie.org>
   2001-2013 The Board of Trustees of the Leland Stanford Junior University
 License: Expat
 
@@ -128,7 +128,7 @@ License: rra-public-domain
 
 Files: portable/snprintf.c tests/portable/snprintf-t.c
 Copyright: 1995 Patrick Powell
-  2000-2006 Russ Allbery <rra@stanford.edu>
+  2000-2006 Russ Allbery <eagle@eyrie.org>
   2001 Hrvoje Niksic
   2009-2010 The Board of Trustees of the Leland Stanford Junior University
 License: Powell-snprintf

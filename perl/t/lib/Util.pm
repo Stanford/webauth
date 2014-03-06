@@ -1,7 +1,7 @@
 # Utility class for webauth tests.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Parts from Russ Allbery <rra@stanford.edu>
+# Parts from Russ Allbery <eagle@eyrie.org>
 # Copyright 2010, 2012, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #

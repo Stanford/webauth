@@ -6,7 +6,7 @@
  * This module only has one instance inside a particular Apache server and
  * therefore takes no per-directory configuration.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Based on original code by Roland Schemers
  * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University

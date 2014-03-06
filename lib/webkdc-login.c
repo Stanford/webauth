@@ -6,7 +6,7 @@
  * attempt to authenticate to a WAS, either with proxy tokens or with a
  * username and authentication credential, or both.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

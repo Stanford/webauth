@@ -216,7 +216,7 @@ If the document is empty, the new element becomes the root.
 
 =head1 AUTHOR
 
-Roland Schemers and Russ Allbery <rra@stanford.edu>
+Roland Schemers and Russ Allbery <eagle@eyrie.org>
 
 =head1 SEE ALSO
 

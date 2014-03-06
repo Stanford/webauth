@@ -358,7 +358,7 @@ Convert this XML element (and, recursively, all of its children) to XML.
 
 =head1 AUTHOR
 
-Roland Schemers and Russ Allbery <rra@stanford.edu>
+Roland Schemers and Russ Allbery <eagle@eyrie.org>
 
 =head1 SEE ALSO
 

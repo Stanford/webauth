@@ -7,7 +7,7 @@
  * separate test result, since that makes problem reporting much clearer and
  * more helpful to the developer.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

@@ -1,6 +1,6 @@
 # Perl representation of a WebAuth webkdc-service token.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -132,7 +132,7 @@ Get or set the expiration timestamp for this token in seconds since epoch.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =head1 SEE ALSO
 

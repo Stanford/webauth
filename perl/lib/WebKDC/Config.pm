@@ -1,6 +1,6 @@
 # Configuration for the WebLogin script.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -165,7 +165,7 @@ L<http://webauth.stanford.edu/weblogin-config.html>.
 
 =head1 AUTHORS
 
-Roland Schemers and Russ Allbery <rra@stanford.edu>.
+Roland Schemers and Russ Allbery <eagle@eyrie.org>.
 
 =head1 SEE ALSO
 

@@ -1,7 +1,7 @@
 /*
  * Test suite for keyring handling.
  *
- * Written by Roland Schemers and Russ Allbery <rra@stanford.edu>
+ * Written by Roland Schemers and Russ Allbery <eagle@eyrie.org>
  * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

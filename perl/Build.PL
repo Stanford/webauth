@@ -2,7 +2,7 @@
 #
 # Build script for WebAuth distribution.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2003, 2004, 2005, 2006, 2009, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -17,7 +17,7 @@ use Module::Build;
 # Basic package configuration.
 my $build = Module::Build->new(
     module_name          => 'WebAuth',
-    dist_author          => 'Russ Allbery <rra@stanford.edu>',
+    dist_author          => 'Russ Allbery <eagle@eyrie.org>',
     license              => 'mit',
     recursive_test_files => 1,
     add_to_cleanup       => [qw(webauth_keyring webauth_keyring2)],

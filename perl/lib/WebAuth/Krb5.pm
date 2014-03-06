@@ -5,7 +5,7 @@
 # supplemental methods that are implemented in terms of other underlying calls
 # and provides version and documentation information.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -316,7 +316,7 @@ long periods may therefore result in unexpected memory usage.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =head1 SEE ALSO
 
