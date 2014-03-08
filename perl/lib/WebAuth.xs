@@ -606,7 +606,6 @@ WebAuth::Krb5
 krb5_new(self)
     WebAuth self
   PREINIT:
-    struct webauth_krb5 *kc = NULL;
     WebAuth__Krb5 krb5;
     int status;
     SV *output;
