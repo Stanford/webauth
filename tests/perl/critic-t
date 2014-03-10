@@ -52,7 +52,7 @@ automake_setup();
 use_prereq('Test::Perl::Critic');
 
 # Force the embedded Perl::Tidy check to use the correct configuration.
-local $ENV{PERLTIDY} = test_file_path('/data/perltidyrc');
+local $ENV{PERLTIDY} = test_file_path('data/perltidyrc');
 
 # Import the configuration file.
 Test::Perl::Critic->import(-profile => test_file_path('data/perlcriticrc'));

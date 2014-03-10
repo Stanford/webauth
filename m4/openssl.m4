@@ -12,9 +12,16 @@ dnl RRA_LIB_CRYPTO_SWITCH to set CPPFLAGS, LDFLAGS, and LIBS to include the
 dnl SSL or crypto libraries, saving the current values first, and
 dnl RRA_LIB_OPENSSL_RESTORE and RRA_LIB_CRYPTO_RESTORE to restore those
 dnl settings to before the last RRA_LIB_OPENSSL_SWITCH or
-dnl RRA_LIB_CRYPTO_SWITCH.
+dnl RRA_LIB_CRYPTO_SWITCH.  Defines HAVE_OPENSSL and sets rra_use_OPENSSL to
+dnl true if the library is found.
 dnl
-dnl Depends on the lib-helper.m4 framework.
+dnl Provides the RRA_LIB_OPENSSL_OPTIONAL macro, which should be used if
+dnl OpenSSL support is optional.  This macro will still set the substitution
+dnl variables and shell variables described above, but they'll be empty unless
+dnl OpenSSL libraries are detected.  HAVE_OPENSSL will be defined only if the
+dnl library is found.
+dnl
+dnl Depends on RRA_ENABLE_REDUCED_DEPENDS and the lib-helper.m4 framework.
 dnl
 dnl The canonical version of this file is maintained in the rra-c-util
 dnl package, available at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
@@ -42,7 +49,8 @@ dnl Checks if the OpenSSL and crypto libraries are present.  The single
 dnl argument, if "true", says to fail if the OpenSSL SSL library could not be
 dnl found.
 AC_DEFUN([_RRA_LIB_OPENSSL_INTERNAL],
-[RRA_LIB_HELPER_PATHS([OPENSSL])
+[AC_REQUIRE([RRA_ENABLE_REDUCED_DEPENDS])
+ RRA_LIB_HELPER_PATHS([OPENSSL])
  CRYPTO_CPPFLAGS="$OPENSSL_CPPFLAGS"
  CRYPTO_LDFLAGS="$OPENSSL_LDFLAGS"
  CRYPTO_LIBS=
@@ -50,24 +58,35 @@ AC_DEFUN([_RRA_LIB_OPENSSL_INTERNAL],
  AC_SUBST([CRYPTO_LDFLAGS])
  AC_SUBST([CRYPTO_LIBS])
  RRA_LIB_OPENSSL_SWITCH
- AC_CHECK_LIB([crypto], [AES_cbc_encrypt], [CRYPTO_LIBS=-lcrypto],
-    [AC_MSG_ERROR([cannot find usable OpenSSL crypto library])])
+ rra_openssl_extra=
+ LIBS=
+ AS_IF([test x"$rra_reduced_depends" != xtrue],
+    [AC_SEARCH_LIBS([dlopen], [dl])])
+ rra_openssl_extra="$LIBS"
+ LIBS="$rra_OPENSSL_save_LIBS"
+ AC_CHECK_LIB([crypto], [AES_cbc_encrypt],
+    [CRYPTO_LIBS="-lcrypto $rra_openssl_extra"],
+    [AS_IF([test x"$1" = xtrue],
+        [AC_MSG_ERROR([cannot find usable OpenSSL crypto library])])],
+    [$rra_openssl_extra])
  AS_IF([test x"$rra_reduced_depends" = xtrue],
+    [AC_CHECK_LIB([ssl], [SSL_library_init], [OPENSSL_LIBS=-lssl],
+        [AS_IF([test x"$1" = xtrue],
+            [AC_MSG_ERROR([cannot find usable OpenSSL library])])])],
     [AC_CHECK_LIB([ssl], [SSL_library_init],
         [OPENSSL_LIBS="-lssl $CRYPTO_LIBS"],
         [AS_IF([test x"$1" = xtrue],
             [AC_MSG_ERROR([cannot find usable OpenSSL library])])],
-        [$CRYPTO_LIBS])],
-    [AC_CHECK_LIB([ssl], [SSL_library_init], [OPENSSL_LIBS=-lssl],
-        [AS_IF([test x"$1" = xtrue],
-            [AC_MSG_ERROR([cannot find usable OpenSSL library])])])])])
+        [$CRYPTO_LIBS])])
+ RRA_LIB_OPENSSL_RESTORE])
 
 dnl The main macro for packages with mandatory OpenSSL support.
 AC_DEFUN([RRA_LIB_OPENSSL],
 [RRA_LIB_HELPER_VAR_INIT([OPENSSL])
  RRA_LIB_HELPER_WITH([openssl], [OpenSSL], [OPENSSL])
  _RRA_LIB_OPENSSL_INTERNAL([true])
- AC_DEFINE([HAVE_SSL], 1, [Define if libssl is available.])])
+ rra_use_OPENSSL=true
+ AC_DEFINE([HAVE_OPENSSL], 1, [Define if libssl is available.])])
 
 dnl The main macro for packages with optional OpenSSL support.
 AC_DEFUN([RRA_LIB_OPENSSL_OPTIONAL],
@@ -78,4 +97,5 @@ AC_DEFUN([RRA_LIB_OPENSSL_OPTIONAL],
         [_RRA_LIB_OPENSSL_INTERNAL([true])],
         [_RRA_LIB_OPENSSL_INTERNAL([false])])])
  AS_IF([test x"$OPENSSL_LIBS" != x],
-    [AC_DEFINE([HAVE_SSL], 1, [Define if libssl is available.])])])
+    [rra_use_OPENSSL=true
+     AC_DEFINE([HAVE_OPENSSL], 1, [Define if libssl is available.])])])

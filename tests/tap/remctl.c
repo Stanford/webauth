@@ -33,15 +33,6 @@
 #include <config.h>
 #include <portable/system.h>
 
-#include <fcntl.h>
-#include <signal.h>
-#ifdef HAVE_SYS_SELECT_H
-# include <sys/select.h>
-#endif
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
 #include <tests/tap/macros.h>

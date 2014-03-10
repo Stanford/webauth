@@ -54,7 +54,7 @@
  * which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2008, 2009, 2010
+ * Copyright 2008, 2009, 2010, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  * Copyright (c) 2004, 2005, 2006
  *     by Internet Systems Consortium, Inc. ("ISC")
@@ -160,6 +160,31 @@ HANDLER_FUNCTION(die)
 
 
 /*
+ * Reset all handlers back to the defaults and free all allocated memory.
+ * This is primarily useful for programs that undergo comprehensive memory
+ * allocation analysis.
+ */
+void
+message_handlers_reset(void)
+{
+    free(debug_handlers);
+    debug_handlers = NULL;
+    if (notice_handlers != stdout_handlers) {
+        free(notice_handlers);
+        notice_handlers = stdout_handlers;
+    }
+    if (warn_handlers != stderr_handlers) {
+        free(warn_handlers);
+        warn_handlers = stderr_handlers;
+    }
+    if (die_handlers != stderr_handlers) {
+        free(die_handlers);
+        die_handlers = stderr_handlers;
+    }
+}
+
+
+/*
  * Print a message to stdout, supporting message_program_name.
  */
 void
@@ -204,6 +229,7 @@ static void
 message_log_syslog(int pri, size_t len, const char *fmt, va_list args, int err)
 {
     char *buffer;
+    int status;
 
     buffer = malloc(len + 1);
     if (buffer == NULL) {
@@ -211,7 +237,12 @@ message_log_syslog(int pri, size_t len, const char *fmt, va_list args, int err)
                 (unsigned long) len + 1, __FILE__, __LINE__, strerror(errno));
         exit(message_fatal_cleanup ? (*message_fatal_cleanup)() : 1);
     }
-    vsnprintf(buffer, len + 1, fmt, args);
+    status = vsnprintf(buffer, len + 1, fmt, args);
+    if (status < 0) {
+        warn("failed to format output with vsnprintf in syslog handler");
+        free(buffer);
+        return;
+    }
 #ifdef _WIN32
     {
         HANDLE eventlog;

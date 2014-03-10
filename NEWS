@@ -70,12 +70,24 @@ WebAuth 4.6.0 (unreleased)
     Fix configure probes for OpenSSL on platforms without transitive
     shared library dependencies.
 
-    Update to C TAP Harness 2.4:
+    Update to rra-c-util 5.3:
+
+    * Avoid leaking dummy symbols into shared libraries.
+    * Probe for libdl for OpenSSL libraries (required on AIX).
+    * Distinguish failure to format output in asprintf wrappers.
+    * Check return status of snprintf properly.
+    * Better remctld process management in the test suite.
+    * Better memory management in Kerberos tests.
+    * Fix syntax error when buiding portable/krb5.h with a C++ compiler.
+
+    Update to C TAP Harness 3.0:
 
     * Add new diag_file_add and _remove API to the C TAP library.
     * Add new test_cleanup_register API to the C TAP library.
     * Suppress lazy plans and test summaries if the test failed with bail.
     * Add warn_unused_result gcc attributes to relevant functions.
+    * Reopen standard input for tests to /dev/null.
+    * Clean up inherited file descriptors from the test harness.
 
 WebAuth 4.5.5 (2013-08-28)
 
