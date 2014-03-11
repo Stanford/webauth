@@ -5,7 +5,7 @@
  * about a user from the user information service.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -119,8 +119,7 @@ convert_number(struct webauth_context *ctx, const char *string,
     *value = strtoul(string, &end, 10);
     if (*end != '\0' || (*value == ULONG_MAX && errno != 0)) {
         s = WA_ERR_REMOTE_FAILURE;
-        wai_error_set(ctx, s, "invalid number %s in XML", string);
-        return s;
+        return wai_error_set(ctx, s, "invalid number %s in XML", string);
     }
     return WA_ERR_NONE;
 }
@@ -255,11 +254,9 @@ parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
     bool multifactor_required = false;
 
     /* We currently don't check that the user parameter is correct. */
-    if (strcmp(doc->root->name, "authdata") != 0) {
-        wai_error_set(ctx, s, "root element is %s, not authdata",
-                      doc->root->name);
-        return s;
-    }
+    if (strcmp(doc->root->name, "authdata") != 0)
+        return wai_error_set(ctx, s, "root element is %s, not authdata",
+                             doc->root->name);
 
     /* Parse the XML. */
     info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
@@ -325,11 +322,9 @@ parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
     struct webauth_user_validate *validate;
     const char *content;
 
-    if (strcmp(doc->root->name, "authdata") != 0) {
-        wai_error_set(ctx, s, "root element is %s, not authdata",
-                      doc->root->name);
-        return s;
-    }
+    if (strcmp(doc->root->name, "authdata") != 0)
+        return wai_error_set(ctx, s, "root element is %s, not authdata",
+                             doc->root->name);
     validate = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_validate));
     for (child = doc->root->first_child; child != NULL; child = child->next) {
         if (strcmp(child->name, "success") == 0) {
@@ -387,8 +382,7 @@ remctl_generic(struct webauth_context *ctx, const char **command,
     r = remctl_new();
     if (r == NULL) {
         s = WA_ERR_NO_MEM;
-        wai_error_set_system(ctx, s, errno, "initializing remctl");
-        return s;
+        return wai_error_set_system(ctx, s, errno, "initializing remctl");
     }
 
     /*
@@ -521,11 +515,8 @@ static int
 remctl_generic(struct webauth_context *ctx, const char **command UNUSED,
                apr_xml_doc **doc UNUSED)
 {
-    int s;
-
-    s = WA_ERR_UNIMPLEMENTED;
-    wai_error_set(ctx, s, "not built with remctl support");
-    return s;
+    return wai_error_set(ctx, WA_ERR_UNIMPLEMENTED,
+                         "not built with remctl support");
 }
 #endif /* !HAVE_REMCTL */
 
@@ -616,8 +607,7 @@ check_config(struct webauth_context *ctx)
         }
 #ifndef HAVE_REMCTL
         s = WA_ERR_UNIMPLEMENTED;
-        wai_error_set(ctx, s, "not built with remctl support");
-        return s;
+        return wai_error_set(ctx, s, "not built with remctl support");
 #endif
     }
     return WA_ERR_NONE;

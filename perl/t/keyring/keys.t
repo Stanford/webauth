@@ -4,7 +4,7 @@
 #
 # Written by Roland Schemers
 # Rewritten by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2002, 2003, 2005, 2009, 2010, 2012
+# Copyright 2002, 2003, 2005, 2009, 2010, 2012, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -58,12 +58,12 @@ eval {
     $key = eval { $wa->key_create (WA_KEY_AES, 2, $bytes) };
     ok ($@->isa ('WebAuth::Exception'),
         '... and creating one of invalid length fails');
-    like ($@, qr/^webauth_key_create:\ invalid\ argument\ to\ function
+    like ($@, qr/^webauth_key_create:\ operation\ not\ supported
           \ \(unsupported\ key\ size\ 2\)\ at\ /x,
           '... with correct exception');
-    is ($@->status, WA_ERR_INVALID, '... and correct status');
+    is ($@->status, WA_ERR_UNIMPLEMENTED, '... and correct status');
     is ($@->error_message,
-        'invalid argument to function (unsupported key size 2)',
+        'operation not supported (unsupported key size 2)',
         '... and correct error message');
     is ($@->detail_message, 'webauth_key_create', '... and correct detail');
 

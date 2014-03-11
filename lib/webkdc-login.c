@@ -7,7 +7,7 @@
  * username and authentication credential, or both.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -251,8 +251,7 @@ parse_token_webkdc_service(struct webauth_context *ctx, const char *data,
     if (s != WA_ERR_NONE) {
         wai_log_error(ctx, WA_LOG_WARN, s,
                       "invalid session key in webkdc-service token");
-        wai_error_set(ctx, WA_PEC_SERVICE_TOKEN_INVALID, NULL);
-        return WA_PEC_SERVICE_TOKEN_INVALID;
+        return wai_error_set(ctx, WA_PEC_SERVICE_TOKEN_INVALID, NULL);
     }
     state->session = webauth_keyring_from_key(ctx, key);
     return WA_ERR_NONE;
@@ -325,10 +324,8 @@ do_login_otp(struct webauth_context *ctx,
     int s;
 
     /* Do the remote validation call. */
-    if (ctx->user == NULL) {
-        wai_error_set(ctx, WA_PEC_LOGIN_FAILED, "OTP not configured");
-        return WA_PEC_LOGIN_FAILED;
-    }
+    if (ctx->user == NULL)
+        return wai_error_set(ctx, WA_PEC_LOGIN_FAILED, "OTP not configured");
     s = webauth_user_validate(ctx, login->username, state->remote_ip,
                               login->otp, login->otp_type,
                               state->login_state_in, &validate);
@@ -439,9 +436,9 @@ realm_permitted(struct webauth_context *ctx, struct webauth_krb5 *kc)
     }
     if (!okay) {
         s = WA_PEC_USER_REJECTED;
-        wai_error_set(ctx, s, "realm %s is not permitted", realm);
+        return wai_error_set(ctx, s, "realm %s is not permitted", realm);
     }
-    return s;
+    return WA_ERR_NONE;
 }
 
 
@@ -674,8 +671,7 @@ merge_webkdc_proxies(struct webauth_context *ctx,
     if (s == WA_ERR_TOKEN_REJECTED) {
         wai_log_error(ctx, WA_LOG_WARN, s, "rejecting webkdc-proxy tokens");
         s = WA_PEC_UNAUTHORIZED;
-        wai_error_set(ctx, s, "may not use webkdc-proxy token");
-        return s;
+        return wai_error_set(ctx, s, "may not use webkdc-proxy token");
     } else if (s != WA_ERR_NONE) {
         wai_error_context(ctx, "merging webkdc-proxy tokens");
         return s;
@@ -695,9 +691,8 @@ merge_webkdc_proxies(struct webauth_context *ctx,
     wpt = &wkproxy->token.webkdc_proxy;
     if (strncmp(wpt->proxy_subject, "WEBKDC:", 7) != 0) {
         s = WA_PEC_PROXY_TOKEN_INVALID;
-        wai_error_set(ctx, s, "proxy subject %s not allowed",
-                      wpt->proxy_subject);
-        return s;
+        return wai_error_set(ctx, s, "proxy subject %s not allowed",
+                             wpt->proxy_subject);
     }
     state->wkproxy = wkproxy;
     return WA_ERR_NONE;
@@ -1050,10 +1045,8 @@ check_factors_proxy(struct webauth_context *ctx,
      * the available factors in that case.
      */
     if (state->request->loa > wpt->loa) {
-        if (info != NULL && state->request->loa > info->max_loa) {
-            wai_error_set(ctx, WA_PEC_LOA_UNAVAILABLE, NULL);
-            return WA_PEC_LOA_UNAVAILABLE;
-        }
+        if (info != NULL && state->request->loa > info->max_loa)
+            return wai_error_set(ctx, WA_PEC_LOA_UNAVAILABLE, NULL);
         s = WA_PEC_MULTIFACTOR_REQUIRED;
     }
 
@@ -1162,10 +1155,8 @@ check_forced_auth(struct webauth_context *ctx,
     /* FIXME: strstr is lame. */
     options = state->request->options;
     if (options != NULL && strstr(options, "fa") != NULL)
-        if (!state->did_login) {
-            wai_error_set(ctx, WA_PEC_LOGIN_FORCED, NULL);
-            return WA_PEC_LOGIN_FORCED;
-        }
+        if (!state->did_login)
+            return wai_error_set(ctx, WA_PEC_LOGIN_FORCED, NULL);
     return WA_ERR_NONE;
 }
 
@@ -1202,8 +1193,7 @@ build_identity_list(struct webauth_context *ctx, const char *subject,
     code = apr_file_open(&acl, path, flags, APR_FPROT_OS_DEFAULT, ctx->pool);
     if (code != APR_SUCCESS) {
         s = WA_ERR_FILE_OPENREAD;
-        wai_error_set_apr(ctx, s, code, "identity ACL %s", path);
-        return s;
+        return wai_error_set_apr(ctx, s, code, "identity ACL %s", path);
     }
 
     /*
@@ -1340,10 +1330,8 @@ get_krb5_authenticator(struct webauth_context *ctx, const char *server,
     *auth = NULL;
 
     /* Ensure that we have a Kerberos webkdc-proxy token. */
-    if (strcmp(wpt->proxy_type, "krb5") != 0) {
-        wai_error_set(ctx, WA_PEC_PROXY_TOKEN_REQUIRED, NULL);
-        return WA_PEC_PROXY_TOKEN_REQUIRED;
-    }
+    if (strcmp(wpt->proxy_type, "krb5") != 0)
+        return wai_error_set(ctx, WA_PEC_PROXY_TOKEN_REQUIRED, NULL);
 
     /*
      * FIXME: Probably need to examine errors a little more closely to
@@ -1449,10 +1437,8 @@ create_proxy_token(struct webauth_context *ctx,
     /* If the requested proxy type is krb5, check the webkdc-proxy token. */
     wpt = &state->wkproxy->token.webkdc_proxy;
     if (strcmp(state->request->proxy_type, "krb5") == 0)
-        if (strcmp(wpt->proxy_type, "krb5") != 0) {
-            wai_error_set(ctx, WA_PEC_PROXY_TOKEN_REQUIRED, NULL);
-            return WA_PEC_PROXY_TOKEN_REQUIRED;
-        }
+        if (strcmp(wpt->proxy_type, "krb5") != 0)
+            return wai_error_set(ctx, WA_PEC_PROXY_TOKEN_REQUIRED, NULL);
 
     /* Create the easy portions of the proxy token. */
     memset(&token, 0, sizeof(token));

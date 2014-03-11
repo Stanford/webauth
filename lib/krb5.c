@@ -746,11 +746,9 @@ webauth_krb5_get_principal(struct webauth_context *ctx,
                            struct webauth_krb5 *kc, char **principal,
                            enum webauth_krb5_canon canon)
 {
-    if (kc->princ == NULL) {
-        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
-                      "Kerberos context not initialized");
-        return WA_ERR_INVALID_CONTEXT;
-    }
+    if (kc->princ == NULL)
+        return wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
+                             "Kerberos context not initialized");
     return canonicalize_principal(ctx, kc, kc->princ, principal, canon);
 }
 
@@ -766,11 +764,9 @@ webauth_krb5_get_realm(struct webauth_context *ctx, struct webauth_krb5 *kc,
 {
     const char *result;
 
-    if (kc->princ == NULL) {
-        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
-                      "Kerberos context not initialized");
-        return WA_ERR_INVALID_CONTEXT;
-    }
+    if (kc->princ == NULL)
+        return wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
+                             "Kerberos context not initialized");
     result = krb5_principal_get_realm(kc->ctx, kc->princ);
     if (result == NULL) {
         wai_error_set(ctx, WA_ERR_INVALID_CONTEXT, "no realm for principal");
@@ -793,11 +789,9 @@ webauth_krb5_get_cache(struct webauth_context *ctx, struct webauth_krb5 *kc,
     krb5_error_code code;
     char *result;
 
-    if (kc->cc == NULL) {
-        wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
-                      "Kerberos context not initialized");
-        return WA_ERR_INVALID_CONTEXT;
-    }
+    if (kc->cc == NULL)
+        return wai_error_set(ctx, WA_ERR_INVALID_CONTEXT,
+                             "Kerberos context not initialized");
     code = krb5_cc_get_full_name(kc->ctx, kc->cc, &result);
     if (code != 0)
         return error_set(ctx, kc, code, "cannot get cache name");
@@ -1206,22 +1200,19 @@ remctl_change_password(struct webauth_context *ctx, struct webauth_krb5 *kc,
     r = remctl_new();
     if (r == NULL) {
         s = WA_ERR_NO_MEM;
-        wai_error_set_system(ctx, s, errno, "initializing remctl");
-        return s;
+        return wai_error_set_system(ctx, s, errno, "initializing remctl");
     }
 
     /* Point remctl at the ticket cache from the Kerberos context. */
     s = webauth_krb5_get_cache(ctx, kc, &cache);
     if (s != WA_ERR_NONE)
         goto fail;
-    if (!remctl_set_ccache(r, cache)) {
+    if (!remctl_set_ccache(r, cache))
         if (setenv("KRB5CCNAME", cache, 1) < 0) {
             s = WA_ERR_NO_MEM;
-            wai_error_set_system(ctx, s, errno,
-                                 "setting KRB5CCNAME for remctl");
+            wai_error_set_system(ctx, s, errno, "KRB5CCNAME for remctl");
             goto fail;
         }
-    }
 
     /* Set a timeout if one was given. */
     if (c->timeout > 0)
@@ -1304,11 +1295,8 @@ static int
 remctl_generic(struct webauth_context *ctx, struct webauth_krb5 *kc UNUSED,
                const char *password UNUSED)
 {
-    int s;
-
-    s = WA_ERR_UNIMPLEMENTED;
-    wai_error_set(ctx, s, "not built with remctl support");
-    return s;
+    wai_error_set(ctx, WA_ERR_UNIMPLEMENTED, "not built with remctl support");
+    return WA_ERR_UNIMPLEMENTED;
 }
 #endif /* !HAVE_REMCTL */
 
@@ -1358,8 +1346,7 @@ webauth_krb5_change_config(struct webauth_context *ctx,
         }
     } else if (config->protocol != WA_CHANGE_KPASSWD) {
         s = WA_ERR_UNIMPLEMENTED;
-        wai_error_set(ctx, s, "unknown protocol %d", config->protocol);
-        return s;
+        return wai_error_set(ctx, s, "unknown protocol %d", config->protocol);
     }
 
     /* Clear everything and return if using the kpasswd protocol. */

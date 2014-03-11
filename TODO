@@ -522,8 +522,4 @@ Style:
 
  * WEBAUTH-120: Update coding style for the WebAuth Perl modules.
 
- * WEBAUTH-140: Change wai_error_set to return the new error code and use
-   that to simplify some of the error handling logic throughout the code
-   base.
-
  * WEBAUTH-142: Add function annotations to the API (particularly alloc).

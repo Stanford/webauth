@@ -2,7 +2,7 @@
  * Internal data types, definitions, and prototypes for the WebAuth library.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -352,17 +352,21 @@ void wai_error_context(struct webauth_context *, const char *, ...)
 int wai_error_protocol(struct webauth_context *, int)
     __attribute__((__nonnull__, __pure__));
 
-/* Set the internal WebAuth error message and error code. */
-void wai_error_set(struct webauth_context *, int s, const char *, ...)
+/*
+ * Set the internal WebAuth error message and error code and return that
+ * code.  The return value is so that a function returning an error can simply
+ * return the return value of wai_error_set, thus often saving a line of code.
+ */
+int wai_error_set(struct webauth_context *, int s, const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 3, 4)));
 
 /* The same, but include the string expansion of an APR error. */
-void wai_error_set_apr(struct webauth_context *, int s, apr_status_t,
+int wai_error_set_apr(struct webauth_context *, int s, apr_status_t,
                        const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
 
 /* The same, but include the string expansion of an errno. */
-void wai_error_set_system(struct webauth_context *, int s, int syserr,
+int wai_error_set_system(struct webauth_context *, int s, int syserr,
                           const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
 

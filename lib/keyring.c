@@ -2,7 +2,7 @@
  * Handling of keys and keyrings.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2012, 2013
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2012, 2013, 2014
  *    The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -142,10 +142,9 @@ webauth_keyring_best_key(struct webauth_context *ctx,
                 best = entry;
         }
     }
-    if (best == NULL) {
-        wai_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys");
-        return WA_ERR_NOT_FOUND;
-    } else {
+    if (best == NULL)
+        return wai_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys");
+    else {
         *output = best->key;
         return WA_ERR_NONE;
     }
@@ -176,9 +175,7 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
         return s;
     if (data.version != KEYRING_VERSION) {
         s = WA_ERR_FILE_VERSION;
-        wai_error_set(ctx, s, "unsupported keyring data version %d",
-                      data.version);
-        return s;
+        return wai_error_set(ctx, s, "keyring version %d", data.version);
     }
 
     /*

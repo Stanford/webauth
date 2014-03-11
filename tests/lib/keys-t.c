@@ -2,7 +2,7 @@
  * Test key handling.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2012
+ * Copyright 2012, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -68,9 +68,9 @@ main(void)
 
     /* Errors on key creation. */
     s = webauth_key_create(ctx, 2, WA_AES_128, NULL, &key);
-    is_int(WA_ERR_INVALID, s, "Invalid key type fails");
+    is_int(WA_ERR_UNIMPLEMENTED, s, "Invalid key type fails");
     s = webauth_key_create(ctx, WA_KEY_AES, 14, NULL, &key);
-    is_int(WA_ERR_INVALID, s, "Invalid key size fails");
+    is_int(WA_ERR_UNIMPLEMENTED, s, "Invalid key size fails");
 
     webauth_context_free(ctx);
     return 0;
