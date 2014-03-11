@@ -5,9 +5,10 @@
 
 <name>mod_webauthldap</name>
 <description>LDAP authorization and lookup for WebAuth</description>
-<status>Contributed</status>
+<status>External</status>
 <sourcefile>mod_webauthldap.c</sourcefile>
 <identifier>webauthldap_module</identifier>
+<compatibility>Apache 2.0 and higher</compatibility>
 
 <summary>
 
@@ -21,7 +22,7 @@ GSS-API Kerberos via SASL.</p>
 <a href="http://webauth.stanford.edu/">WebAuth documentation</a>.</p>
 </summary>
 
-<section><title>Generic Minimal Config File</title>
+<section id="config"><title>Generic Minimal Config File</title>
 
 <p>The following example shows the minimum config file required to
 configure this module.</p>
@@ -39,7 +40,7 @@ WebAuthLdapTktCache /tmp/webauthldap.tkt
 </example>
 </section>
 
-<section><title>Using WebAuthLdap Authorization</title>
+<section id="basics"><title>Using WebAuthLdap Authorization</title>
 
 <p>To restrict access to particular privilege group(s) place the
 <code>require privgroup &lt;group name&gt;</code> directives in a
@@ -75,7 +76,7 @@ mod_access will logs messages complaining that it doesn't recognize the
 
 </section>
 
-<section><title>Ad hoc attributes lookup</title>
+<section id="attributes"><title>Ad hoc attributes lookup</title>
 
 <p>By using the WebAuthLdapAttribute directive in a .htaccess file, a
 Location block or a Directory block, any attributes available to the
@@ -124,7 +125,7 @@ separator.</p>
 
 </section>
 
-<section><title>WebAuth 2.x backward compatibility</title>
+<section id="compat"><title>WebAuth 2.x backward compatibility</title>
 
 <p>StanfordAuth as an AuthType is supported as a form of backward
 compatibility, to ease the transition from WebAuth v2.  When it is used,
@@ -165,10 +166,10 @@ require group stanford:stanford
 Stanford users, since WebAuth v2 was never publically released.</p>
 </section>
 
-<section><title>Manual License</title>
+<section id="license"><title>Manual License</title>
 
-<p>Copyright 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012 The Board of
-Trustees of the Leland Stanford Junior University</p>
+<p>Copyright 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012, 2014 The
+Board of Trustees of the Leland Stanford Junior University</p>
 
 <p>Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright notice

@@ -491,8 +491,6 @@ Documentation:
    WebAuth components exchange, including the interactions with the user
    information service.
 
- * WEBAUTH-170: Copy how mod_fcgid handles manual section links.
-
  * WEBAUTH-183: Document and name the WebLogin UI components.
 
  * WEBAUTH-187: Collect all token lifetime information together in one

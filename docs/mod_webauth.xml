@@ -5,9 +5,10 @@
 <modulesynopsis metafile="mod_webauth.xml.meta">
   <name>mod_webauth</name>
   <description>Support for the WebAuth protocol</description>
-  <status>Contributed</status>
+  <status>External</status>
   <sourcefile>mod_webauth.c</sourcefile>
   <identifier>webauth_module</identifier>
+  <compatibility>Apache 2.0 and higher</compatibility>
 
   <summary>
     <p>
@@ -21,7 +22,7 @@
     </p>
   </summary>
 
-  <section>
+  <section id="config">
     <title>Minimal Config File</title>
 
     <p>
@@ -51,7 +52,7 @@ WebAuthWebKdcPrincipal service/webkdc
     </p>
   </section>
 
-  <section>
+  <section id="basics">
     <title>Using WebAuth Authentication</title>
 
     <p>
@@ -81,8 +82,8 @@ WebAuthWebKdcPrincipal service/webkdc
     </p>
   </section>
 
-  <section>
-    <title><a name="sectionenv">Environment Variables</a></title>
+  <section id="environment">
+    <title>Environment Variables</title>
 
     <p>
       This module provides some information as additional environment
@@ -229,13 +230,13 @@ WEBAUTH_USER=schemers
     </p>
   </section>
 
-  <section>
-    <title><a name="factors">Authentication Factors</a></title>
+  <section id="factors">
+    <title>Authentication Factors</title>
 
     <p>
       Below are the authentication factors that can be required via
       WebAuth directives or queried from the <a
-      href="#sectionenv">environmental variables</a>
+      href="#environment">environmental variables</a>
       WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.
     </p>
 
@@ -325,7 +326,7 @@ WEBAUTH_USER=schemers
     </table>
   </section>
 
-  <section>
+  <section id="proxy">
     <title>Using WebAuth with Proxy Servers</title>
 
     <p>
@@ -405,7 +406,7 @@ WEBAUTH_USER=schemers
     </note>
   </section>
 
-  <section>
+  <section id="perl">
     <title>Perl Integration</title>
 
     <p>
@@ -442,12 +443,12 @@ print "The authenticated user is $REMOTE_USER\n";
 
     <p>
       Any of the environment variables described in the
-      <a href="#sectionenv">environment variables</a> section may be
+      <a href="#environment">environment variables</a> section may be
       accessed this way.
     </p>
   </section>
 
-  <section>
+  <section id="php">
     <title>PHP 4.x and 5.x Integration</title>
 
     <p>
@@ -495,12 +496,12 @@ print "The authenticated user is $WEBAUTH_USER\n";
     </p>
     <p>
       Any of the environment variables described in the
-      <a href="#sectionenv">environment variables</a> section may be
+      <a href="#enivronment">environment variables</a> section may be
       accessed this way.
     </p>
   </section>
 
-  <section>
+  <section id="java">
     <title>Java/Tomcat/mod_jk Integration</title>
 
     <p>
@@ -631,7 +632,7 @@ WEBAUTH_USER is set to:
     </p>
   </section>
 
-  <section>
+  <section id="credentials">
     <title>Requesting Credentials</title>
 
     <p>
@@ -712,7 +713,7 @@ WEBAUTH_USER is set to:
     </note>
   </section>
 
-  <section>
+  <section id="debugging">
     <title>Debugging mod_webauth</title>
 
     <p>
@@ -746,7 +747,7 @@ WebAuthDebug on
     </example>
   </section>
 
-  <section>
+  <section id="loadbalance">
     <title>Setting up load-balanced WebAuth servers</title>
 
     <p>
@@ -879,12 +880,13 @@ done
     </example>
   </section>
 
-  <section>
+  <section id="license">
     <title>Manual License</title>
 
     <p>
-      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012, 2013
-      The Board of Trustees of the Leland Stanford Junior University
+      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012,
+      2013, 2014 The Board of Trustees of the Leland Stanford Junior
+      University
     </p>
     <p>
       Copying and distribution of this file, with or without modification,

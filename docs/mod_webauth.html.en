@@ -27,9 +27,10 @@
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>Support for the WebAuth protocol</td></tr>
-<tr><th><a href="module-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="module-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webauth_module</td></tr>
-<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c</td></tr></table>
+<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c</td></tr>
+<tr><th><a href="module-dict.html#Compatibility">Compatibility:</a></th><td>Apache 2.0 and higher</td></tr></table>
 <h3>Summary</h3>
 
     <p>
@@ -88,22 +89,22 @@
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="../images/down.gif" /> <a href="#s1">Minimal Config File</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s2">Using WebAuth Authentication</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s3">Environment Variables</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s4">Authentication Factors</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s5">Using WebAuth with Proxy Servers</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s6">Perl Integration</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s7">PHP 4.x and 5.x Integration</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s8">Java/Tomcat/mod_jk Integration</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s9">Requesting Credentials</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s10">Debugging mod_webauth</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s11">Setting up load-balanced WebAuth servers</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s12">Manual License</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#config">Minimal Config File</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#basics">Using WebAuth Authentication</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#environment">Environment Variables</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#factors">Authentication Factors</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#proxy">Using WebAuth with Proxy Servers</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#perl">Perl Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#php">PHP 4.x and 5.x Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#java">Java/Tomcat/mod_jk Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#credentials">Requesting Credentials</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#debugging">Debugging mod_webauth</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#loadbalance">Setting up load-balanced WebAuth servers</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#license">Manual License</a></li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s1">Minimal Config File</a></h2>
+<h2><a name="config" id="config">Minimal Config File</a></h2>
     
 
     <p>
@@ -128,7 +129,7 @@ WebAuthWebKdcPrincipal service/webkdc</pre></div>
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s2">Using WebAuth Authentication</a></h2>
+<h2><a name="basics" id="basics">Using WebAuth Authentication</a></h2>
     
 
     <p>
@@ -153,7 +154,7 @@ WebAuthWebKdcPrincipal service/webkdc</pre></div>
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s3"><a name="sectionenv">Environment Variables</a></a></h2>
+<h2><a name="environment" id="environment">Environment Variables</a></h2>
     
 
     <p>
@@ -292,12 +293,12 @@ WEBAUTH_USER=schemers</pre></div>
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s4"><a name="factors">Authentication Factors</a></a></h2>
+<h2><a name="factors" id="factors">Authentication Factors</a></h2>
     
 
     <p>
       Below are the authentication factors that can be required via
-      WebAuth directives or queried from the <a href="#sectionenv">environmental variables</a>
+      WebAuth directives or queried from the <a href="#environment">environmental variables</a>
       WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.
     </p>
 
@@ -387,7 +388,7 @@ WEBAUTH_USER=schemers</pre></div>
     </table>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s5">Using WebAuth with Proxy Servers</a></h2>
+<h2><a name="proxy" id="proxy">Using WebAuth with Proxy Servers</a></h2>
     
 
     <p>
@@ -462,7 +463,7 @@ WEBAUTH_USER=schemers</pre></div>
     </div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s6">Perl Integration</a></h2>
+<h2><a name="perl" id="perl">Perl Integration</a></h2>
     
 
     <p>
@@ -489,12 +490,12 @@ print "The authenticated user is $REMOTE_USER\n";</pre></div>
 
     <p>
       Any of the environment variables described in the
-      <a href="#sectionenv">environment variables</a> section may be
+      <a href="#environment">environment variables</a> section may be
       accessed this way.
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s7">PHP 4.x and 5.x Integration</a></h2>
+<h2><a name="php" id="php">PHP 4.x and 5.x Integration</a></h2>
     
 
     <p>
@@ -532,12 +533,12 @@ print "The authenticated user is $WEBAUTH_USER\n";</pre></div>
     </p>
     <p>
       Any of the environment variables described in the
-      <a href="#sectionenv">environment variables</a> section may be
+      <a href="#enivronment">environment variables</a> section may be
       accessed this way.
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s8">Java/Tomcat/mod_jk Integration</a></h2>
+<h2><a name="java" id="java">Java/Tomcat/mod_jk Integration</a></h2>
     
 
     <p>
@@ -648,7 +649,7 @@ JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"</pre></div>
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s9">Requesting Credentials</a></h2>
+<h2><a name="credentials" id="credentials">Requesting Credentials</a></h2>
     
 
     <p>
@@ -724,7 +725,7 @@ JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"</pre></div>
     </div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s10">Debugging mod_webauth</a></h2>
+<h2><a name="debugging" id="debugging">Debugging mod_webauth</a></h2>
     
 
     <p>
@@ -753,7 +754,7 @@ WebAuthDebug on
 &lt;/Location&gt;</pre></div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s11">Setting up load-balanced WebAuth servers</a></h2>
+<h2><a name="loadbalance" id="loadbalance">Setting up load-balanced WebAuth servers</a></h2>
     
 
     <p>
@@ -866,12 +867,13 @@ done
 # valid.</pre></div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s12">Manual License</a></h2>
+<h2><a name="license" id="license">Manual License</a></h2>
     
 
     <p>
-      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012, 2013
-      The Board of Trustees of the Leland Stanford Junior University
+      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012,
+      2013, 2014 The Board of Trustees of the Leland Stanford Junior
+      University
     </p>
     <p>
       Copying and distribution of this file, with or without modification,
@@ -887,7 +889,7 @@ done
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAppTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(lifetime of id-token returned from WebKDC)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -919,7 +921,7 @@ WebAuthAppTokenLifetime 2h</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAuthType <em>StanfordAuth</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -959,7 +961,7 @@ WebAuthAuthType StanfordAuth
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthCookiePath <em>scope</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>/</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1036,7 +1038,7 @@ WebAuthAuthType StanfordAuth
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthCred <em>type</em> [<em>service</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1077,7 +1079,7 @@ WebAuthAuthType StanfordAuth
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthCredCacheDir <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1112,7 +1114,7 @@ WebAuthCredCacheDir conf/webauth/credcache
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDebug on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDebug off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1132,7 +1134,7 @@ LogLevel debug</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDoLogout on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDoLogout off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1166,7 +1168,7 @@ LogLevel debug</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDontCache on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDontCache off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1218,7 +1220,7 @@ WebAuthDontCache on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthExtraRedirect on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthExtraRedirect on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host, directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1272,7 +1274,7 @@ WebAuthDontCache on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthFaliureURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1296,7 +1298,7 @@ WebAuthFailureURL /app/sorry.html
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthForceLogin on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthForceLogin off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1356,7 +1358,7 @@ WebAuthFailureURL /app/sorry.html
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthHttpOnly on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1388,7 +1390,7 @@ WebAuthHttpOnly off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthInactiveExpire <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(disabled)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1430,7 +1432,7 @@ WebAuthLastUseUpdateInterval 10m</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeyring <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1464,7 +1466,7 @@ WebAuthKeyRing conf/webauth/keyring
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeyringAutoUpdate on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthKeyringAutoUpdate on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1499,7 +1501,7 @@ WebAuthKeyringAutoUdpate off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthKeyringKeyLifetime 30d</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1531,7 +1533,7 @@ WebAuthKeyringKeyLifetime 60d
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1561,7 +1563,7 @@ WebAuthKeytab conf/webauth/keytab webauth/slapshot.stanford.edu
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLastUseUpdateInterval <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthLastUsedUpdateInterval 0</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1597,7 +1599,7 @@ WebAuthLastUseUpdateInterval 10m</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLoginCanceledURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1623,7 +1625,7 @@ WebAuthLoginCanceledURL /nonwebauth/info.html
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLoginURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1652,7 +1654,7 @@ WebAuthLoginURL https://weblogin.stanford.edu/login
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthOptional on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1696,7 +1698,7 @@ WebAuthOptional on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthPostReturnURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1721,7 +1723,7 @@ WebAuthPostReturnURL /myapp/</pre></div>
     </code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1758,7 +1760,7 @@ WebAuthRequireInitialFactor p o
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireLOA <em>loa</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>0</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1795,7 +1797,7 @@ WebAuthRequireLOA 2
     </code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1836,7 +1838,7 @@ WebAuthRequireSessionFactor m
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireSSL on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthRequireSSL on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1907,7 +1909,7 @@ WebAuthRequireSSL off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthReturnURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(url user originally requested)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1929,7 +1931,7 @@ WebAuthReturnURL /myapp/</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthServiceTokenCache <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1963,7 +1965,7 @@ WebAuthServiceTokenCache conf/webauth/service_token_cache
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirect on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirect off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2001,7 +2003,7 @@ WebAuthSSLRedirect on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirectPort <em>port</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirectPort 443</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2024,7 +2026,7 @@ WebAuthSSLRedirectPort 8443</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLReturn on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLReturn off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2062,7 +2064,7 @@ WebAuthSSLRedirectPort 8443</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthStripURL on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2104,7 +2106,7 @@ WebAuthStripURL off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSubjectAuthType <em>type</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSubjectAuthType webkdc</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2184,7 +2186,7 @@ WebAuthSubjectAuthType krb5
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthTokenMaxTTL 300s</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2213,7 +2215,7 @@ WebAuthTokenMaxTTL 10m</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthTrustAuthzIdentity on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthTrustAuthzIdentity off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host, directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2351,7 +2353,7 @@ CustomLog /var/log/apache2/access.log webauth_combined</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthUseCreds on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthUseCreds off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2376,7 +2378,7 @@ CustomLog /var/log/apache2/access.log webauth_combined</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthVarPrefix <em>string</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthVarPrefix ""</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2405,7 +2407,7 @@ CustomLog /var/log/apache2/access.log webauth_combined</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebKdcPrincipal <em>principal</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2433,7 +2435,7 @@ WebAuthWebKdcPrincipal service/webkdc@stanford.edu</pre></div>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertCheck on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2466,7 +2468,7 @@ WebAuthWebKdcSSLCertCheck off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertFile <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2508,7 +2510,7 @@ WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebKdcURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
