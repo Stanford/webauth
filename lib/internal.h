@@ -397,7 +397,7 @@ int wai_file_write(struct webauth_context *, const void *, size_t,
  * Returns the amount of space required to hex encode data of the given
  * length.  Returned length does NOT include room for a null-termination.
  */
-size_t webauth_hex_encoded_length(size_t length)
+size_t wai_hex_encoded_length(size_t length)
     __attribute__((__const__));
 
 /*
@@ -408,7 +408,7 @@ size_t webauth_hex_encoded_length(size_t length)
  * Returns WA_ERR_NONE on succes, or WA_ERR_CORRUPT if length is not greater
  * then 0 and a multiple of 2.
  */
-int webauth_hex_decoded_length(size_t length, size_t *out_length)
+int wai_hex_decoded_length(size_t length, size_t *out_length)
     __attribute__((__nonnull__));
 
 /*
@@ -417,9 +417,8 @@ int webauth_hex_decoded_length(size_t length, size_t *out_length)
  *
  * Returns WA_ERR_NONE or WA_ERR_NO_ROOM.
  */
-int webauth_hex_encode(const char *input, size_t input_len,
-                       char *output, size_t *output_len,
-                       size_t max_output_len)
+int wai_hex_encode(const char *input, size_t input_len, char *output,
+                   size_t *output_len, size_t max_output_len)
     __attribute__((__nonnull__));
 
 /*
@@ -428,9 +427,8 @@ int webauth_hex_encode(const char *input, size_t input_len,
  *
  * Returns WA_ERR_NONE, WA_ERR_NO_ROOM, or WA_ERR_CORRUPT.
  */
-int webauth_hex_decode(char *input, size_t input_len,
-                       char *output, size_t *output_length,
-                       size_t max_output_len)
+int wai_hex_decode(char *input, size_t input_len, char *output,
+                   size_t *output_length, size_t max_output_len)
     __attribute__((__nonnull__));
 
 /*

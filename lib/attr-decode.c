@@ -196,12 +196,11 @@ decode_data(struct webauth_context *ctx, struct value *value, void **output,
     size_t length;
 
     if (ascii) {
-        s = webauth_hex_decoded_length(value->length, &length);
+        s = wai_hex_decoded_length(value->length, &length);
         if (s != WA_ERR_NONE)
             return wai_error_set(ctx, s, "invalid hex-encoded data");
         *output = apr_pcalloc(ctx->pool, length);
-        s = webauth_hex_decode(value->data, value->length, *output, size,
-                               length);
+        s = wai_hex_decode(value->data, value->length, *output, size, length);
         if (s != WA_ERR_NONE)
             return wai_error_set(ctx, s, "invalid hex-encoded data");
     } else {

@@ -7,7 +7,7 @@
  * caches and keyrings.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2012, 2013
+ * Copyright 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -74,10 +74,10 @@ encode_data(struct wai_buffer *output, const char *attr, const void *data,
 
     wai_buffer_append_sprintf(output, "%s=", attr);
     if (ascii) {
-        hexlen = webauth_hex_encoded_length(length);
+        hexlen = wai_hex_encoded_length(length);
         wai_buffer_resize(output, output->used + hexlen + 1);
-        s = webauth_hex_encode(data, length, output->data + output->used,
-                               &hexlen, hexlen);
+        s = wai_hex_encode(data, length, output->data + output->used,
+                           &hexlen, hexlen);
         if (s != WA_ERR_NONE)
             return s;
         output->used += hexlen;
