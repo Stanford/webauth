@@ -15,6 +15,7 @@
 #include <portable/stdbool.h>
 
 #include <apr_errno.h>          /* apr_status_t */
+#include <apr_file_io.h>        /* apr_file_t */
 #include <apr_pools.h>          /* apr_pool_t */
 #include <apr_tables.h>         /* apr_array_header_t */
 #include <apr_xml.h>            /* apr_xml_elem */
@@ -369,6 +370,19 @@ int wai_error_set_apr(struct webauth_context *, int s, apr_status_t,
 int wai_error_set_system(struct webauth_context *, int s, int syserr,
                           const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
+
+/*
+ * Lock or unlock a file, using an external lock file.  The lock file will be
+ * named by appending ".lock" to the provide file name.  This method allows
+ * atomic replace of locked files.  The apr_file_t argument is a token to pass
+ * to wai_file_unlock.  All locks are exclusive.
+ */
+int wai_file_lock(struct webauth_context *, const char *, apr_file_t **)
+    __attribute__((__nonnull__));
+
+/* Unlock a file locked with wai_file_lock. */
+int wai_file_unlock(struct webauth_context *, const char *, apr_file_t *)
+    __attribute__((__nonnull__));
 
 /* Read the contents of a file into memory. */
 int wai_file_read(struct webauth_context *, const char *, void **, size_t *)

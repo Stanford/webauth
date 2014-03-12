@@ -203,7 +203,10 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
 
 /*
  * Read the encoded form of a keyring from the given file and decode it,
- * storing it in the ring argument.  Returns a WA_ERR code.
+ * storing it in the ring argument.  Returns a WA_ERR code.  We do not do any
+ * locking for reads and instead rely on atomic replacement of the keyring on
+ * update (although we do read the keyring within a lock while doing
+ * auto-update).
  */
 int
 webauth_keyring_read(struct webauth_context *ctx, const char *path,
@@ -263,11 +266,11 @@ webauth_keyring_encode(struct webauth_context *ctx,
 
 /*
  * Write a keyring to the given file in encoded format.  Returns a WA_ERR
- * code.
+ * code.  This is the internal function that does no locking.
  */
-int
-webauth_keyring_write(struct webauth_context *ctx,
-                      const struct webauth_keyring *ring, const char *path)
+static int
+write_keyring(struct webauth_context *ctx, const struct webauth_keyring *ring,
+              const char *path)
 {
     apr_file_t *file = NULL;
     size_t length;
@@ -321,6 +324,25 @@ done:
 
 
 /*
+ * Public wrapper around write_keyring with locking.
+ */
+int
+webauth_keyring_write(struct webauth_context *ctx,
+                      const struct webauth_keyring *ring, const char *path)
+{
+    int s;
+    apr_file_t *lock;
+
+    s = wai_file_lock(ctx, path, &lock);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = write_keyring(ctx, ring, path);
+    wai_file_unlock(ctx, path, lock);
+    return s;
+}
+
+
+/*
  * Create a new keyring initialized with a single new random key and write it
  * to the specified path.  Used to create a new keyring file when none
  * exists.  Also stores the newly generated keyring in the ring argument.
@@ -340,7 +362,7 @@ new_ring(struct webauth_context *ctx, const char *path,
     *ring = webauth_keyring_new(ctx, 1);
     now = time(NULL);
     webauth_keyring_add(ctx, *ring, now, now, key);
-    return webauth_keyring_write(ctx, *ring, path);
+    return write_keyring(ctx, *ring, path);
 }
 
 
@@ -379,7 +401,7 @@ check_ring(struct webauth_context *ctx, const char *path,
     if (s != WA_ERR_NONE)
         return s;
     webauth_keyring_add(ctx, ring, now, now, key);
-    return webauth_keyring_write(ctx, ring, path);
+    return write_keyring(ctx, ring, path);
 }
 
 
@@ -407,17 +429,33 @@ webauth_keyring_auto_update(struct webauth_context *ctx, const char *path,
                             int *update_status)
 {
     int s;
+    apr_file_t *lock;
 
+    /* Set output variables in case of an error. */
     *updated = WA_KAU_NONE;
     *update_status = WA_ERR_NONE;
+
+    /*
+     * Lock the keyring so that the read, possible creation, and possible
+     * update is done once and atomically.
+     */
+    s = wai_file_lock(ctx, path, &lock);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* Read and possibly create or update the keyring. */
     s = webauth_keyring_read(ctx, path, ring);
     if (s != WA_ERR_NONE) {
         if (!create || s != WA_ERR_FILE_NOT_FOUND)
-            return s;
+            goto done;
         *updated = WA_KAU_CREATE;
-        return new_ring(ctx, path, ring);
+        s = new_ring(ctx, path, ring);
+        goto done;
     }
     if (lifetime > 0)
         *update_status = check_ring(ctx, path, lifetime, *ring, updated);
+
+done:
+    wai_file_unlock(ctx, path, lock);
     return s;
 }

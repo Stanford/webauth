@@ -3,7 +3,7 @@
 # Test suite for wa_keyring.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2010, 2013
+# Copyright 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -167,4 +167,4 @@ is($err,    q{}, '...with no errors');
 is(scalar(@out) - 3, 3, '...and has the correct number of keys');
 
 # Clean up.
-unlink 'keyring';
+unlink 'keyring', 'keyring.lock';

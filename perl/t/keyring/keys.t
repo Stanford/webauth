@@ -79,8 +79,10 @@ eval {
     ok ($ring2->isa ('WebAuth::Keyring'), 'reading a new keyring works');
     $ring->write ('webauth_keyring2');
 
-    unlink ('webauth_keyring') if -f 'webauth_keyring';
-    unlink ('webauth_keyring2') if -f 'webauth_keyring2';
+    unlink ('webauth_keyring', 'webauth_keyring.lock')
+        if -f 'webauth_keyring';
+    unlink ('webauth_keyring2', 'webauth_keyring2.lock')
+        if -f 'webauth_keyring2';
 };
 is ($@, '', 'No unexpected exceptions');
 

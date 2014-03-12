@@ -205,4 +205,4 @@ $weblogin->query->param ('username', $username.'_doe');
 isnt ($status, WebKDC::WK_SUCCESS, 'changing the password of a user fails');
 
 # Clean up the keyring.
-unlink ($WebKDC::Config::KEYRING_PATH);
+unlink ($WebKDC::Config::KEYRING_PATH, "$WebKDC::Config::KEYRING_PATH.lock");

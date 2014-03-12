@@ -9,7 +9,7 @@
  * argument to other functions.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2013
+ * Copyright 2011, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -128,6 +128,7 @@ enum webauth_status {
     WA_ERR_TOKEN_REJECTED,   /* Token used in invalid context */
     WA_ERR_TOKEN_STALE,      /* Token is stale */
     WA_ERR_UNIMPLEMENTED,    /* Operation not supported */
+    WA_ERR_FILE_LOCK,        /* Unable to lock file */
 
     /* Update webauth_error_message when adding more codes. */
 };

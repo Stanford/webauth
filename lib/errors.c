@@ -92,6 +92,7 @@ error_string(struct webauth_context *ctx, int s)
     case WA_ERR_TOKEN_REJECTED:    return "token used in invalid context";
     case WA_ERR_TOKEN_STALE:       return "token is stale";
     case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
+    case WA_ERR_FILE_LOCK:         return "error locking file";
     default:
         if (ctx != NULL)
             return apr_psprintf(ctx->pool, "unknown status code %d", s);

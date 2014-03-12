@@ -124,7 +124,7 @@ sub init_weblogin {
 sub create_test_keyring {
     my ($wa) = @_;
 
-    unlink ('t/data/test.keyring', 'krb5cc_test');
+    unlink ('t/data/test.keyring', 't/data/test.keyring.lock', 'krb5cc_test');
     $WebKDC::Config::KEYRING_PATH = 't/data/test.keyring';
     create_keyring ($WebKDC::Config::KEYRING_PATH);
     my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);

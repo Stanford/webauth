@@ -3,7 +3,7 @@
 # Test suite for keyring manipulation.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2011, 2012, 2013
+# Copyright 2011, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -104,7 +104,7 @@ eval {
     my $data = eval { $keyring->encode };
     is ($@, '', 'Encoding the keyring works');
     is ($data, $data2, '... and the encoded data matches');
-    unlink ('webauth_keyring');
+    unlink ('webauth_keyring', 'webauth_keyring.lock');
 
     # Check whether we get back the correct key when we ask for the best
     # key for the "current" time.  This should be the first key, since the
@@ -146,7 +146,7 @@ eval {
     is ($@, '', 'Writing the key out to a file works');
     $keyring2 = eval { WebAuth::Keyring->read ($wa, 'webauth_keyring') };
     is ($@, '', 'Reading the keyring back in works');
-    unlink ('webauth_keyring');
+    unlink ('webauth_keyring', 'webauth_keyring.lock');
     is (scalar ($keyring2->entries), 1, '... and contains one key');
 };
 is ($@, '', 'No unexpected exceptions');

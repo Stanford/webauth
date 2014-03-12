@@ -30,6 +30,14 @@ WebAuth 4.6.0 (unreleased)
     existing Cache-Control headers, add Vary: *, and (for WebLogin pages)
     set an expiration time in the past.
 
+    webauth_keyring_write and webauth_keyring_auto_update now lock the
+    keyring, using a separate lock file named by appending ".lock" to the
+    name of the keyring.  This applies to the keyrings used by
+    mod_webauth, mod_webkdc, and the wa_keyring utility and ensures that
+    only one process attempts to update a keyring at the same time.  These
+    functions continue to use atomic replacement on all writes, and no
+    locks are used for reading the keyring.
+
     Use the authenticated identity returned by the WebKDC as the username
     for multifactor authentication in WebLogin rather than preserving what
     the user originally typed.  The WebKDC may have done Kerberos

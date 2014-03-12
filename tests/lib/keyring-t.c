@@ -2,7 +2,7 @@
  * Test suite for keyring handling.
  *
  * Written by Roland Schemers and Russ Allbery <eagle@eyrie.org>
- * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012, 2013
+ * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -29,7 +29,7 @@ main(void)
     const struct webauth_key *best;
     struct webauth_keyring *ring, *ring2;
     struct webauth_keyring_entry *entry, *entry2;
-    char *tmpdir, *keyring, *buf2;
+    char *tmpdir, *keyring, *lock, *buf2;
     char buf[4096];
     FILE *file;
     int s, ks, fd;
@@ -86,6 +86,7 @@ main(void)
     /* Write the keyring out and then read it back in. */
     tmpdir = test_tmpdir();
     basprintf(&keyring, "%s/webauth_keyring", tmpdir);
+    basprintf(&lock, "%s.lock", keyring);
     s = webauth_keyring_write(ctx, ring, keyring);
     is_int(WA_ERR_NONE, s, "Writing the keyring to a file succeeds");
     s = webauth_keyring_read(ctx, keyring, &ring2);
@@ -261,6 +262,8 @@ main(void)
     /* Clean up. */
     unlink(keyring);
     free(keyring);
+    unlink(lock);
+    free(lock);
     test_tmpdir_free(tmpdir);
     webauth_context_free(ctx);
     return 0;

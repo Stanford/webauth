@@ -3,7 +3,7 @@
 # Tests for weblogin confirmation page
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2012, 2013
+# Copyright 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -176,5 +176,5 @@ compare_fields (\%output, \%check, @fields);
 $WebKDC::Config::FACTOR_WARNING = $default_factor_warning;
 # Check print_confirm_page (device_expiring = 1)
 
-unlink ('krb5cc_test', 't/data/test.keyring');
+unlink ('krb5cc_test', 't/data/test.keyring', 't/data/test.keyring.lock');
 rmtree ('./t/tmp');

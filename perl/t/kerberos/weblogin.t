@@ -3,7 +3,7 @@
 # Tests for weblogin page handling after login responses.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2012, 2013
+# Copyright 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -123,7 +123,7 @@ $ENV{SCRIPT_NAME} = '/login';
 
 # Create a keyring to test with.
 my $wa = WebAuth->new;
-unlink ('t/data/test.keyring', 'krb5cc_test');
+unlink ('t/data/test.keyring', 't/data/test.keyring.lock', 'krb5cc_test');
 $WebKDC::Config::KEYRING_PATH = 't/data/test.keyring';
 create_keyring ($WebKDC::Config::KEYRING_PATH);
 my $keyring = $wa->keyring_read ($WebKDC::Config::KEYRING_PATH);
@@ -278,5 +278,5 @@ is ($token->loa, 2, '... and LoA');
 ok (abs ($token->expiration - time - $WebKDC::Config::REMUSER_EXPIRES) < 2,
     '... and expiration is in the right range');
 
-unlink ('krb5cc_test', 't/data/test.keyring');
+unlink ('krb5cc_test', 't/data/test.keyring', 't/data/test.keyring.lock');
 rmtree ('./t/tmp');

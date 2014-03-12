@@ -120,9 +120,6 @@ General:
 
 libwebauth:
 
- * WEBAUTH-41: Add locking to the code reading and writing keyrings so
-   that two processes don't simultaneously update a keyring.
-
  * WEBAUTH-46: Support configuration of options for initial Kerberos
    tickets, such as ticket lifetime.  We also probably want to suppress
    some options by default that we never use.
