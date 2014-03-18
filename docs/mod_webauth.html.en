@@ -1441,8 +1441,19 @@ WebAuthLastUseUpdateInterval 10m</pre></div>
         be readable by the Apache user.
       </p>
       <p>
-        The keyring file gets read once per child and cached for the
-        duration of a child.
+        The keyring file is read when the first request for a virtual host
+        is received.  Each child maintains an in-memory cached keyring for
+        each virtual host.  These keyrings are only reloaded from disk
+        when Apache refreshes its configuration.  If the keyring is
+        changed by an external process (<code>wa_keyring</code>, for
+        instance), Apache must be told to reload configuration files in
+        order to pick up the change.
+      </p>
+      <p>
+        When using the ITK Apache MPM, there should be a separate keyring
+        for each unique virtual host user that will be doing WebAuth.  This
+        maintains proper privilege separation by assigning each user a
+        separate keyring.
       </p>
       <p>
         If the path is not absolute, then it will be treated as being

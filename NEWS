@@ -24,6 +24,18 @@ WebAuth 4.6.0 (unreleased)
     redirects to WebLogin due to an ordering issue when processing notes
     and subrequests.  Patch from Benjamin Coddington.
 
+    mod_webauth and mod_webkdc now maintain separate in-memory keyrings
+    per virtual host, and the WebAuthKeyring, WebKdcKeyring, and related
+    directives are now correctly honored in the virtual host configuration
+    and can be meaningfully set to different values.  This allows the
+    modules to work properly with the ITK MPM with separate keyrings owned
+    by different users for each virtual host so that proper privilege
+    separation between virtual hosts is maintained.  When using the
+    modules in this configuration, configure each virtual host with
+    WebAuthKeyring or WebKdcKeyring directives pointing to separate
+    keyring files writable by the user that virtual host will use.  Thanks
+    to Vegard Edvardsen for the patch.
+
     Be even more thorough in telling browsers not to cache responses from
     WebLogin, redirects and logout pages from mod_webauth, and any page
     marked with WebAuthDontCache.  Add private and max-age=0 to the
