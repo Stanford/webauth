@@ -37,6 +37,7 @@ use warnings;
 
 use lib "$ENV{SOURCE}/tap/perl";
 
+use File::Spec;
 use Test::More;
 use Test::RRA qw(skip_unless_maintainer use_prereq);
 use Test::RRA::Automake qw(automake_setup perl_dirs test_file_path);
@@ -50,6 +51,13 @@ automake_setup();
 
 # Load prerequisite modules.
 use_prereq('Test::Perl::Critic');
+
+# Due to an annoying bug in Perl::Tidy 20130922, we cannot run tests if the
+# source directory is read-only.  It unconditionally tries to create a log
+# file in the current directory and fails to run any checks if it cannot.
+if (!-w File::Spec->curdir()) {
+    plan skip_all => 'Perl::Tidy needs writable source directory';
+}
 
 # Force the embedded Perl::Tidy check to use the correct configuration.
 local $ENV{PERLTIDY} = test_file_path('data/perltidyrc');

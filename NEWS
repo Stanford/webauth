@@ -105,6 +105,7 @@ WebAuth 4.6.0 (unreleased)
     * Better remctld process management in the test suite.
     * Better memory management in Kerberos tests.
     * Fix syntax error when buiding portable/krb5.h with a C++ compiler.
+    * Skip Perl critic tests with read-only source directory.
 
     Update to C TAP Harness 3.0:
 
