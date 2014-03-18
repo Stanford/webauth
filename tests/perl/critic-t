@@ -10,7 +10,7 @@
 # which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,3 +59,7 @@ Test::Perl::Critic->import(-profile => test_file_path('data/perlcriticrc'));
 
 # Finally, run the actual tests.
 all_critic_ok(perl_dirs({ skip => [@CRITIC_IGNORE] }));
+
+# On Debian with perltidy 20130922-1, a perltidy.LOG file gets left behind
+# in the current directory.  Remove it if it exists.
+unlink('perltidy.LOG');
