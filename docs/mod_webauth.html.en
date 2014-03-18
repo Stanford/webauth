@@ -1427,7 +1427,7 @@ WebAuthLastUseUpdateInterval 10m</pre></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeyring" id="WebAuthKeyring">WebAuthKeyring</a> <a name="webauthkeyring" id="webauthkeyring">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the webauth keyring
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the WebAuth keyring
     </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeyring <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
@@ -1436,8 +1436,9 @@ WebAuthLastUseUpdateInterval 10m</pre></div>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
-        This is the name of the file containing the webauth keyring, which
-        is a file that contains the server's private AES key(s).
+        This is the name of the file containing the WebAuth keyring, which
+        is a file that contains the server's private AES key(s).  It must
+        be readable by the Apache user.
       </p>
       <p>
         The keyring file gets read once per child and cached for the
@@ -1471,10 +1472,26 @@ WebAuthKeyRing conf/webauth/keyring
 </table>
       <p>
         This directive controls whether or not we auto-update the keyring
-        file.  This includes creating it if it doesn't exist, and
-        generating a new key before the old key expires, and periodically
-        garbage collecting old keys.  Note that auto updating only occurs
-        on server startup and restarts.
+        file.  This includes creating it if it doesn't exist, generating a
+        new key before the old key expires, and periodically
+        garbage-collecting old keys.  Updating only occurs on server
+        startup and restarts.
+      </p>
+
+      <p>
+        If auto-update is enabled, Apache must have write access to the
+        directory containing the keyring, since keyrings are updated by
+        writing out the new file to a separate name and then atomically
+        replacing the file.
+      </p>
+
+      <p>
+        Ownership (user and group) of the existing keyring file will be
+        preserved if possible without overwriting the existing file.
+        Permissions will also be preserved, with the exception that
+        permissions will not be copied to the new file if the old file was
+        group-readable or group-writable and setting the group ownership
+        failed.
       </p>
 
       <div class="note">
@@ -1482,7 +1499,7 @@ WebAuthKeyRing conf/webauth/keyring
         <p>
           This directive should be turned off if multiple servers are
           sharing the same keyring file so the keyring file can be
-          manually updated.  That too will eventually be automated.
+          manually updated.
         </p>
       </div>
 

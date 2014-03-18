@@ -38,6 +38,12 @@ WebAuth 4.6.0 (unreleased)
     functions continue to use atomic replacement on all writes, and no
     locks are used for reading the keyring.
 
+    WebAuth keyring updates via either mod_webauth's and mod_webkdc's
+    auto-update support or via wa_keyring now preserve the keyring
+    ownership and permissions where possible, with the exception that the
+    permissions are not preserved if the old permissions included group
+    access and the group ownership could not be preserved.
+
     Use the authenticated identity returned by the WebKDC as the username
     for multifactor authentication in WebLogin rather than preserving what
     the user originally typed.  The WebKDC may have done Kerberos
