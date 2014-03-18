@@ -356,7 +356,8 @@ fatal_config(server_rec *s, const char *dir, apr_pool_t *ptemp)
  * from an Apache configuration directive.
  */
 void
-mwa_config_init(server_rec *server, struct server_config *bconf, apr_pool_t *p)
+mwa_config_init(server_rec *server, struct server_config *bconf UNUSED,
+                apr_pool_t *p)
 {
     struct server_config *sconf;
     int status;
@@ -388,19 +389,6 @@ mwa_config_init(server_rec *server, struct server_config *bconf, apr_pool_t *p)
     /* Initialize the mutex. */
     if (sconf->mutex == NULL)
         apr_thread_mutex_create(&sconf->mutex, APR_THREAD_MUTEX_DEFAULT, p);
-
-    /*
-     * Load the keyring into the configuration struct.  If the configuration
-     * we're passed in has a keyring loaded and it matches ours, use that.
-     * Otherwise, initialize the keyring with our configuration settings.
-     */
-    if (sconf->ring == NULL) {
-        if (bconf->ring != NULL
-            && strcmp(sconf->keyring_path, bconf->keyring_path) == 0)
-            sconf->ring = bconf->ring;
-        else
-            mwa_cache_keyring(server, sconf);
-    }
 
     /* Unlink any existing service token cache so that we'll get a new one. */
     if (unlink(sconf->st_cache_path) < 0 && errno != ENOENT)

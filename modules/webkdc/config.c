@@ -8,7 +8,7 @@
  *
  * Written by Russ Allbery <eagle@eyrie.org>
  * Based on original code by Roland Schemers
- * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2013
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -221,7 +221,8 @@ fatal_config(server_rec *s, const char *dir, apr_pool_t *ptemp)
  * from an Apache configuration directive.
  */
 void
-webkdc_config_init(server_rec *server, struct config *bconf, apr_pool_t *p)
+webkdc_config_init(server_rec *server, struct config *bconf UNUSED,
+                   apr_pool_t *p)
 {
     struct config *sconf;
     int status;
@@ -246,21 +247,6 @@ webkdc_config_init(server_rec *server, struct config *bconf, apr_pool_t *p)
                      "mod_webauth: fatal error: %s", msg);
         fprintf(stderr, "mod_webauth: fatal error: %s\n", msg);
         exit(1);
-    }
-
-    /*
-     * Load the keyring into the configuration struct.  If the configuration
-     * we're passed in has a keyring loaded and it matches ours, use that and
-     * mark it to not be freed.  Otherwise, initialize the keyring with our
-     * configuration settings.
-     */
-    if (sconf->ring != NULL)
-        return;
-    if (bconf->ring != NULL
-        && strcmp(sconf->keyring_path, bconf->keyring_path) == 0) {
-        sconf->ring = bconf->ring;
-    } else {
-        mwk_cache_keyring(server, sconf);
     }
 }
 

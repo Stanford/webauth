@@ -29,6 +29,23 @@ APLOG_USE_MODULE(webauth);
 #endif
 
 
+static int
+ensure_keyring_loaded(MWA_REQ_CTXT *rc)
+{
+    apr_thread_mutex_lock(rc->sconf->mutex);
+
+    if (rc->sconf->ring != NULL) {
+        apr_thread_mutex_unlock(rc->sconf->mutex);
+        return 1;
+    }
+
+    /* Perform last minute loading of the keyring. */
+    mwa_cache_keyring(rc->r->server, rc->sconf);
+
+    apr_thread_mutex_unlock(rc->sconf->mutex);
+    return (rc->sconf->ring != NULL);
+}
+
 static void
 dont_cache(MWA_REQ_CTXT *rc)
 {
@@ -797,7 +814,7 @@ make_proxy_cookie(const char *proxy_type,
     const char *token;
     int status;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return 0;
     data = apr_pcalloc(rc->r->pool, sizeof(struct webauth_token));
     data->type = WA_TOKEN_PROXY;
@@ -836,7 +853,7 @@ make_cred_cookie(struct webauth_token_cred *ct, MWA_REQ_CTXT *rc)
     struct webauth_token data;
     int status;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return 0;
     data.type = WA_TOKEN_CRED;
     data.token.cred = *ct;
@@ -874,7 +891,7 @@ make_app_cookie(const char *subject,
     const char *token;
     int status;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return 0;
     if (creation_time == 0) {
         creation_time = time(NULL);
@@ -971,7 +988,7 @@ parse_app_token(char *token, MWA_REQ_CTXT *rc)
     int status;
     struct webauth_token *app;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return 0;
     ap_unescape_url(token);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_APP, token,
@@ -1039,7 +1056,7 @@ parse_proxy_token(char *token, MWA_REQ_CTXT *rc)
     struct webauth_token *pt;
     int status;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return 0;
     ap_unescape_url(token);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_PROXY, token,
@@ -1096,7 +1113,7 @@ get_session_key(char *token, MWA_REQ_CTXT *rc)
     const char *mwa_func = "get_session_key";
 
     ap_unescape_url(token);
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return NULL;
     status = webauth_token_decode(rc->ctx, WA_TOKEN_APP, token,
                                   rc->sconf->ring, &data);
@@ -1618,7 +1635,7 @@ parse_cred_token_cookie(MWA_REQ_CTXT *rc, MWA_WACRED *cred)
     struct webauth_token_cred *ct;
     const char *mwa_func = "parse_cred_token_cookie";
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return NULL;
 
     cval = find_cookie(rc, cname);

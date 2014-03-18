@@ -294,7 +294,7 @@ mwa_log_webauth_error(MWA_REQ_CTXT *rc, int status, const char *mwa_func,
                       const char *func, const char *extra);
 
 /*
- * this should only be called in the module init routine
+ * this should only be called in the ensure_keyring_loaded routine
  */
 int
 mwa_cache_keyring(server_rec *serv, struct server_config *sconf);

@@ -37,6 +37,7 @@ struct webauth_keyring;
 /* enum for mutexes */
 enum mwk_mutex_type {
     MWK_MUTEX_TOKENACL,
+    MWK_MUTEX_KEYRING,
     MWK_MUTEX_MAX /* MUST BE LAST! */
 };
 

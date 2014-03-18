@@ -29,6 +29,23 @@
 APLOG_USE_MODULE(webkdc);
 
 
+static int
+ensure_keyring_loaded(MWK_REQ_CTXT *rc)
+{
+    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING);
+
+    if (rc->sconf->ring != NULL) {
+        mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING);
+        return 1;
+    }
+
+    /* Perform last minute loading of the keyring. */
+    mwk_cache_keyring(rc->r->server, rc->sconf);
+
+    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING);
+    return (rc->sconf->ring != NULL);
+}
+
 /*
  * if msg has any whitespace or double quotes in it, enclose
  * it in double quotes, and escape any inner double quotes
@@ -266,7 +283,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
         if (token == NULL)
             return MWK_ERROR;
-        if (rc->sconf->ring == NULL)
+        if (!ensure_keyring_loaded(rc))
             return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                      mwk_func, true);
         status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_SERVICE, token,
@@ -358,7 +375,7 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token,
     int status;
     struct webauth_token *data;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, true);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_PROXY, token,
@@ -392,7 +409,7 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
     int status;
     struct webauth_token *data;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, true);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_LOGIN, token,
@@ -501,7 +518,7 @@ make_token(MWK_REQ_CTXT *rc, struct webauth_token *data, const char **token,
 {
     int status;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "no keyring", mwk_func, true);
     status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, token);
@@ -1311,7 +1328,7 @@ parse_service_token(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     const char *at = get_attr_value(rc, e, "type", 1, mwk_func);
     char *msg, *token;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, true);
 
