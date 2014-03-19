@@ -9,7 +9,7 @@
 <link href="../style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
 <link href="../style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
 <link href="../style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" /><link rel="stylesheet" type="text/css" href="../style/css/prettify.css" />
-<script src="../style/scripts/prettify.js" type="text/javascript">
+<script src="../style/scripts/prettify.min.js" type="text/javascript">
 </script>
 
 <link href="../images/favicon.ico" rel="shortcut icon" /></head>
@@ -27,9 +27,10 @@
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>Support for the WebAuth protocol</td></tr>
-<tr><th><a href="module-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="module-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webauth_module</td></tr>
-<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c</td></tr></table>
+<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webauth.c</td></tr>
+<tr><th><a href="module-dict.html#Compatibility">Compatibility:</a></th><td>Apache 2.0 and higher</td></tr></table>
 <h3>Summary</h3>
 
     <p>
@@ -46,6 +47,7 @@
 <ul id="toc">
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthapptokenlifetime">WebAuthAppTokenLifetime</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthauthtype">WebAuthAuthType</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webauthcookiepath">WebAuthCookiePath</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthcred">WebAuthCred</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthcredcachedir">WebAuthCredCacheDir</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webauthdebug">WebAuthDebug</a></li>
@@ -87,22 +89,22 @@
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="../images/down.gif" /> <a href="#s1">Minimal Config File</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s2">Using WebAuth Authentication</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s3">Environment Variables</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s4">Authentication Factors</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s5">Using WebAuth with Proxy Servers</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s6">Perl Integration</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s7">PHP 4.x and 5.x Integration</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s8">Java/Tomcat/mod_jk Integration</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s9">Requesting Credentials</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s10">Debugging mod_webauth</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s11">Setting up load-balanced WebAuth servers</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s12">Manual License</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#config">Minimal Config File</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#basics">Using WebAuth Authentication</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#environment">Environment Variables</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#factors">Authentication Factors</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#proxy">Using WebAuth with Proxy Servers</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#perl">Perl Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#php">PHP 4.x and 5.x Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#java">Java/Tomcat/mod_jk Integration</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#credentials">Requesting Credentials</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#debugging">Debugging mod_webauth</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#loadbalance">Setting up load-balanced WebAuth servers</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#license">Manual License</a></li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s1">Minimal Config File</a></h2>
+<h2><a name="config" id="config">Minimal Config File</a></h2>
     
 
     <p>
@@ -110,16 +112,14 @@
       configure mod_webauth.
     </p>
 
-    <div class="example"><h3>Example</h3><pre>
-LoadModule webauth_module modules/mod_webauth.so
+    <div class="example"><h3>Example</h3><pre>LoadModule webauth_module modules/mod_webauth.so
 
 WebAuthKeyring conf/webauth/keyring
 WebAuthKeytab conf/webauth/keytab
 WebAuthServiceTokenCache conf/webauth/service_token_cache
 WebAuthLoginURL https://webkdc/login/
 WebAuthWebKdcURL https://webkdc/webkdc-service/
-WebAuthWebKdcPrincipal service/webkdc
-</pre></div>
+WebAuthWebKdcPrincipal service/webkdc</pre></div>
 
     <p>
       This will enable the module, but not protect any pages.  To do that,
@@ -129,7 +129,7 @@ WebAuthWebKdcPrincipal service/webkdc
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s2">Using WebAuth Authentication</a></h2>
+<h2><a name="basics" id="basics">Using WebAuth Authentication</a></h2>
     
 
     <p>
@@ -139,12 +139,10 @@ WebAuthWebKdcPrincipal service/webkdc
       valid-user</code> directive.
     </p>
 
-    <div class="example"><h3>Example</h3><pre>
-&lt;Location /private/&gt;
+    <div class="example"><h3>Example</h3><pre>&lt;Location /private/&gt;
   AuthType WebAuth
   Require valid-user
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
 
     <p>
       This will allow anyone who can authenticate using your WebAuth
@@ -156,7 +154,7 @@ WebAuthWebKdcPrincipal service/webkdc
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s3"><a name="sectionenv">Environment Variables</a></a></h2>
+<h2><a name="environment" id="environment">Environment Variables</a></h2>
     
 
     <p>
@@ -237,8 +235,7 @@ WebAuthWebKdcPrincipal service/webkdc
       </tr>
     </table>
 
-    <div class="example"><h3>Example Environment Variables</h3><pre>
-AUTH_TYPE=WebAuth
+    <div class="example"><h3>Example Environment Variables</h3><pre>AUTH_TYPE=WebAuth
 REMOTE_USER=roland
 WEBAUTH_AUTHZ_USER=roland
 WEBAUTH_FACTORS_INITIAL=p,o,o2,m
@@ -247,8 +244,7 @@ WEBAUTH_LOA=2
 WEBAUTH_TOKEN_CREATION=103872393
 WEBAUTH_TOKEN_EXPIRATION=1038759389
 WEBAUTH_TOKEN_LASTUSED=103872393
-WEBAUTH_USER=schemers
-</pre></div>
+WEBAUTH_USER=schemers</pre></div>
 
     <p>
       WebAuth can support a separate authentication identity and an
@@ -297,12 +293,12 @@ WEBAUTH_USER=schemers
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s4"><a name="factors">Authentication Factors</a></a></h2>
+<h2><a name="factors" id="factors">Authentication Factors</a></h2>
     
 
     <p>
       Below are the authentication factors that can be required via
-      WebAuth directives or queried from the <a href="#sectionenv">environmental variables</a>
+      WebAuth directives or queried from the <a href="#environment">environmental variables</a>
       WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.
     </p>
 
@@ -392,7 +388,7 @@ WEBAUTH_USER=schemers
     </table>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s5">Using WebAuth with Proxy Servers</a></h2>
+<h2><a name="proxy" id="proxy">Using WebAuth with Proxy Servers</a></h2>
     
 
     <p>
@@ -424,15 +420,13 @@ WEBAUTH_USER=schemers
       <code>RequestHeader</code> directive, you could do the following:
     </p>
 
-    <div class="example"><h3>Example</h3><pre>
-&lt;Location /someplace&gt;
+    <div class="example"><h3>Example</h3><pre>&lt;Location /someplace&gt;
   AuthType WebAuth
   require valid-user
   ProxyPass http://otherhost.stanford.edu/
   ProxyPassReverse http://otherhost.stanford.edu/
   RequestHeader set "X-WEBAUTH-USER" "%{WEBAUTH_USER}e"
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
 
     <p>
       The <code>RequestHeader</code> directive causes the
@@ -469,7 +463,7 @@ WEBAUTH_USER=schemers
     </div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s6">Perl Integration</a></h2>
+<h2><a name="perl" id="perl">Perl Integration</a></h2>
     
 
     <p>
@@ -479,12 +473,10 @@ WEBAUTH_USER=schemers
       http://yourserver/private/ are to be protected:
     </p>
 
-    <div class="example"><h3>Apache Directives Example</h3><pre>
-&lt;Location /private/&gt;
+    <div class="example"><h3>Apache Directives Example</h3><pre>&lt;Location /private/&gt;
   AuthType WebAuth
   Require valid-user
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
 
     <p>
       Then, in order to determine the user's identity from the Perl
@@ -492,20 +484,18 @@ WEBAUTH_USER=schemers
       set by mod_webauth within your Perl script:
     </p>
 
-    <div class="example"><h3>Perl Example</h3><pre>
-my $REMOTE_USER = $ENV{'REMOTE_USER'};
+    <div class="example"><h3>Perl Example</h3><pre>my $REMOTE_USER = $ENV{'REMOTE_USER'};
 print "Content-Type: text/plain\n\n";
-print "The authenticated user is $REMOTE_USER\n";
-</pre></div>
+print "The authenticated user is $REMOTE_USER\n";</pre></div>
 
     <p>
       Any of the environment variables described in the
-      <a href="#sectionenv">environment variables</a> section may be
+      <a href="#environment">environment variables</a> section may be
       accessed this way.
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s7">PHP 4.x and 5.x Integration</a></h2>
+<h2><a name="php" id="php">PHP 4.x and 5.x Integration</a></h2>
     
 
     <p>
@@ -514,12 +504,10 @@ print "The authenticated user is $REMOTE_USER\n";
       PHP scripts.  For example:
     </p>
 
-    <div class="example"><h3>Apache Directives Example</h3><pre>
-&lt;Location /private/&gt;
+    <div class="example"><h3>Apache Directives Example</h3><pre>&lt;Location /private/&gt;
   AuthType WebAuth
   Require valid-user
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
 
     <p>
       Then, in order to determine the user's identity from the PHP script,
@@ -527,14 +515,12 @@ print "The authenticated user is $REMOTE_USER\n";
       <code>$_SERVER</code> array variable.  For example:
     </p>
 
-    <div class="example"><h3>PHP Example</h3><pre>
-$WEBAUTH_USER = getenv('WEBAUTH_USER');
+    <div class="example"><h3>PHP Example</h3><pre>$WEBAUTH_USER = getenv('WEBAUTH_USER');
 
 # alternative, using the $_SERVER 'superglobal' array:
 # $WEBAUTH_USER = $_SERVER['WEBAUTH_USER'];
 
-print "The authenticated user is $WEBAUTH_USER\n";
-</pre></div>
+print "The authenticated user is $WEBAUTH_USER\n";</pre></div>
 
     <p>
       In looking at the source for PHP 4.3, it appears that the
@@ -547,12 +533,12 @@ print "The authenticated user is $WEBAUTH_USER\n";
     </p>
     <p>
       Any of the environment variables described in the
-      <a href="#sectionenv">environment variables</a> section may be
+      <a href="#enivronment">environment variables</a> section may be
       accessed this way.
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s8">Java/Tomcat/mod_jk Integration</a></h2>
+<h2><a name="java" id="java">Java/Tomcat/mod_jk Integration</a></h2>
     
 
     <p>
@@ -563,8 +549,7 @@ print "The authenticated user is $WEBAUTH_USER\n";
       want to pass.  For example:
     </p>
 
-    <div class="example"><h3>Apache Directives Example</h3><pre>
-# WebAuth-protect /private/
+    <div class="example"><h3>Apache Directives Example</h3><pre># WebAuth-protect /private/
 &lt;Location /private/&gt;
   AuthType WebAuth
   Require valid-user
@@ -577,8 +562,7 @@ JkEnvVar WEBAUTH_USER "&lt;UNSET&gt;"
 JkEnvVar REMOTE_USER "&lt;UNSET&gt;"
 JkEnvVar AUTH_TYPE "&lt;UNSET&gt;"
 JkEnvVar WEBAUTH_TOKEN_CREATION "&lt;UNSET&gt;"
-JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"
-</pre></div>
+JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"</pre></div>
 
     <p>
       If all you are interested in is REMOTE_USER, then you don't need to
@@ -590,10 +574,8 @@ JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"
       <code>request</code> object.
     </p>
 
-    <div class="example"><h3>JSP Example</h3><pre>
-WEBAUTH_USER is set to:
-&lt;% out.print (request.getAttribute("WEBAUTH_USER")); %&gt;
-</pre></div>
+    <div class="example"><h3>JSP Example</h3><pre>WEBAUTH_USER is set to:
+&lt;% out.print (request.getAttribute("WEBAUTH_USER")); %&gt;</pre></div>
 
     <p>
       Any variables you configure mod_jk to pass via <code>JkEnvVar</code>
@@ -620,12 +602,10 @@ WEBAUTH_USER is set to:
       <code>server.xml</code> file.  For example:
     </p>
 
-    <div class="example"><h3>Connector Example</h3><pre>
-&lt;Connector className="org.apache.ajp.tomcat4.Ajp13Connector"
+    <div class="example"><h3>Connector Example</h3><pre>&lt;Connector className="org.apache.ajp.tomcat4.Ajp13Connector"
     port="8009" minProcessors="5" maxProcessors="75"
     tomcatAuthentication="false"
-    acceptCount="10" debug="0"/&gt;
-</pre></div>
+    acceptCount="10" debug="0"/&gt;</pre></div>
 
     <p>
       Be aware that Apache and Tomcat parse semicolons in URLs
@@ -647,8 +627,7 @@ WEBAUTH_USER is set to:
       following example:
     </p>
 
-    <div class="example"><h3>Access Control Example</h3><pre>
-# DO NOT USE THIS -- insecure!
+    <div class="example"><h3>Access Control Example</h3><pre># DO NOT USE THIS -- insecure!
 &lt;Location "/srvlet/secret"&gt;
     AuthType WebAuth
     require valid-user
@@ -661,8 +640,7 @@ WEBAUTH_USER is set to:
 &lt;Location ~ "/srvlet/secret(;.*)?$"&gt;
     AuthType WebAuth
     require valid-user
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
 
     <p>
       This problem applies to any Apache authentication mechanism applied
@@ -671,7 +649,7 @@ WEBAUTH_USER is set to:
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s9">Requesting Credentials</a></h2>
+<h2><a name="credentials" id="credentials">Requesting Credentials</a></h2>
     
 
     <p>
@@ -712,8 +690,7 @@ WEBAUTH_USER is set to:
       requires the use of two Kerberos credentials.
     </p>
 
-    <div class="example"><h3>Example</h3><pre>
-# This first WebAuthCred directive will cause us to acquire a proxy token
+    <div class="example"><h3>Example</h3><pre># This first WebAuthCred directive will cause us to acquire a proxy token
 # on the initial redirect when determining the user's identity.  It saves
 # an extra redirect later on when we actually use/acquire credentials.
 
@@ -730,8 +707,7 @@ WEBAUTH_USER is set to:
   WebAuthUseCreds on
   WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu
   WebAuthCred krb5 host/lichen.stanford.edu@stanford.edu
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
 
     <div class="note">
       <h3>Warning</h3>
@@ -749,7 +725,7 @@ WEBAUTH_USER is set to:
     </div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s10">Debugging mod_webauth</a></h2>
+<h2><a name="debugging" id="debugging">Debugging mod_webauth</a></h2>
     
 
     <p>
@@ -768,19 +744,17 @@ WEBAUTH_USER is set to:
       </p>
     </div>
 
-    <div class="example"><h3>Example</h3><pre>
-# WebAuthDebug must be on
+    <div class="example"><h3>Example</h3><pre># WebAuthDebug must be on
 WebAuthDebug on
 
 &lt;Location /webauth-status&gt;
   SetHandler webauth
   Order allow,deny
   Allow from all
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s11">Setting up load-balanced WebAuth servers</a></h2>
+<h2><a name="loadbalance" id="loadbalance">Setting up load-balanced WebAuth servers</a></h2>
     
 
     <p>
@@ -848,35 +822,29 @@ wa_keyring -f ./keyring add 7d
       <code>remove</code> commands.  For example:
     </p>
 
-    <div class="example"><h3>Manually remove old keys</h3><pre>
-$ wa_keyring -f ./keyring list
+    <div class="example"><h3>Manually remove old keys</h3><pre>$ wa_keyring -f ./keyring list
 Path: ./keyring
 id  Created            Valid after        Fingerprint
  0  2003-02-13 12:43:25  2003-02-13 12:43:25  664b48642f741ae343ef5ea46a8768e8
  1  2003-03-12 16:21:57  2003-03-12 16:21:57  7c4971e760f75525bba277a308c092c0
 
-$ wa_keyring -f ./keyring remove 0
-</pre></div>
+$ wa_keyring -f ./keyring remove 0</pre></div>
 
     <p>
       Or it can be done automatically, using the <code>gc</code> command:
     </p>
 
-    <div class="example"><h3>Automatically removing old keys</h3><pre>
-# Remove any keys with a valid after date older then 90 days
-$ wa_keyring -f ./keyring gc -90d
-</pre></div>
+    <div class="example"><h3>Automatically removing old keys</h3><pre># Remove any keys with a valid after date older then 90 days
+$ wa_keyring -f ./keyring gc -90d</pre></div>
 
     <p>
       To summarize, for each WebAuth (master and slaves), you'd want the
       following directives:
     </p>
 
-    <div class="example"><h3>Example</h3><pre>
-WebAuthKeyring conf/webauth/keyring
+    <div class="example"><h3>Example</h3><pre>WebAuthKeyring conf/webauth/keyring
 WebAuthKeytab conf/webauth/keytab
-WebAuthKeyringAutoUpdate off
-</pre></div>
+WebAuthKeyringAutoUpdate off</pre></div>
 
     <p>
       Periodically (once a month should be reasonable), you'd want to
@@ -884,8 +852,7 @@ WebAuthKeyringAutoUpdate off
       file on the slaves.  For example:
     </p>
 
-    <div class="example"><h3>Monthly Key maintenance</h3><pre>
-# Generate a new key that will be valid in 2 days.
+    <div class="example"><h3>Monthly Key maintenance</h3><pre># Generate a new key that will be valid in 2 days.
 wa_keyring -f conf/webauth/keyring add 2d
 
 # Remove keys that have been around for more then 60 days.
@@ -897,16 +864,16 @@ for slave in $slaves ; do
 done
 
 # Restart the master and all the slaves at any point before the new key is
-# valid.
-</pre></div>
+# valid.</pre></div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s12">Manual License</a></h2>
+<h2><a name="license" id="license">Manual License</a></h2>
     
 
     <p>
-      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012, 2013
-      The Board of Trustees of the Leland Stanford Junior University
+      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012,
+      2013, 2014 The Board of Trustees of the Leland Stanford Junior
+      University
     </p>
     <p>
       Copying and distribution of this file, with or without modification,
@@ -922,7 +889,7 @@ done
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAppTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(lifetime of id-token returned from WebKDC)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -943,10 +910,8 @@ done
         minutes, hours, days, and weeks respectively.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# create an app-token valid for 2 hours
-WebAuthAppTokenLifetime 2h
-</pre></div>
+      <div class="example"><h3>Example</h3><pre># create an app-token valid for 2 hours
+WebAuthAppTokenLifetime 2h</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -956,7 +921,7 @@ WebAuthAppTokenLifetime 2h
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAuthType <em>StanfordAuth</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -988,13 +953,92 @@ WebAuthAuthType StanfordAuth
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebAuthCookiePath" id="WebAuthCookiePath">WebAuthCookiePath</a> <a name="webauthcookiepath" id="webauthcookiepath">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>
+      Path scope of cookies set by the module
+    </td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthCookiePath <em>scope</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>/</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
+</table>
+      <p>
+        Normally, all WebAuth cookies use a path of "/" and will be sent
+        by the browser for all requests to that server or virtual host.
+        This setting can be used to restrict the scope of cookies (which
+        include app, proxy, and cred cookies) to a particular URL path
+        prefix.  This may be useful if different sections of a virtual
+        host must be handled differently by user information service
+        policy and therefore must use separate credential sets.  It allows
+        different portions of the same virtual host to be treated as
+        separate destination "sites" from the perspective of single
+        sign-on and browser authentication credential management.
+      </p>
+      <p>
+        The <em>scope</em> argument should be the URL or a prefix of the
+        URL by which the resource affected by this directive is accessed.
+        The module has no way of checking this, so use care in setting the
+        scope.  An incorrect scope may result in cookies being set but not
+        returned by the browser, which can cause a redirect loop between
+        the WebAuth-protected site and the WebLogin service.
+      </p>
+      <p>
+        The <em>scope</em> argument follows the normal rules for
+        path-based scope for cookies using the "path=" cookie parameter as
+        described in <a href="http://tools.ietf.org/search/rfc6265">RFC
+        6265</a>.
+      </p>
+
+      <div class="note">
+        <h3>Warning</h3>
+        <p>
+          Currently, the mod_webauth module does not deal properly with
+          requests containing multiple cookies of the same name.  The
+          first cookie will be used and the rest ignored, which results in
+          undefined behavior since the order of cookies is not
+          deterministic.  Therefore, if the
+          <code class="directive">WebAuthCookiePath</code> directive is used
+          within a virtual host, all WebAuth-protected URLs in that
+          virtual host should use this directive and all protected URLs
+          should be within one and only one path scope.  In other words,
+          ensure that the browser will know that only one set of cookies
+          could apply to any given URL so that it will never send more than
+          one cookie with the same name.
+        </p>
+        <p>
+          This restriction will hopefully be lifted in future versions of
+          WebAuth.
+        </p>
+      </div>
+
+      <div class="example"><h3>Example</h3><p><code>
+        
+# In the following example, no other URLs in this virtual host should be
+# protected by WebAuth to avoid creating potentially conflicting cookies
+# with a path scope of /.
+&lt;Location "/content"&gt;
+  AuthType WebAuth
+  Require vald-user
+  WebAuthCookiePath /content
+&lt;/Location&gt;
+&lt;Location "/manage"&gt;
+  AuthType WebAuth
+  Require user admin1 admin2
+  WebAuthCookiePath /manage
+&lt;/Location&gt;
+      </code></p></div>
+    
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthCred" id="WebAuthCred">WebAuthCred</a> <a name="webauthcred" id="webauthcred">Directive</a></h2>
 <table class="directive">
 <tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Which credentials to acquire</td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthCred <em>type</em> [<em>service</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1017,15 +1061,13 @@ WebAuthAuthType StanfordAuth
         specify that multiple credentials are required.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# get and use the following krb5 credential on every
+      <div class="example"><h3>Example</h3><pre># get and use the following krb5 credential on every
 # request under /myapp/.
 &lt;Location /myapp/&gt;
   AuthType WebAuth
   require valid-user
   WebAuthCred krb5 host/slapshot.stanford.edu@stanford.edu
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1037,7 +1079,7 @@ WebAuthAuthType StanfordAuth
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthCredCacheDir <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1072,7 +1114,7 @@ WebAuthCredCacheDir conf/webauth/credcache
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDebug on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDebug off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1081,10 +1123,8 @@ WebAuthCredCacheDir conf/webauth/credcache
         <code>debug</code> as well.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-WebAuthDebug on
-LogLevel debug
-</pre></div>
+      <div class="example"><h3>Example</h3><pre>WebAuthDebug on
+LogLevel debug</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1094,7 +1134,7 @@ LogLevel debug
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDoLogout on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDoLogout off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1105,11 +1145,9 @@ LogLevel debug
         directive for the given location.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-&lt;Location /myapp/logout&gt;
+      <div class="example"><h3>Example</h3><pre>&lt;Location /myapp/logout&gt;
   WebAuthDoLogout on
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
 
       <div class="note">
         <h3>Note</h3>
@@ -1130,7 +1168,7 @@ LogLevel debug
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthDontCache on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthDontCache off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1182,7 +1220,7 @@ WebAuthDontCache on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthExtraRedirect on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthExtraRedirect on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host, directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1209,12 +1247,10 @@ WebAuthDontCache on
         in the user's browser (though hopefully this should never happen).
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-&lt;Location /myapp/&gt;
+      <div class="example"><h3>Example</h3><pre>&lt;Location /myapp/&gt;
   WebAuthExtraRedirect off
   ...
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
 
       <div class="note">
         <h3>Compatibility</h3>
@@ -1238,7 +1274,7 @@ WebAuthDontCache on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthFaliureURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1262,7 +1298,7 @@ WebAuthFailureURL /app/sorry.html
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthForceLogin on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthForceLogin off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1305,16 +1341,14 @@ WebAuthFailureURL /app/sorry.html
         authorization identity without reauthenticating.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# force the user to login, and create an app-token
+      <div class="example"><h3>Example</h3><pre># force the user to login, and create an app-token
 # that only lasts for 20 minutes
 &lt;Location /myapp/&gt;
   AuthType WebAuth
   Require valid-user
   WebAuthForceLogin on
   WebAuthAppTokenLifetime 20m
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1324,7 +1358,7 @@ WebAuthFailureURL /app/sorry.html
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthHttpOnly on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1356,7 +1390,7 @@ WebAuthHttpOnly off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthInactiveExpire <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(disabled)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1382,34 +1416,44 @@ WebAuthHttpOnly off
         minutes, hours, days, and weeks respectively.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# timeout an app-token if it isn't used for more
+      <div class="example"><h3>Example</h3><pre># timeout an app-token if it isn't used for more
 # then 20 minutes
 WebAuthInactiveExpire 20m
 # update the last-used-time in the cookie if it's older
 # then 10 minutes
-WebAuthLastUseUpdateInterval 10m
-</pre></div>
+WebAuthLastUseUpdateInterval 10m</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="directive-section"><h2><a name="WebAuthKeyring" id="WebAuthKeyring">WebAuthKeyring</a> <a name="webauthkeyring" id="webauthkeyring">Directive</a></h2>
 <table class="directive">
-<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the webauth keyring
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Name of the file containing the WebAuth keyring
     </td></tr>
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeyring <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
-        This is the name of the file containing the webauth keyring, which
-        is a file that contains the server's private AES key(s).
+        This is the name of the file containing the WebAuth keyring, which
+        is a file that contains the server's private AES key(s).  It must
+        be readable by the Apache user.
       </p>
       <p>
-        The keyring file gets read once per child and cached for the
-        duration of a child.
+        The keyring file is read when the first request for a virtual host
+        is received.  Each child maintains an in-memory cached keyring for
+        each virtual host.  These keyrings are only reloaded from disk
+        when Apache refreshes its configuration.  If the keyring is
+        changed by an external process (<code>wa_keyring</code>, for
+        instance), Apache must be told to reload configuration files in
+        order to pick up the change.
+      </p>
+      <p>
+        When using the ITK Apache MPM, there should be a separate keyring
+        for each unique virtual host user that will be doing WebAuth.  This
+        maintains proper privilege separation by assigning each user a
+        separate keyring.
       </p>
       <p>
         If the path is not absolute, then it will be treated as being
@@ -1434,15 +1478,31 @@ WebAuthKeyRing conf/webauth/keyring
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeyringAutoUpdate on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthKeyringAutoUpdate on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
         This directive controls whether or not we auto-update the keyring
-        file.  This includes creating it if it doesn't exist, and
-        generating a new key before the old key expires, and periodically
-        garbage collecting old keys.  Note that auto updating only occurs
-        on server startup and restarts.
+        file.  This includes creating it if it doesn't exist, generating a
+        new key before the old key expires, and periodically
+        garbage-collecting old keys.  Updating only occurs on server
+        startup and restarts.
+      </p>
+
+      <p>
+        If auto-update is enabled, Apache must have write access to the
+        directory containing the keyring, since keyrings are updated by
+        writing out the new file to a separate name and then atomically
+        replacing the file.
+      </p>
+
+      <p>
+        Ownership (user and group) of the existing keyring file will be
+        preserved if possible without overwriting the existing file.
+        Permissions will also be preserved, with the exception that
+        permissions will not be copied to the new file if the old file was
+        group-readable or group-writable and setting the group ownership
+        failed.
       </p>
 
       <div class="note">
@@ -1450,7 +1510,7 @@ WebAuthKeyRing conf/webauth/keyring
         <p>
           This directive should be turned off if multiple servers are
           sharing the same keyring file so the keyring file can be
-          manually updated.  That too will eventually be automated.
+          manually updated.
         </p>
       </div>
 
@@ -1469,7 +1529,7 @@ WebAuthKeyringAutoUdpate off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthAKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthKeyringKeyLifetime 30d</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1501,7 +1561,7 @@ WebAuthKeyringKeyLifetime 60d
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1531,7 +1591,7 @@ WebAuthKeytab conf/webauth/keytab webauth/slapshot.stanford.edu
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLastUseUpdateInterval <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthLastUsedUpdateInterval 0</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1552,14 +1612,12 @@ WebAuthKeytab conf/webauth/keytab webauth/slapshot.stanford.edu
         minutes, hours, days, and weeks respectively.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# timeout an app-token if it isn't used for
+      <div class="example"><h3>Example</h3><pre># timeout an app-token if it isn't used for
 # more then 20 minutes
 WebAuthInactiveExpire 20m
 # update the last-used-time in the cookie if it's older
 # then 10 minutes
-WebAuthLastUseUpdateInterval 10m
-</pre></div>
+WebAuthLastUseUpdateInterval 10m</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1569,7 +1627,7 @@ WebAuthLastUseUpdateInterval 10m
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLoginCanceledURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1595,7 +1653,7 @@ WebAuthLoginCanceledURL /nonwebauth/info.html
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthLoginURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1624,7 +1682,7 @@ WebAuthLoginURL https://weblogin.stanford.edu/login
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthOptional on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1668,7 +1726,7 @@ WebAuthOptional on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthPostReturnURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1679,11 +1737,9 @@ WebAuthOptional on
         authentication.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# if unauthenticated when accessing a URL via a POST,
+      <div class="example"><h3>Example</h3><pre># if unauthenticated when accessing a URL via a POST,
 # authenticate and return to front-page
-WebAuthPostReturnURL /myapp/
-</pre></div>
+WebAuthPostReturnURL /myapp/</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1695,7 +1751,7 @@ WebAuthPostReturnURL /myapp/
     </code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1732,7 +1788,7 @@ WebAuthRequireInitialFactor p o
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireLOA <em>loa</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>0</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1769,7 +1825,7 @@ WebAuthRequireLOA 2
     </code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1810,7 +1866,7 @@ WebAuthRequireSessionFactor m
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthRequireSSL on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthRequireSSL on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1865,15 +1921,13 @@ WebAuthRequireSessionFactor m
         </p>
       </div>
 
-      <div class="example"><h3>Example</h3><pre>
-# This server is behind an SSL accelerator, so Apache only sees
+      <div class="example"><h3>Example</h3><pre># This server is behind an SSL accelerator, so Apache only sees
 # non-SSL traffic.  Permit non-SSL WebAuth access, but ensure the
 # return URL for authentication tells the client to use SSL.
 WebAuthRequireSSL off
 &lt;Location /&gt;
   WebAuthSSLReturn on
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1883,7 +1937,7 @@ WebAuthRequireSSL off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthReturnURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(url user originally requested)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1892,11 +1946,9 @@ WebAuthRequireSSL off
         URL they originally requested.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# if unauthenticated when accessing a URL, authenticate
+      <div class="example"><h3>Example</h3><pre># if unauthenticated when accessing a URL, authenticate
 # and return to front-page
-WebAuthReturnURL /myapp/
-</pre></div>
+WebAuthReturnURL /myapp/</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1907,7 +1959,7 @@ WebAuthReturnURL /myapp/
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthServiceTokenCache <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1941,7 +1993,7 @@ WebAuthServiceTokenCache conf/webauth/service_token_cache
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirect on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirect off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1979,7 +2031,7 @@ WebAuthSSLRedirect on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLRedirectPort <em>port</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLRedirectPort 443</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -1991,10 +2043,8 @@ WebAuthSSLRedirect on
         ports 8080 and 8443, for example.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-WebAuthSSLRedirect on
-WebAuthSSLRedirectPort 8443
-</pre></div>
+      <div class="example"><h3>Example</h3><pre>WebAuthSSLRedirect on
+WebAuthSSLRedirectPort 8443</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -2004,7 +2054,7 @@ WebAuthSSLRedirectPort 8443
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSSLReturn on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSSLReturn off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2025,14 +2075,12 @@ WebAuthSSLRedirectPort 8443
         behind an SSL offload proxy.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-&lt;Location /myapp/&gt;
+      <div class="example"><h3>Example</h3><pre>&lt;Location /myapp/&gt;
   AuthType WebAuth
   Require valid-user
   WebAuthRequireSSL off
   WebAuthSSLReturn on
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -2044,7 +2092,7 @@ WebAuthSSLRedirectPort 8443
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthStripURL on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2086,7 +2134,7 @@ WebAuthStripURL off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthSubjectAuthType <em>type</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthSubjectAuthType webkdc</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2166,7 +2214,7 @@ WebAuthSubjectAuthType krb5
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthTokenMaxTTL 300s</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2182,10 +2230,8 @@ WebAuthSubjectAuthType krb5
         minutes, hours, days, and weeks respectively.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# ten minute TTL
-WebAuthTokenMaxTTL 10m
-</pre></div>
+      <div class="example"><h3>Example</h3><pre># ten minute TTL
+WebAuthTokenMaxTTL 10m</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -2197,7 +2243,7 @@ WebAuthTokenMaxTTL 10m
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthTrustAuthzIdentity on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthTrustAuthzIdentity off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host, directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2321,13 +2367,11 @@ WebAuthTrustAuthzIdentity on
         </p>
       </div>
 
-      <div class="example"><h3>Logging Example</h3><pre>
-# Replace ident field with WebAuth authentication identity.
+      <div class="example"><h3>Logging Example</h3><pre># Replace ident field with WebAuth authentication identity.
 LogFormat \
  "%h %{WEBAUTH_USER}e %u %t \"%r\" %&gt;s %O \"%{Referer}i\" \"%{User-Agent}i\"" \
  webauth_combined
-CustomLog /var/log/apache2/access.log webauth_combined
-</pre></div>
+CustomLog /var/log/apache2/access.log webauth_combined</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -2337,7 +2381,7 @@ CustomLog /var/log/apache2/access.log webauth_combined
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthUseCreds on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthUseCreds off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2349,11 +2393,9 @@ CustomLog /var/log/apache2/access.log webauth_combined
         directive.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-&lt;Location /myapp/command&gt;
+      <div class="example"><h3>Example</h3><pre>&lt;Location /myapp/command&gt;
   WebAuthUseCreds on
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -2364,7 +2406,7 @@ CustomLog /var/log/apache2/access.log webauth_combined
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthVarPrefix <em>string</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebAuthVarPrefix ""</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>directory, .htaccess</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2378,13 +2420,11 @@ CustomLog /var/log/apache2/access.log webauth_combined
         addition to the standard "WEBAUTH" ones.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-&lt;Location /myapp/&gt;
+      <div class="example"><h3>Example</h3><pre>&lt;Location /myapp/&gt;
   # this will cause both WEBAUTH_USER and HTTP_WEBAUTH_USER
   # environment variables to get set.
   WebAuthVarPrefix HTTP_
-&lt;/Location&gt;
-</pre></div>
+&lt;/Location&gt;</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -2395,7 +2435,7 @@ CustomLog /var/log/apache2/access.log webauth_combined
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebKdcPrincipal <em>principal</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2409,10 +2449,8 @@ CustomLog /var/log/apache2/access.log webauth_combined
         <p>This directive must be set.</p>
       </div>
 
-      <div class="example"><h3>Example</h3><pre>
-# if realm isn't specified, the default realm will be used
-WebAuthWebKdcPrincipal service/webkdc@stanford.edu
-</pre></div>
+      <div class="example"><h3>Example</h3><pre># if realm isn't specified, the default realm will be used
+WebAuthWebKdcPrincipal service/webkdc@stanford.edu</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -2425,7 +2463,7 @@ WebAuthWebKdcPrincipal service/webkdc@stanford.edu
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertCheck on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2458,7 +2496,7 @@ WebAuthWebKdcSSLCertCheck off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebkdcSSLCertFile <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>
@@ -2500,7 +2538,7 @@ WebAuthWebKdcSSLCertFile conf/webauth/webkdc.cert
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebAuthWebKdcURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webauth</td></tr>
 </table>
       <p>

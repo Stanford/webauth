@@ -2,8 +2,8 @@
 #
 # Test suite for wa_keyring.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2010, 2013
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -23,7 +23,7 @@ use_prereq(qw(Date::Parse str2time));
 use_prereq(qw(IPC::Run run));
 
 # Declare our plan.
-plan tests => 68;
+plan tests => 72;
 
 # Set up Automake testing.
 automake_setup({ chdir_build => 1 });
@@ -166,5 +166,15 @@ is($err,    q{}, '...with no errors');
 @out = split(m{\n}xms, $out);
 is(scalar(@out) - 3, 3, '...and has the correct number of keys');
 
+# Change the permissions on the keyring and ensure they're preserved after a
+# write.
+chmod 0664, 'keyring' or BAIL_OUT("cannot chmod keyring: $!");
+($status, $out, $err) = wa_keyring('-f', 'keyring', 'add', '0d');
+is($status, 0,   'wa_keyring add 0d succeeded');
+is($out,    q{}, '...with no output');
+is($err,    q{}, '...and no errors');
+my $mode = (stat 'keyring')[2] & oct(777);
+is($mode, oct(664), '...and mode was preserved');
+
 # Clean up.
-unlink 'keyring';
+unlink 'keyring', 'keyring.lock';

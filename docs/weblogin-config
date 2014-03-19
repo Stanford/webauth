@@ -100,6 +100,8 @@ Templates
 
       permitted_authz   List (for FOREACH) of possible authorization ids
 
+      user_message      Raw HTML returned by the user information service
+
   token_rights will be a list, each member of which is a hash.  The keys
   of the hash are listed under token_rights above.  principal, instance,
   and realm will only be set if type is "krb5".  See the WebKDC manual
@@ -149,6 +151,7 @@ Templates
       err_multifactor_invalid  If set, could not validate a submitted OTP
       multifactor_required     Set to site-required mf when user mf too low
       multifactor_configured   Set to user mf when user mf too low for site
+      user_message             Raw HTML from the user information service
 
   Finally, the logout script uses a simple template with only one
   variable:
@@ -263,6 +266,15 @@ Configuration
       screen.
 
       Default: not set.
+
+  $FACTOR_WARNING
+
+      The seconds until we start to warn a user that their long-lived
+      device factor is about to expire.  This will force the
+      confirmation page, and so should be kept small for any sites
+      that have the confirmation page disabled by default.
+
+      Default: 172800 (2 days).
 
   $FATAL_PAGE
 
@@ -392,33 +404,29 @@ Configuration
 
       Default: not set.
 
-  $REMEMBER_FALLBACK
+  $PASSWORD_CHANGE_COMMAND
+  $PASSWORD_CHANGE_PORT
+  $PASSWORD_CHANGE_PRINC
+  $PASSWORD_CHANGE_SERVER
+  $PASSWORD_CHANGE_SUBCOMMAND
 
-      The fallback position for whether or not to store webkdc-proxy
-      tokens and any webkdc-factor tokens in cookies following a
-      successful login; in other words, the fallback position for whether
-      to do single sign-on.  This value is used if the remember_login form
-      parameter is not set.
+      Configuration to use remctl to do password changes instead of using
+      kpasswd.  By default, the normal kpasswd protocol is used for
+      password change, but this is a UDP-based protocol with some known
+      problems and poor behavior if password changes are slow.  If
+      $PASSWORD_CHANGE_SERVER is set, password changes will be done via a
+      remctl protocol instead.  (WebAuth must be built with remctl
+      support.)
 
-      This is not necessarily the default value; the template may send the
-      parameter by default (and, in fact, the default template does).
-      Rather, it's whatever happens if no value is sent.  Assuming the
-      form uses a checkbox, it's the behavior that should happen if the
-      checkbox is not checked.
+      The remaining options configure the service principal to which to
+      authenticate when sending the command (_PRINC), the port to use if
+      not the remctl default (_PORT), and the remctl command and
+      subcommand to send (_COMMAND and _SUBCOMMAND).  The only remaining
+      argument will be the new password.  _COMMAND and _SUBCOMMAND must be
+      set; the other options are all optional and will use remctl defaults
+      if not set.
 
-      The value should be either 'yes' or 'no'.
-
-      Default: no (default template sends yes via a checkbox that's
-      selected by default)
-
-  $FACTOR_WARNING
-
-      The seconds until we start to warn a user that their long-lived
-      device factor is about to expire.  This will force the
-      confirmation page, and so should be kept small for any sites
-      that have the confirmation page disabled by default.
-
-      Default: 172800 (2 days).
+      Default: not set.
 
   $RATE_LIMIT_INTERVAL
 
@@ -441,6 +449,25 @@ Configuration
       is ignored.
 
       Default: not set.
+
+  $REMEMBER_FALLBACK
+
+      The fallback position for whether or not to store webkdc-proxy
+      tokens and any webkdc-factor tokens in cookies following a
+      successful login; in other words, the fallback position for whether
+      to do single sign-on.  This value is used if the remember_login form
+      parameter is not set.
+
+      This is not necessarily the default value; the template may send the
+      parameter by default (and, in fact, the default template does).
+      Rather, it's whatever happens if no value is sent.  Assuming the
+      form uses a checkbox, it's the behavior that should happen if the
+      checkbox is not checked.
+
+      The value should be either 'yes' or 'no'.
+
+      Default: no (default template sends yes via a checkbox that's
+      selected by default)
 
   $REMUSER_ENABLED (was $HONOR_REMOTE_USER)
 
@@ -591,6 +618,14 @@ Configuration
 
       Default: not set.
 
+  $TEMPLATE_COMPILE_PATH
+
+      The path to the directory that Template Toolkit will use to
+      create compiled versions of the template for speed.
+
+      Default:  "/usr/local/share/weblogin/generic/templates/ttc" (which
+      works for the default installation paths).
+
   $TEMPLATE_PATH
 
       The path to the directory containing the confirm.tmpl, error.tmpl,
@@ -599,14 +634,6 @@ Configuration
 
       Default:  "/usr/local/share/weblogin/generic/templates" (which works
       for the default installation paths).
-
-  $TEMPLATE_COMPILE_PATH
-
-      The path to the directory that Template Toolkit will use to
-      create compiled versions of the template for speed.
-
-      Default:  "/usr/local/share/weblogin/generic/templates/ttc" (which
-      works for the default installation paths).
 
   $TOKEN_ACL
 

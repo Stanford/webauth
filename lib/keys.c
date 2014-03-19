@@ -1,8 +1,8 @@
 /*
  * Handling of keys and keyrings.
  *
- * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2013
+ * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2011, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -42,14 +42,12 @@ webauth_key_create(struct webauth_context *ctx, enum webauth_key_type type,
 
     /* Return NULL on invalid key types and sizes. */
     if (type != WA_KEY_AES) {
-        s = WA_ERR_INVALID;
-        wai_error_set(ctx, s, "unsupported key type %d", type);
-        return s;
+        s = WA_ERR_UNIMPLEMENTED;
+        return wai_error_set(ctx, s, "unsupported key type %d", type);
     }
     if (size != WA_AES_128 && size != WA_AES_192 && size != WA_AES_256) {
-        s = WA_ERR_INVALID;
-        wai_error_set(ctx, s, "unsupported key size %d", size);
-        return s;
+        s = WA_ERR_UNIMPLEMENTED;
+        return wai_error_set(ctx, s, "unsupported key size %d", size);
     }
 
     /* Create the basic key structure. */

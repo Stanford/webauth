@@ -4,7 +4,7 @@
  * Additional functions that are helpful for testing WebAuth code and have
  * knowledge of WebAuth functions and data structures.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

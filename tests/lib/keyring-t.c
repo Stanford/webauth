@@ -1,8 +1,8 @@
 /*
  * Test suite for keyring handling.
  *
- * Written by Roland Schemers and Russ Allbery <rra@stanford.edu>
- * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012, 2013
+ * Written by Roland Schemers and Russ Allbery <eagle@eyrie.org>
+ * Copyright 2002, 2003, 2005, 2006, 2009, 2010, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -14,6 +14,7 @@
 
 #include <fcntl.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #include <tests/tap/basic.h>
 #include <tests/tap/string.h>
@@ -29,15 +30,16 @@ main(void)
     const struct webauth_key *best;
     struct webauth_keyring *ring, *ring2;
     struct webauth_keyring_entry *entry, *entry2;
-    char *tmpdir, *keyring, *buf2;
+    char *tmpdir, *keyring, *lock, *buf2;
     char buf[4096];
     FILE *file;
     int s, ks, fd;
     size_t i, size;
     time_t now;
     enum webauth_kau_status kau;
+    struct stat st;
 
-    plan(96);
+    plan(98);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -86,7 +88,10 @@ main(void)
     /* Write the keyring out and then read it back in. */
     tmpdir = test_tmpdir();
     basprintf(&keyring, "%s/webauth_keyring", tmpdir);
+    basprintf(&lock, "%s.lock", keyring);
     s = webauth_keyring_write(ctx, ring, keyring);
+    if (s != WA_ERR_NONE)
+        diag("error message: %s", webauth_error_message(ctx, s));
     is_int(WA_ERR_NONE, s, "Writing the keyring to a file succeeds");
     s = webauth_keyring_read(ctx, keyring, &ring2);
     if (s != WA_ERR_NONE)
@@ -258,9 +263,21 @@ main(void)
     ok(memcmp(entry->key->data, entry2->key->data, entry->key->length) == 0,
        "... and key data matches");
 
+    /* Change the mode of the keyring and ensure it is preserved on write. */
+    if (chmod(keyring, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) < 0)
+        sysbail("cannot chmod %s", keyring);
+    s = webauth_keyring_write(ctx, ring, keyring);
+    is_int(WA_ERR_NONE, s, "Overwrote keyring with changed permissions");
+    if (stat(keyring, &st) < 0)
+        sysbail("cannot stat %s", keyring);
+    is_int(S_IFREG | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP, st.st_mode,
+           "...and writing the keyring preserves permissions");
+
     /* Clean up. */
     unlink(keyring);
     free(keyring);
+    unlink(lock);
+    free(lock);
     test_tmpdir_free(tmpdir);
     webauth_context_free(ctx);
     return 0;

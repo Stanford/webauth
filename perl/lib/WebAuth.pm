@@ -40,7 +40,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0600';
 }
 
 our (@EXPORT, @EXPORT_OK, %EXPORT_TAGS);
@@ -410,7 +410,7 @@ WebAuth::Krb5:
 =head1 AUTHOR
 
 Roland Schemers, Jon Robertson <jonrober@stanford.edu>, and Russ Allbery
-<rra@stanford.edu>.
+<eagle@eyrie.org>.
 
 =head1 SEE ALSO
 

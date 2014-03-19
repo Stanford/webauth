@@ -8,8 +8,8 @@
  * information out the other end.  We separately test the decoding process
  * against pre-constructed tokens, so this will hopefully be sufficient.
  *
- * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2013
+ * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2011, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -826,7 +826,7 @@ main(void)
     req.proxy_type = NULL;
     req.return_url = "not a URL";
     check_request_error(ctx, &req, ring, "invalid return URL",
-                        "invalid URL: not a URL", "req");
+                        "invalid URL \"not a URL\"", "req");
 
     /*
      * Real-life example of a URL with 8-bit characters (with some hostname
@@ -835,7 +835,7 @@ main(void)
     req.return_url = "https://proxy-auth-test-a.example.edu/cgi-bin/index.cgi"
         "?url=http://example.com%20(\xe2\x80\x8bhttp://proxy-test.example.edu/"
         "login?url=http://www.example.com)";
-    basprintf(&expected, "non-ASCII characters in URL: %s", req.return_url);
+    basprintf(&expected, "non-ASCII characters in URL \"%s\"", req.return_url);
     check_request_error(ctx, &req, ring, "non-ASCII URL", expected, "req");
     free(expected);
 

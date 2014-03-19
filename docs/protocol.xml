@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <?rfc private="WebAuth Documentation"?>
 <?rfc toc="yes" symrefs="yes"?>
-<rfc>
+<rfc category="info" docName="draft-allbery-webauth-00" ipr="trust200902">
   <front>
     <title>WebAuth Technical Specification</title>
     <author initials='R.' surname='Schemers' fullname='Roland Schemers'>
@@ -16,11 +16,11 @@
           <city>Stanford</city> <region>CA</region>
           <code>94305-4136</code> <country>US</country>
         </postal>
-        <email>rra@stanford.edu</email>
+        <email>eagle@eyrie.org</email>
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='April' year='2013' />
+    <date month='November' year='2013' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1596,7 +1596,8 @@
           </artwork>
         </figure>
 
-        <t>Everything except {key-hint} is AES-encrypted.</t>
+        <t>Everything except {key-hint} is encrypted using 128-bit AES in
+        CBC mode with an all-zero IV.</t>
 
         <t>{key-hint} is a four-byte Unix UTC time stored in network byte
         order.  It is not encrypted and is used only as a hint for the
@@ -1607,16 +1608,20 @@
         <t>{nonce} is 16 random bytes and is encrypted with the rest of
         the data in the token.  It is used to ensure that two tokens with
         the same data and same encryption key don't encrypt to the same
-        value.</t>
+        value.  All WebAuth protocol keys MUST be rotated frequently
+        enough to ensure that the chances of a nonce collision between two
+        tokens encrypted with the same key are sufficiently low to be
+        ignorable, since reuse of the nonce may expose similarities in the
+        plaintext.</t>
 
-        <t>{hmac} is the SHA1 HMAC of the actual data including the
+        <t>{hmac} is the SHA-1 HMAC of the actual data including the
         padding (in other words, the pre-encryption concatenation of
         {token-attributes} and {padding}).  The key used with HMAC is the
         AES private key.  (A better solution would be to use a different
         key, but that requires having two keys or using a key-derivation
         function to derive the HMAC key from the AES key.  One possible
         future approach would be to use a key-derivation function like TLS
-        uses.</t>
+        uses.)</t>
 
         <t>{token-attributes} is a sequence of name=value pairs, separated
         by a ';' character.  Names must be one or more ASCII alphanumeric
@@ -2638,6 +2643,15 @@
           the h factor.  Clarify that error code 14 can be used for a wide
           variety of login failures.  Clarify differences between error
           codes 22, 24, and 26.</t>
+
+          <t hangText='3.5.1 (2013-09-26, rra)'>
+          <vspace blankLines='0'/>Be explicit that token encryption is
+          128-bit AES in CBC mode.</t>
+
+          <t hangText='3.5.2 (2013-11-09, rra)'>
+          <vspace blankLines='0'/>Document the IV used for token
+          encryption and be explicit about the security requirements for
+          nonces and key rotation.</t>
         </list>
       </t>
     </section>

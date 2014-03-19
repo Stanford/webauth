@@ -2,7 +2,7 @@
  * Handling of keys and keyrings.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2012, 2013
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2012, 2013, 2014
  *    The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -12,6 +12,8 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
+#include <errno.h>
+#include <sys/stat.h>
 #include <time.h>
 
 #include <lib/internal.h>
@@ -142,10 +144,9 @@ webauth_keyring_best_key(struct webauth_context *ctx,
                 best = entry;
         }
     }
-    if (best == NULL) {
-        wai_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys");
-        return WA_ERR_NOT_FOUND;
-    } else {
+    if (best == NULL)
+        return wai_error_set(ctx, WA_ERR_NOT_FOUND, "no valid keys");
+    else {
         *output = best->key;
         return WA_ERR_NONE;
     }
@@ -176,9 +177,7 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
         return s;
     if (data.version != KEYRING_VERSION) {
         s = WA_ERR_FILE_VERSION;
-        wai_error_set(ctx, s, "unsupported keyring data version %d",
-                      data.version);
-        return s;
+        return wai_error_set(ctx, s, "keyring version %d", data.version);
     }
 
     /*
@@ -206,7 +205,10 @@ webauth_keyring_decode(struct webauth_context *ctx, const char *input,
 
 /*
  * Read the encoded form of a keyring from the given file and decode it,
- * storing it in the ring argument.  Returns a WA_ERR code.
+ * storing it in the ring argument.  Returns a WA_ERR code.  We do not do any
+ * locking for reads and instead rely on atomic replacement of the keyring on
+ * update (although we do read the keyring within a lock while doing
+ * auto-update).
  */
 int
 webauth_keyring_read(struct webauth_context *ctx, const char *path,
@@ -266,44 +268,91 @@ webauth_keyring_encode(struct webauth_context *ctx,
 
 /*
  * Write a keyring to the given file in encoded format.  Returns a WA_ERR
- * code.
+ * code.  This is the internal function that does no locking.
+ *
+ * We unfortunately have to use POSIX I/O functions since APR doesn't have
+ * equivalents of fchown or fchmod.
  */
-int
-webauth_keyring_write(struct webauth_context *ctx,
-                      const struct webauth_keyring *ring, const char *path)
+static int
+write_keyring(struct webauth_context *ctx, const struct webauth_keyring *ring,
+              const char *path)
 {
-    apr_file_t *file = NULL;
+    struct stat st;
+    bool sync_perms = false;
+    bool group_set = false;
+    int fd = -1;
     size_t length;
+    ssize_t result;
     char *temp, *buf;
     apr_status_t code;
-    apr_int32_t flags;
+    mode_t mode;
     int s;
+
+    /* Get the ownership and mode of the existing file. */
+    if (stat(path, &st) == 0)
+        sync_perms = true;
+    else if (errno != ENOENT) {
+        s = WA_ERR_FILE_READ;
+        return wai_error_set_system(ctx, s, errno, "stat %s", path);
+    }
 
     /* Create a temporary file for the new copy of the keyring. */
     temp = apr_psprintf(ctx->pool, "%s.XXXXXX", path);
-    flags = (APR_FOPEN_CREATE | APR_FOPEN_WRITE | APR_FOPEN_EXCL
-             | APR_FOPEN_NOCLEANUP);
-    code = apr_file_mktemp(&file, temp, flags, ctx->pool);
-    if (code != APR_SUCCESS) {
+    fd = mkstemp(temp);
+    if (fd < 0) {
         s = WA_ERR_FILE_OPENWRITE;
-        wai_error_set_apr(ctx, s, code, "temporary keyring %s", temp);
-        goto done;
+        wai_error_set_system(ctx, s, errno, "temporary keyring %s", temp);
+        return s;
+    }
+
+    /*
+     * Set ownership and permissions.  Ignore failures of fchown with EPERM,
+     * as this probably indicates that we're rewriting a keyring owned by
+     * someone else and we're not root.  Assume that whoever created such a
+     * situation knew what they were doing and has appropriate permissions.
+     *
+     * Change the group first, since it's the most likely to succeed, and then
+     * the user.
+     */
+    if (sync_perms) {
+        if (fchown(fd, -1, st.st_gid) == 0)
+            group_set = true;
+        else if (errno != EPERM) {
+            s = WA_ERR_FILE_WRITE;
+            wai_error_set_system(ctx, s, errno, "group of %s", temp);
+            goto done;
+        }
+        if (fchown(fd, st.st_uid, -1) < 0 && errno != EPERM) {
+            s = WA_ERR_FILE_WRITE;
+            wai_error_set_system(ctx, s, errno, "group of %s", temp);
+            goto done;
+        }
+
+        /*
+         * Don't sync permissions if the include group read or write and we
+         * weren't able to set the group.
+         */
+        mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+        if (group_set || !(mode & (S_IRGRP | S_IWGRP)))
+            if (fchmod(fd, mode) < 0) {
+                s = WA_ERR_FILE_WRITE;
+                wai_error_set_system(ctx, s, errno, "mode of %s", temp);
+                goto done;
+            }
     }
 
     /* Encode and write out the file. */
     s = webauth_keyring_encode(ctx, ring, &buf, &length);
     if (s != WA_ERR_NONE)
         goto done;
-    code = apr_file_write_full(file, buf, length, NULL);
-    if (code == APR_SUCCESS) {
-        code = apr_file_close(file);
-        file = NULL;
-    }
-    if (code != APR_SUCCESS) {
+    result = write(fd, buf, length);
+    if (result < 0 || (size_t) result != length) {
         s = WA_ERR_FILE_WRITE;
-        wai_error_set_apr(ctx, s, code, "temporary keyring %s", temp);
+        wai_error_set_system(ctx, s, errno, "temporary keyring %s", temp);
         goto done;
     }
+    close(fd);
+    fd = -1;
 
     /* Rename the new file over the old path. */
     code = apr_file_rename(temp, path, ctx->pool);
@@ -315,10 +364,29 @@ webauth_keyring_write(struct webauth_context *ctx,
     s = WA_ERR_NONE;
 
 done:
-    if (file != NULL) {
-        apr_file_close(file);
+    if (fd >= 0) {
+        close(fd);
         apr_file_remove(temp, ctx->pool);
     }
+    return s;
+}
+
+
+/*
+ * Public wrapper around write_keyring with locking.
+ */
+int
+webauth_keyring_write(struct webauth_context *ctx,
+                      const struct webauth_keyring *ring, const char *path)
+{
+    int s;
+    apr_file_t *lock;
+
+    s = wai_file_lock(ctx, path, &lock);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = write_keyring(ctx, ring, path);
+    wai_file_unlock(ctx, path, lock);
     return s;
 }
 
@@ -343,7 +411,7 @@ new_ring(struct webauth_context *ctx, const char *path,
     *ring = webauth_keyring_new(ctx, 1);
     now = time(NULL);
     webauth_keyring_add(ctx, *ring, now, now, key);
-    return webauth_keyring_write(ctx, *ring, path);
+    return write_keyring(ctx, *ring, path);
 }
 
 
@@ -382,7 +450,7 @@ check_ring(struct webauth_context *ctx, const char *path,
     if (s != WA_ERR_NONE)
         return s;
     webauth_keyring_add(ctx, ring, now, now, key);
-    return webauth_keyring_write(ctx, ring, path);
+    return write_keyring(ctx, ring, path);
 }
 
 
@@ -410,17 +478,33 @@ webauth_keyring_auto_update(struct webauth_context *ctx, const char *path,
                             int *update_status)
 {
     int s;
+    apr_file_t *lock;
 
+    /* Set output variables in case of an error. */
     *updated = WA_KAU_NONE;
     *update_status = WA_ERR_NONE;
+
+    /*
+     * Lock the keyring so that the read, possible creation, and possible
+     * update is done once and atomically.
+     */
+    s = wai_file_lock(ctx, path, &lock);
+    if (s != WA_ERR_NONE)
+        return s;
+
+    /* Read and possibly create or update the keyring. */
     s = webauth_keyring_read(ctx, path, ring);
     if (s != WA_ERR_NONE) {
         if (!create || s != WA_ERR_FILE_NOT_FOUND)
-            return s;
+            goto done;
         *updated = WA_KAU_CREATE;
-        return new_ring(ctx, path, ring);
+        s = new_ring(ctx, path, ring);
+        goto done;
     }
     if (lifetime > 0)
         *update_status = check_ring(ctx, path, lifetime, *ring, updated);
+
+done:
+    wai_file_unlock(ctx, path, lock);
     return s;
 }

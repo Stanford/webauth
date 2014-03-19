@@ -5,7 +5,7 @@
  * this with arbitrary data, since these routines don't care about the
  * attribute formatting or content.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

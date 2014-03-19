@@ -3,7 +3,7 @@
 # Miscellaneous error tests that belong less to one specific page
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2012, 2013
+# Copyright 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -147,6 +147,6 @@ SKIP: {
     ok ($$page =~ /Status: 302 Moved/, '... with the correct error message');
 }
 
-unlink ($WebKDC::Config::KEYRING_PATH);
+unlink ($WebKDC::Config::KEYRING_PATH, "$WebKDC::Config::KEYRING_PATH.lock");
 unlink ('krb5cc_test');
 rmtree ('./t/tmp');

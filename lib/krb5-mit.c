@@ -5,7 +5,7 @@
  * use MIT Kerberos.  If you make any changes here, you probably also need to
  * make a corresponding change to krb5-heimdal.c for systems with Heimdal.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Based on the original Kerberos support code by Roland Schemers
  * Copyright 2002, 2003, 2006, 2009, 2010, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University

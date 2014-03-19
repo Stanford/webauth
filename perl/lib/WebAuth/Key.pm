@@ -5,7 +5,7 @@
 # supplemental methods that are implemented in terms of other underlying calls
 # and provides version and documentation information.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -41,7 +41,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0600';
 }
 
 # Constructor.  Takes a WebAuth context, a key type, a key size, and optional
@@ -147,7 +147,7 @@ Returns the type of the key, which currently will always be WA_KEY_AES.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =head1 SEE ALSO
 

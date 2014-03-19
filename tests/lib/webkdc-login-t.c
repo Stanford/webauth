@@ -5,7 +5,7 @@
  * Kerberos test configuration.  This ensures we do some basic functionality
  * tests even if no Kerberos configuration is provided.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *
@@ -67,6 +67,39 @@ static const struct wat_login_test tests_login[] = {
             NULL,
             {
                 "id", "webkdc", NULL, NULL, 0, "https://example.com/", "lc",
+                NULL, NULL, 0, NULL, 0
+            }
+        },
+        {
+            NULL, NULL,
+            NO_FACTOR_DATA,
+            NO_TOKENS_WKPROXY,
+            EMPTY_TOKEN_WKFACTOR,
+            EMPTY_TOKEN_ID,
+            EMPTY_TOKEN_PROXY,
+            NO_LOGINS,
+            0,
+            NO_AUTHZ_IDS
+        },
+    },
+
+    /* Attempt a login with a malformatted principal. */
+    {
+        "Login with malformatted principal",
+        WA_PEC_USER_REJECTED,
+        "Kerberos error",
+        {
+            { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
+            {
+                { "example\\", "testpassword", NULL, NULL, 0 },
+                EMPTY_TOKEN_LOGIN,
+                EMPTY_TOKEN_LOGIN
+            },
+            NO_TOKENS_WKPROXY,
+            NO_TOKENS_WKFACTOR,
+            NULL,
+            {
+                "id", "webkdc", NULL, "data", 4, "https://example.com/", NULL,
                 NULL, NULL, 0, NULL, 0
             }
         },
