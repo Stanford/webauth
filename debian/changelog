@@ -1,4 +1,4 @@
-webauth (4.6.0-1) UNRELEASED; urgency=medium
+webauth (4.6.0-1) unstable; urgency=medium
 
   * New upstream release.
     - New mod_webauth configuration directive, WebAuthCookiePath, which
@@ -40,7 +40,7 @@ webauth (4.6.0-1) UNRELEASED; urgency=medium
   * Remove now-unnecessary override of dh_builddeb to use xz compression.
   * Update standards version to 3.9.5 (no changes required).
 
- -- Russ Allbery <rra@debian.org>  Tue, 18 Mar 2014 20:08:35 -0700
+ -- Russ Allbery <rra@debian.org>  Tue, 18 Mar 2014 22:59:18 -0700
 
 webauth (4.5.5-2) unstable; urgency=low
 
