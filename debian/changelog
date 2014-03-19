@@ -1,3 +1,14 @@
+webauth (4.6.0-2) unstable; urgency=medium
+
+  * Change ownership of the mod_webauth keyring to www-data on upgrade
+    from prior versions if it was owned by root.  Versions prior to 4.6.0
+    created the keyring during Apache configuration parsing before Apache
+    dropped privileges, but keyring handling is now done by the Apache
+    child processes.  Without this change, WebAuth actions would fail
+    because the keyring could not be initialized.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 19 Mar 2014 13:50:40 -0700
+
 webauth (4.6.0-1) unstable; urgency=medium
 
   * New upstream release.

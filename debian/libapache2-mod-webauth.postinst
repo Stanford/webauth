@@ -10,6 +10,19 @@ fi
 chgrp www-data /var/lib/webauth
 chmod 770 /var/lib/webauth
 
+# On upgrade from versions prior to 4.6.0-2, ensure the keyring is owned by
+# www-data if it was owned by root.  Earlier versions of WebAuth updated the
+# keyring during Apache configuration and therefore created it owned by root,
+# but keyring handling is now done in the child processes, so those keyrings
+# would no longer be readable.
+if [ "$1" = 'configure' ] && [ -f '/var/lib/webauth/keyring' ] ; then
+    if [ -n "$2" ] && dpkg --compare-versions "$2" lt 4.6.0-2~ ; then
+        if [ "$(stat -c '%U' /var/lib/webauth/keyring)" = 'root' ] ; then
+            chown www-data:www-data /var/lib/webauth/keyring
+        fi
+    fi
+fi
+
 # dh_apache2 -e currently doesn't add code to restart Apache when a module
 # that isn't enabled by default was enabled and is upgraded.  (#710463)  This
 # code is somewhat odd since the cleanest way to restart Apache on upgrade is
