@@ -49,6 +49,3 @@ override_dh_apache2:
 	dh_apache2 -Nlibapache2-mod-webauth -Nlibapache2-mod-webauthldap
 	dh_apache2 -plibapache2-mod-webauth -e
 	dh_apache2 -plibapache2-mod-webauthldap -e
-
-override_dh_builddeb:
-	dh_builddeb -- -Zxz
