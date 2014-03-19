@@ -22,6 +22,7 @@ webauth_keyring_new
 webauth_keyring_read
 webauth_keyring_remove
 webauth_keyring_write
+webauth_krb5_change_config
 webauth_krb5_change_password
 webauth_krb5_export_cred
 webauth_krb5_free

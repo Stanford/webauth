@@ -61,7 +61,7 @@ of the add() and best_key() methods of WebAuth::Keyring.
 
 =head1 AUTHOR
 
-Russ Allbery <rra@stanford.edu>
+Russ Allbery <eagle@eyrie.org>
 
 =head1 SEE ALSO
 

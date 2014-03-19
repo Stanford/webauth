@@ -62,7 +62,7 @@
 #undef HAVE_INTTYPES_H
 
 /* Define to enable Kerberos features. */
-#undef HAVE_KERBEROS
+#undef HAVE_KRB5
 
 /* Define to 1 if you have the `krb5_cc_get_full_name' function. */
 #undef HAVE_KRB5_CC_GET_FULL_NAME
@@ -140,6 +140,9 @@
 /* Define to 1 if you have the <mod_auth.h> header file. */
 #undef HAVE_MOD_AUTH_H
 
+/* Define if libssl is available. */
+#undef HAVE_OPENSSL
+
 /* Define to enable remctl features. */
 #undef HAVE_REMCTL
 
@@ -216,9 +219,6 @@
    */
 #undef LT_OBJDIR
 
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
-
 /* Name of package */
 #undef PACKAGE
 
@@ -273,6 +273,17 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
 
 /* Define to 1 if on MINIX. */
 #undef _MINIX

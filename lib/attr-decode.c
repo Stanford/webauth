@@ -6,8 +6,8 @@
  * tokens and for some other WebAuth persistant data structures, such as
  * service token caches and keyrings.
  *
- * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2012, 2013
+ * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -178,8 +178,7 @@ decode_attrs(struct webauth_context *ctx, void *data, size_t length,
     return WA_ERR_NONE;
 
 corrupt:
-    wai_error_set(ctx, WA_ERR_CORRUPT, "invalid attribute data");
-    return WA_ERR_CORRUPT;
+    return wai_error_set(ctx, WA_ERR_CORRUPT, "invalid attribute data");
 }
 
 
@@ -197,18 +196,13 @@ decode_data(struct webauth_context *ctx, struct value *value, void **output,
     size_t length;
 
     if (ascii) {
-        s = webauth_hex_decoded_length(value->length, &length);
-        if (s != WA_ERR_NONE) {
-            wai_error_set(ctx, s, "invalid hex-encoded data");
-            return s;
-        }
+        s = wai_hex_decoded_length(value->length, &length);
+        if (s != WA_ERR_NONE)
+            return wai_error_set(ctx, s, "invalid hex-encoded data");
         *output = apr_pcalloc(ctx->pool, length);
-        s = webauth_hex_decode(value->data, value->length, *output, size,
-                               length);
-        if (s != WA_ERR_NONE) {
-            wai_error_set(ctx, s, "invalid hex-encoded data");
-            return s;
-        }
+        s = wai_hex_decode(value->data, value->length, *output, size, length);
+        if (s != WA_ERR_NONE)
+            return wai_error_set(ctx, s, "invalid hex-encoded data");
     } else {
         *output = apr_pmemdup(ctx->pool, value->data, value->length);
         *size = value->length;
@@ -262,8 +256,7 @@ decode_number(struct webauth_context *ctx, struct value *value,
     return WA_ERR_NONE;
 
 corrupt:
-    wai_error_set(ctx, WA_ERR_CORRUPT, "invalid encoded number");
-    return WA_ERR_CORRUPT;
+    return wai_error_set(ctx, WA_ERR_CORRUPT, "invalid encoded number");
 }
 
 
@@ -403,10 +396,8 @@ wai_decode_token(struct webauth_context *ctx, const void *input,
     if (s != WA_ERR_NONE)
         return s;
     value = apr_hash_get(attrs, "t", strlen("t"));
-    if (value == NULL) {
-        wai_error_set(ctx, WA_ERR_CORRUPT, "no token type attribute");
-        return WA_ERR_CORRUPT;
-    }
+    if (value == NULL)
+        return wai_error_set(ctx, WA_ERR_CORRUPT, "no token type attribute");
     decode_string(ctx, value, &type);
     token->type = webauth_token_type_code(type);
     if (token->type == WA_TOKEN_UNKNOWN) {

@@ -8,8 +8,8 @@
  * managing that error message, plus internal interfaces to log at various log
  * levels.
  *
- * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012, 2013
+ * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -92,6 +92,7 @@ error_string(struct webauth_context *ctx, int s)
     case WA_ERR_TOKEN_REJECTED:    return "token used in invalid context";
     case WA_ERR_TOKEN_STALE:       return "token is stale";
     case WA_ERR_UNIMPLEMENTED:     return "operation not supported";
+    case WA_ERR_FILE_LOCK:         return "error locking file";
     default:
         if (ctx != NULL)
             return apr_psprintf(ctx->pool, "unknown status code %d", s);
@@ -179,10 +180,10 @@ wai_error_protocol(struct webauth_context *ctx UNUSED, int s)
 /*
  * Set the error message and code to the provided values, supporting
  * printf-style formatting.  If format is NULL, that indicates the generic
- * error string is sufficient.  This function is internal to the WebAuth
- * library and is not exposed to external consumers.
+ * error string is sufficient.  Returns the new error code.  This function is
+ * internal to the WebAuth library and is not exposed to external consumers.
  */
-void
+int
 wai_error_set(struct webauth_context *ctx, int s, const char *format, ...)
 {
     va_list args;
@@ -191,7 +192,7 @@ wai_error_set(struct webauth_context *ctx, int s, const char *format, ...)
     if (format == NULL) {
         ctx->error  = error_string(ctx, s);
         ctx->status = s;
-        return;
+        return s;
     }
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
@@ -199,16 +200,17 @@ wai_error_set(struct webauth_context *ctx, int s, const char *format, ...)
     message = apr_psprintf(ctx->pool, "%s (%s)", error_string(ctx, s), string);
     ctx->error  = message;
     ctx->status = s;
+    return s;
 }
 
 
 /*
  * Set the error message and code to the provided values, supporting
  * printf-style formatting and including the string explanation of an APR
- * status.  This function is internal to the WebAuth library and is not
- * exposed to external consumers.
+ * status.  Returns the new error code.  This function is internal to the
+ * WebAuth library and is not exposed to external consumers.
  */
-void
+int
 wai_error_set_apr(struct webauth_context *ctx, int s, apr_status_t code,
                   const char *format, ...)
 {
@@ -220,7 +222,7 @@ wai_error_set_apr(struct webauth_context *ctx, int s, apr_status_t code,
         ctx->error = apr_psprintf(ctx->pool, "%s (%s)", error_string(ctx, s),
                                   apr_strerror(code, buf, sizeof(buf)));
         ctx->status = s;
-        return;
+        return s;
     }
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
@@ -228,16 +230,17 @@ wai_error_set_apr(struct webauth_context *ctx, int s, apr_status_t code,
     ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, s),
                               string, apr_strerror(code, buf, sizeof(buf)));
     ctx->status = s;
+    return s;
 }
 
 
 /*
  * Set the error message and code to the provided values, supporting
  * printf-style formatting and including the string explanation of an errno.
- * This function is internal to the WebAuth library and is not exposed to
- * external consumers.
+ * Returns the new error code.  This function is internal to the WebAuth
+ * library and is not exposed to external consumers.
  */
-void
+int
 wai_error_set_system(struct webauth_context *ctx, int s, int syserr,
                      const char *format, ...)
 {
@@ -248,7 +251,7 @@ wai_error_set_system(struct webauth_context *ctx, int s, int syserr,
         ctx->error = apr_psprintf(ctx->pool, "%s (%s)", error_string(ctx, s),
                                   strerror(syserr));
         ctx->status = s;
-        return;
+        return s;
     }
     va_start(args, format);
     string = apr_pvsprintf(ctx->pool, format, args);
@@ -256,6 +259,7 @@ wai_error_set_system(struct webauth_context *ctx, int s, int syserr,
     ctx->error = apr_psprintf(ctx->pool, "%s (%s: %s)", error_string(ctx, s),
                               string, strerror(syserr));
     ctx->status = s;
+    return s;
 }
 
 

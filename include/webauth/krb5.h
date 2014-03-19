@@ -12,7 +12,7 @@
  * protocol actions.
  *
  * Written by Russ Allbery
- * Copyright 2002, 2003, 2008, 2009, 2010, 2011, 2012
+ * Copyright 2002, 2003, 2008, 2009, 2010, 2011, 2012, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,11 +42,41 @@
 struct webauth_context;
 struct webauth_krb5;
 
+/* Supported protocols for Kerberos password change. */
+enum webauth_change_protocol {
+    WA_CHANGE_KPASSWD = 0,
+    WA_CHANGE_REMCTL  = 1
+};
+
+/*
+ * Configuration information for Kerberos password change operations.  This is
+ * used to bundle together the configuration parameters and pass them into
+ * webauth_krb5_change_config.  If the protocol is WA_CHANGE_KPASSWD, all the
+ * other fields are ignored.
+ *
+ * The port may be 0, which indicates the standard port should be used.
+ * identity is the identity of the password change service and may be NULL to
+ * use the default.  command and subcommand are protocol-specific command
+ * information, such as the first two arguments to a remctl command.
+ *
+ * The timeout will only be enforced if the library is built with remctl 3.1
+ * or later (which have remctl_set_timeout).
+ */
+struct webauth_krb5_change_config {
+    enum webauth_change_protocol protocol;
+    const char *host;
+    unsigned short port;        /* May be 0 to use the standard port */
+    const char *identity;       /* Metadata service identity or NULL */
+    const char *command;        /* Protocol-specific command */
+    const char *subcommand;     /* Protocol-specific subcommand */
+    time_t timeout;             /* Network timeout, or 0 for no timeout */
+};
+
 /* Flags for webauth_krb5_get_principal and webauth_krb5_read_auth. */
 enum webauth_krb5_canon {
     WA_KRB5_CANON_NONE  = 0,    /* Do not canonicalize principals. */
-    WA_KRB5_CANON_LOCAL = 1,    /* Strip the local realm. */
-    WA_KRB5_CANON_STRIP = 2     /* Strip any realm. */
+    WA_KRB5_CANON_LOCAL = 1,    /* Strip the local realm */
+    WA_KRB5_CANON_STRIP = 2     /* Strip any realm */
 };
 
 BEGIN_DECLS
@@ -247,9 +277,22 @@ int webauth_krb5_read_auth_data(struct webauth_context *,
     __attribute__((__nonnull__(1, 2, 3, 5, 8)));
 
 /*
+ * Configure how password changes using this webauth_krb5 struct will be
+ * done.
+ */
+int webauth_krb5_change_config(struct webauth_context *,
+                               struct webauth_krb5 *,
+                               struct webauth_krb5_change_config *)
+    __attribute__((__nonnull__));
+
+/*
  * Change the password for a principal.  The webauth_krb5 context must already
  * be initialized using webauth_krb5_init_via_password with credentials for
- * kadmin/changepw.
+ * the password change service (normally kadmin/changepw).
+ *
+ * The password change will be done using the configuration set with
+ * webauth_krb5_change_config if it is called (on the same webauth_krb5
+ * struct) prior to making this call.
  */
 int webauth_krb5_change_password(struct webauth_context *,
                                  struct webauth_krb5 *, const char *password)

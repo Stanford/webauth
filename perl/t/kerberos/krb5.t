@@ -4,7 +4,7 @@
 #
 # Written by Roland Schemers
 # Updated by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2002, 2003, 2005, 2009, 2010, 2012
+# Copyright 2002, 2003, 2005, 2009, 2010, 2012, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -56,6 +56,10 @@ my ($context, $sp, $ctx_princ, $tgt, $expiration, $princ, $ticket, $rprinc,
 eval { $context = $wa->krb5_new };
 isa_ok ($context, 'WebAuth::Krb5');
 
+# We should now be able to drop the WebAuth context without destroying our
+# Kerberos context, since the WebAuth::Krb5 object should hold a reference.
+undef $wa;
+
 eval {
     $sp = $context->init_via_password($username, $password, '', $keytab);
 };
@@ -82,6 +86,7 @@ ok ($expiration, '... and an expiration time');
 
 # Nuke current context and import from tgt we created.
 eval {
+    my $wa = WebAuth->new;
     $context = $wa->krb5_new;
     $context->import_cred ($tgt);
 };
@@ -92,6 +97,7 @@ eval { $context->import_cred ($ticket) };
 is ($@, '', 'krb5_import_cred to import an exported ticket works');
 
 # Nuke current context and get from keytab
+$wa = WebAuth->new;
 eval {
     $context = $wa->krb5_new;
     $context->init_via_keytab ($keytab);

@@ -1,7 +1,7 @@
 # Configuration for the WebLogin script.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,7 +32,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0600';
 }
 
 my $conf = $ENV{WEBKDC_CONFIG} || '/etc/webkdc/webkdc.conf';
@@ -66,6 +66,12 @@ our $MULTIFACTOR_TGT;
 our $MULTIFACTOR_SERVER;
 our $MULTIFACTOR_PORT = 0;
 our $MULTIFACTOR_PRINC = '';
+
+our $PASSWORD_CHANGE_COMMAND;
+our $PASSWORD_CHANGE_PORT = 0;
+our $PASSWORD_CHANGE_PRINC = '';
+our $PASSWORD_CHANGE_SERVER;
+our $PASSWORD_CHANGE_SUBCOMMAND;
 
 our $REMUSER_ENABLED;
 our $REMUSER_EXPIRES = 60 * 60 * 8;
@@ -159,7 +165,7 @@ L<http://webauth.stanford.edu/weblogin-config.html>.
 
 =head1 AUTHORS
 
-Roland Schemers and Russ Allbery <rra@stanford.edu>.
+Roland Schemers and Russ Allbery <eagle@eyrie.org>.
 
 =head1 SEE ALSO
 

@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+#
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2014
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use warnings;
+
+use WebAuth::Tests qw(build_page);
+
+# Text for the page.  Varies based on whether or not remote user is set.
+my @extended;
+my $remote_user = $ENV{REMOTE_USER};
+if ($remote_user) {
+    push (@extended,
+          "Test failed.  Your authentication as $remote_user leaked.");
+} else {
+    push (@extended,
+          'Test passed.  You are not authenticated when accessing a different'
+          . ' URL.  (Ignore the missing REMOTE_USER diagnostic below.)');
+}
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 14,
+    test_desc     => 'test cookie path restrictions',
+    extended_desc => \@extended,
+    logout        => '/tests/path/test14logout',
+);
+
+print "Content-type: text/html\n\n";
+print build_page(\%settings);

@@ -13,11 +13,11 @@ dnl RRA_LIB_REMCTL_RESTORE to restore those settings to before the last
 dnl RRA_LIB_REMCTL_SWITCH.  HAVE_REMCTL will always be defined if
 dnl RRA_LIB_REMCTL is used.
 dnl
-dnl Provides the RRA_LIB_REMCTL_OPTIONAL macro, which should be used if
-dnl Kerberos support is optional.  This macro will still always est the
-dnl substitution variables, but they'll be empty unless --with-remctl is
-dnl given.  HAVE_REMCTL will be defined if --with-remctl is given and
-dnl $rra_use_remctl will be set to "true".
+dnl Provides the RRA_LIB_REMCTL_OPTIONAL macro, which should be used if remctl
+dnl support is optional.  This macro will still always set the substitution
+dnl variables described above, but they'll be empty unless remctl libraries
+dnl are found.  Defines HAVE_REMCTL and sets rra_use_remctl to true if the
+dnl remctl library is found.
 dnl
 dnl Depends on RRA_ENABLE_REDUCED_DEPENDS, RRA_SET_LDFLAGS, and
 dnl RRA_LIB_GSSAPI.
@@ -25,8 +25,8 @@ dnl
 dnl The canonical version of this file is maintained in the rra-c-util
 dnl package, available at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 dnl
-dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2008, 2009, 2011
+dnl Written by Russ Allbery <eagle@eyrie.org>
+dnl Copyright 2008, 2009, 2011, 2013
 dnl     The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl This file is free software; the authors give unlimited permission to copy
@@ -119,6 +119,7 @@ AC_DEFUN([RRA_LIB_REMCTL],
     [AS_IF([test x"$withval" != xyes && test x"$withval" != xno],
         [rra_remctl_libdir="$withval"])])
  _RRA_LIB_REMCTL_INTERNAL([true])
+ rra_use_remctl=true
  AC_DEFINE([HAVE_REMCTL], 1, [Define to enable remctl features.])])
 
 dnl The main macro for packages with optional remctl support.

@@ -5,7 +5,7 @@
  * library when parsing XML documents.  They're not exposed as part of the
  * library API; they're only used by other parts of the library.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

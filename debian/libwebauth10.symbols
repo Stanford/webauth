@@ -25,6 +25,7 @@ libwebauth.so.10 libwebauth10 #MINVER#
  webauth_keyring_read@WEBAUTH_4_5 4.5.0
  webauth_keyring_remove@WEBAUTH_4_5 4.5.0
  webauth_keyring_write@WEBAUTH_4_5 4.5.0
+ webauth_krb5_change_config@WEBAUTH_4_5 4.6.0
  webauth_krb5_change_password@WEBAUTH_4_5 4.5.0
  webauth_krb5_export_cred@WEBAUTH_4_5 4.5.0
  webauth_krb5_free@WEBAUTH_4_5 4.5.0

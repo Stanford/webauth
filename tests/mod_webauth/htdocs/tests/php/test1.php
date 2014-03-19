@@ -57,7 +57,7 @@
         <p>
             Click <a href="/tests/index.html">here</a> to return without
             logging out<br />
-            Click <a href="/tests/auth/logout">here</a> to logout and return
+            Click <a href="/tests/logout">here</a> to logout and return
         </p>
         <hr />
 

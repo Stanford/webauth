@@ -3,7 +3,7 @@
 # Tests for weblogin confirmation page
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2012, 2013
+# Copyright 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -146,5 +146,5 @@ ok (%output, 'error page for unrecoverable webauth server error');
 is_deeply (\%output, \%check, '... and the output matches what is expected');
 # Check print_error_page (err_webkdc = 1, err_msg = $errmsg: $TEST_ERROR)
 
-unlink ('krb5cc_test', 't/data/test.keyring');
+unlink ('krb5cc_test', 't/data/test.keyring', 't/data/test.keyring.lock');
 rmtree ('./t/tmp');

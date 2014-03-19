@@ -1,8 +1,8 @@
 /*
  * Internal data types, definitions, and prototypes for the WebAuth library.
  *
- * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2012, 2013
+ * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -15,6 +15,7 @@
 #include <portable/stdbool.h>
 
 #include <apr_errno.h>          /* apr_status_t */
+#include <apr_file_io.h>        /* apr_file_t */
 #include <apr_pools.h>          /* apr_pool_t */
 #include <apr_tables.h>         /* apr_array_header_t */
 #include <apr_xml.h>            /* apr_xml_elem */
@@ -352,19 +353,36 @@ void wai_error_context(struct webauth_context *, const char *, ...)
 int wai_error_protocol(struct webauth_context *, int)
     __attribute__((__nonnull__, __pure__));
 
-/* Set the internal WebAuth error message and error code. */
-void wai_error_set(struct webauth_context *, int s, const char *, ...)
+/*
+ * Set the internal WebAuth error message and error code and return that
+ * code.  The return value is so that a function returning an error can simply
+ * return the return value of wai_error_set, thus often saving a line of code.
+ */
+int wai_error_set(struct webauth_context *, int s, const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 3, 4)));
 
 /* The same, but include the string expansion of an APR error. */
-void wai_error_set_apr(struct webauth_context *, int s, apr_status_t,
+int wai_error_set_apr(struct webauth_context *, int s, apr_status_t,
                        const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
 
 /* The same, but include the string expansion of an errno. */
-void wai_error_set_system(struct webauth_context *, int s, int syserr,
+int wai_error_set_system(struct webauth_context *, int s, int syserr,
                           const char *, ...)
     __attribute__((__nonnull__(1), __format__(printf, 4, 5)));
+
+/*
+ * Lock or unlock a file, using an external lock file.  The lock file will be
+ * named by appending ".lock" to the provide file name.  This method allows
+ * atomic replace of locked files.  The apr_file_t argument is a token to pass
+ * to wai_file_unlock.  All locks are exclusive.
+ */
+int wai_file_lock(struct webauth_context *, const char *, apr_file_t **)
+    __attribute__((__nonnull__));
+
+/* Unlock a file locked with wai_file_lock. */
+int wai_file_unlock(struct webauth_context *, const char *, apr_file_t *)
+    __attribute__((__nonnull__));
 
 /* Read the contents of a file into memory. */
 int wai_file_read(struct webauth_context *, const char *, void **, size_t *)
@@ -379,7 +397,7 @@ int wai_file_write(struct webauth_context *, const void *, size_t,
  * Returns the amount of space required to hex encode data of the given
  * length.  Returned length does NOT include room for a null-termination.
  */
-size_t webauth_hex_encoded_length(size_t length)
+size_t wai_hex_encoded_length(size_t length)
     __attribute__((__const__));
 
 /*
@@ -390,7 +408,7 @@ size_t webauth_hex_encoded_length(size_t length)
  * Returns WA_ERR_NONE on succes, or WA_ERR_CORRUPT if length is not greater
  * then 0 and a multiple of 2.
  */
-int webauth_hex_decoded_length(size_t length, size_t *out_length)
+int wai_hex_decoded_length(size_t length, size_t *out_length)
     __attribute__((__nonnull__));
 
 /*
@@ -399,9 +417,8 @@ int webauth_hex_decoded_length(size_t length, size_t *out_length)
  *
  * Returns WA_ERR_NONE or WA_ERR_NO_ROOM.
  */
-int webauth_hex_encode(const char *input, size_t input_len,
-                       char *output, size_t *output_len,
-                       size_t max_output_len)
+int wai_hex_encode(const char *input, size_t input_len, char *output,
+                   size_t *output_len, size_t max_output_len)
     __attribute__((__nonnull__));
 
 /*
@@ -410,9 +427,8 @@ int webauth_hex_encode(const char *input, size_t input_len,
  *
  * Returns WA_ERR_NONE, WA_ERR_NO_ROOM, or WA_ERR_CORRUPT.
  */
-int webauth_hex_decode(char *input, size_t input_len,
-                       char *output, size_t *output_length,
-                       size_t max_output_len)
+int wai_hex_decode(char *input, size_t input_len, char *output,
+                   size_t *output_length, size_t max_output_len)
     __attribute__((__nonnull__));
 
 /*

@@ -9,7 +9,7 @@
 <link href="../style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
 <link href="../style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
 <link href="../style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" /><link rel="stylesheet" type="text/css" href="../style/css/prettify.css" />
-<script src="../style/scripts/prettify.js" type="text/javascript">
+<script src="../style/scripts/prettify.min.js" type="text/javascript">
 </script>
 
 <link href="../images/favicon.ico" rel="shortcut icon" /></head>
@@ -27,9 +27,10 @@
 <p><span>Available Languages: </span><a href="../en/mod/mod_webkdc.html" title="English">&nbsp;en&nbsp;</a></p>
 </div>
 <table class="module"><tr><th><a href="module-dict.html#Description">Description:</a></th><td>WebAuth WebKDC module</td></tr>
-<tr><th><a href="module-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="module-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="module-dict.html#ModuleIdentifier">Module Identifier:</a></th><td>webkdc_module</td></tr>
-<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webkdc.c</td></tr></table>
+<tr><th><a href="module-dict.html#SourceFile">Source File:</a></th><td>mod_webkdc.c</td></tr>
+<tr><th><a href="module-dict.html#Compatibility">Compatibility:</a></th><td>Apache 2.0 and higher</td></tr></table>
 <h3>Summary</h3>
 
     <p>
@@ -73,15 +74,15 @@
 </ul>
 <h3>Topics</h3>
 <ul id="topics">
-<li><img alt="" src="../images/down.gif" /> <a href="#s1">Setting up the WebKDC</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s2">Minimal Config File</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s3">WebKDC Logging</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s4">Setting up Multiple WebKDCs</a></li>
-<li><img alt="" src="../images/down.gif" /> <a href="#s5">Manual License</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#setup">Setting up the WebKDC</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#config">Minimal Config File</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#logging">WebKDC Logging</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#multiple">Setting up Multiple WebKDCs</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#license">Manual License</a></li>
 </ul></div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s1">Setting up the WebKDC</a></h2>
+<h2><a name="setup" id="setup">Setting up the WebKDC</a></h2>
     
     <p>
       The minimal configuration for the WebKDC requires two things: a
@@ -118,7 +119,7 @@
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s2">Minimal Config File</a></h2>
+<h2><a name="config" id="config">Minimal Config File</a></h2>
     
 
     <p>
@@ -126,8 +127,7 @@
       configure and use <code class="module"><a href="../mod/mod_webkdc.html">mod_webkdc</a></code>.
     </p>
 
-    <div class="example"><h3>Example</h3><pre>
-LoadModule webkdc_module modules/mod_webkdc.so
+    <div class="example"><h3>Example</h3><pre>LoadModule webkdc_module modules/mod_webkdc.so
 
 WebKdcServiceTokenLifetime 30d
 WebKdcKeyring conf/webkdc/keyring
@@ -138,11 +138,10 @@ WebKdcTokenAcl conf/webkdc/token.acl
   &lt;Location /webkdc-service&gt;
      SetHandler webkdc
   &lt;/Location&gt;
-&lt;/VirtualHost&gt;
-</pre></div>
+&lt;/VirtualHost&gt;</pre></div>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s3">WebKDC Logging</a></h2>
+<h2><a name="logging" id="logging">WebKDC Logging</a></h2>
     
 
     <p>
@@ -407,7 +406,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
     </dl>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s4">Setting up Multiple WebKDCs</a></h2>
+<h2><a name="multiple" id="multiple">Setting up Multiple WebKDCs</a></h2>
     
 
     <p>
@@ -515,8 +514,7 @@ wa_keyring -f ./keyring gc -60d
       following directives:
     </p>
 
-    <div class="example"><h3>Example</h3><pre>
-LoadModule webkdc_module modules/mod_webkdc.so
+    <div class="example"><h3>Example</h3><pre>LoadModule webkdc_module modules/mod_webkdc.so
 
 WebKdcServiceTokenLifetime 30d
 WebKdcKeyring conf/webkdc/keyring
@@ -528,8 +526,7 @@ WebKdcKeyringAutoUpdate off
   &lt;Location /webkdc-service&gt;
      SetHandler webkdc
   &lt;/Location&gt;
-&lt;/VirtualHost&gt;
-</pre></div>
+&lt;/VirtualHost&gt;</pre></div>
 
     <p>
       Periodically (once a month should be reasonable, but there's no
@@ -539,15 +536,13 @@ WebKdcKeyringAutoUpdate off
       script like this:
     </p>
 
-    <div class="example"><h3>Monthly Key maintenance</h3><pre>
-wa_keyring -f conf/webkdc/keyring add 2d
+    <div class="example"><h3>Monthly Key maintenance</h3><pre>wa_keyring -f conf/webkdc/keyring add 2d
 wa_keyring -f conf/webkdc/keyring gc -60d
 apache2ctl graceful
 for host in slave1 slave2 ; do
     scp conf/webkdc/keyring $host:/path/to/conf/webkdc/keyring
     ssh $host apache2ctl graceful
-done
-</pre></div>
+done</pre></div>
 
     <p>
       If the servers are restarted regularly (such as for nightly log
@@ -558,12 +553,12 @@ done
     </p>
   </div><div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
 <div class="section">
-<h2><a name="s5">Manual License</a></h2>
+<h2><a name="license" id="license">Manual License</a></h2>
     
 
     <p>
-      Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012 The Board
-      of Trustees of the Leland Stanford Junior University
+      Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2014 The
+      Board of Trustees of the Leland Stanford Junior University
     </p>
     <p>
       Copying and distribution of this file, with or without modification,
@@ -579,7 +574,7 @@ done
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcDebug on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcDebug off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -602,7 +597,7 @@ WebKdcDebug on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcIdentityAcl <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -666,16 +661,14 @@ WebKdcDebug on
         ignored.
       </p>
 
-      <div class="example"><h3>Example ACL File</h3><pre>
-# Allow alice to assert an identity of bob to foo.example.org.
+      <div class="example"><h3>Example ACL File</h3><pre># Allow alice to assert an identity of bob to foo.example.org.
 alice krb5:webauth/foo.example.org@EXAMPLE.ORG bob
 
 # Allow alice to assert a cross-realm identity to foo.example.org.
 alice krb5:webauth/foo.example.org@EXAMPLE.ORG alice@EXAMPLE.COM
 
 # Allow joe to assert an identity of testuser on foo-test.example.org.
-joe krb5:webauth/foo-test.example.org@EXAMPLE.ORG testuser
-</pre></div>
+joe krb5:webauth/foo-test.example.org@EXAMPLE.ORG testuser</pre></div>
 
       <p>
         If the path is not absolute, it will be considered relative to
@@ -697,7 +690,7 @@ WebKdcIdentityAcl conf/webkdc/id.acl
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKerberosFactors <em>factor</em> ...</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcKerberosFactors u</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -722,16 +715,28 @@ WebKdcKerberosFactors p
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyring <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
         This is the name of the file containing the WebKDC's keyring,
-        which stores the server's private AES keys.  The keyring file is
-        read on startup and cached for the duration of an Apache child
-        process, so if it is changed by an external process
-        (<code>wa_keyring</code>, for instance), Apache must be told to
-        reload configuration files in order to pick up the change.
+        which stores the server's private AES keys.  It must be readable
+        by the Apache user.
+      </p>
+      <p>
+        The keyring file is read when the first request for a virtual host
+        is received.  Each child maintains an in-memory cached keyring for
+        each virtual host.  These keyrings are only reloaded from disk
+        when Apache refreshes its configuration.  If the keyring is
+        changed by an external process (<code>wa_keyring</code>, for
+        instance), Apache must be told to reload configuration files in
+        order to pick up the change.
+      </p>
+      <p>
+        When using the ITK Apache MPM, there should be a separate keyring
+        for each unique virtual host user that will be serving as a
+        WebKDC.  This maintains proper privilege separation by assigning
+        each user a separate keyring.
       </p>
       <p>
         If the path is not absolute, it will considered relative to
@@ -756,15 +761,31 @@ WebKdcKeyring conf/webkdc/keyring
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyringAutoUpdate on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcKeyringAutoUpdate on</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
         This directive controls whether or not we auto-update the keyring
         file.  This includes creating it if it doesn't exist, generating a
-        new key before the old key expires, and periodically garbage
-        collecting old keys.  Note that auto updating only occurs on
-        server startup and restarts.
+        new key before the old key expires, and periodically
+        garbage-collecting old keys.  Updating only occurs on server
+        startup and restarts.
+      </p>
+
+      <p>
+        If auto-update is enabled, Apache must have write access to the
+        directory containing the keyring, since keyrings are updated by
+        writing out the new file to a separate name and then atomically
+        replacing the file.
+      </p>
+
+      <p>
+        Ownership (user and group) of the existing keyring file will be
+        preserved if possible without overwriting the existing file.
+        Permissions will also be preserved, with the exception that
+        permissions will not be copied to the new file if the old file was
+        group-readable or group-writable and setting the group ownership
+        failed.
       </p>
 
       <div class="note">
@@ -791,7 +812,7 @@ WebKdcKeyringAutoUpdate off
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeyringKeyLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcKeyringKeyLifetime 30d</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -828,7 +849,7 @@ WebKdcKeyringKeyLifetime 60d
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcKeytab <em>path</em> [<em>principal</em>]</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -863,7 +884,7 @@ WebKdcKeytab conf/webkdc/keytab service/webkdc
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcLocalRealms none|local|<em>realm</em> ...</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcLocalRealms local</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -904,10 +925,8 @@ WebKdcKeytab conf/webkdc/keytab service/webkdc
         </p>
       </div>
 
-      <div class="example"><h3>Example</h3><pre>
-# Strip stanford.edu and WIN.STANFORD.EDU but leave other realms
-WebKdcLocalRealms stanford.edu WIN.STANFORD.EDU
-</pre></div>
+      <div class="example"><h3>Example</h3><pre># Strip stanford.edu and WIN.STANFORD.EDU but leave other realms
+WebKdcLocalRealms stanford.edu WIN.STANFORD.EDU</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -920,7 +939,7 @@ WebKdcLocalRealms stanford.edu WIN.STANFORD.EDU
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcLoginTimeLimit <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcLoginTimeLimit 5m</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -965,13 +984,11 @@ WebKdcLocalRealms stanford.edu WIN.STANFORD.EDU
         for an authorization identity at the time of login.
       </p>
 
-      <div class="example"><h3>Examples</h3><pre>
-# The user must complete the login process in 90 seconds
+      <div class="example"><h3>Examples</h3><pre># The user must complete the login process in 90 seconds
 WebKdcLoginTimeLimit 90s
 
 # Disable the grace period entirely.
-WebKdcLoginTimeLimit 0s
-</pre></div>
+WebKdcLoginTimeLimit 0s</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -981,7 +998,7 @@ WebKdcLoginTimeLimit 0s
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcPermittedRealms <em>realm</em> ...</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1004,7 +1021,7 @@ WebKdcPermittedRealms stanford.edu WIN.STANFORD.EDU
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcProxyTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(lifetime of underlying proxied-credential)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1039,10 +1056,8 @@ WebKdcPermittedRealms stanford.edu WIN.STANFORD.EDU
         </p>
       </div>
 
-      <div class="example"><h3>Example</h3><pre>
-# create a webkdc-proxy token valid for 2 hours
-WebKdcProxyTokenLifetime 2h
-</pre></div>
+      <div class="example"><h3>Example</h3><pre># create a webkdc-proxy token valid for 2 hours
+WebKdcProxyTokenLifetime 2h</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1052,7 +1067,7 @@ WebKdcProxyTokenLifetime 2h
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcServiceTokenLifetime <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1083,10 +1098,8 @@ WebKdcProxyTokenLifetime 2h
         <p>This directive must be set.</p>
       </div>
 
-      <div class="example"><h3>Example</h3><pre>
-# create a webkdc-service token valid for 30 days
-WebKdcServiceTokenLifetime 30d
-</pre></div>
+      <div class="example"><h3>Example</h3><pre># create a webkdc-service token valid for 30 days
+WebKdcServiceTokenLifetime 30d</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1096,7 +1109,7 @@ WebKdcServiceTokenLifetime 30d
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcTokenAcl <em>path</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1118,13 +1131,11 @@ WebKdcServiceTokenLifetime 30d
         Kerberos service ticket that may be requested.
       </p>
 
-      <div class="example"><h3>Example ACL File</h3><pre>
-# allow anyone with a webauth keytab to request id tokens
+      <div class="example"><h3>Example ACL File</h3><pre># allow anyone with a webauth keytab to request id tokens
 krb5:webauth/*@EXAMPLE.ORG id
 
 # allow shred to request a service/foobar credential
-krb5:webauth/shred.example.org@EXAMPLE.ORG cred krb5 service/foobar@EXAMPLE.ORG
-</pre></div>
+krb5:webauth/shred.example.org@EXAMPLE.ORG cred krb5 service/foobar@EXAMPLE.ORG</pre></div>
 
       <p>
         The <code>krb5:</code> prefix on the subject is used to signify
@@ -1165,7 +1176,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcTokenMaxTTL <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcTokenMaxTTL 300s</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1193,10 +1204,8 @@ WebKdcTokenAcl conf/webkdc/token.acl
         respectively.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# two hour TTL
-WebKdcTokenMaxTTL 2h
-</pre></div>
+      <div class="example"><h3>Example</h3><pre># two hour TTL
+WebKdcTokenMaxTTL 2h</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
@@ -1209,7 +1218,7 @@ WebKdcTokenMaxTTL 2h
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoIgnoreFail on|off</code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcUserInfoIgnoreFail off</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1251,7 +1260,7 @@ WebKdcUserInfoIgnoreFail on
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoPrincipal <em>principal</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1285,7 +1294,7 @@ WebKdcUserInfoPrincipal remctl/userdb.example.com@EXAMPLE.COM
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoTimeout <em>nnnn[s|m|h|d|w]</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>WebKdcUserInfoTimeout 30s</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1344,7 +1353,7 @@ WebKdcUserInfoTimeout 5s
 <tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcUserInfoURL <em>url</em></code></td></tr>
 <tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
 <tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
-<tr><th><a href="directive-dict.html#Status">Status:</a></th><td /></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
 <tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
 </table>
       <p>
@@ -1383,10 +1392,8 @@ WebKdcUserInfoTimeout 5s
         source distribution.
       </p>
 
-      <div class="example"><h3>Example</h3><pre>
-# Contact host userdb.example.com and send user webkdc-userinfo
-WebKdcUserInfoURL remctl://userdb.example.com/user
-</pre></div>
+      <div class="example"><h3>Example</h3><pre># Contact host userdb.example.com and send user webkdc-userinfo
+WebKdcUserInfoURL remctl://userdb.example.com/user</pre></div>
     
 </div>
 </div>

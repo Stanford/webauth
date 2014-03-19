@@ -2,7 +2,7 @@
 #
 # Basic tests for WebKDC::XmlDoc and WebKDC::XmlElement.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2012
 #     The Board of Trustees of the Leland Stanford Junior University
 #
