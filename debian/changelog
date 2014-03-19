@@ -1,5 +1,8 @@
 webauth (4.6.0-3) UNRELEASED; urgency=medium
 
+  * Handle ownership change of the mod_webauth keyring in the
+    libapache2-webauth transition package as well, since that's the
+    package that will see the versioned upgrade.
   * Tighten dependency of libwebkdc-perl on libwebauth-perl to ensure that
     the remctl password change API is available.
   * Refresh debian/copyright with current upstream LICENSE file.
