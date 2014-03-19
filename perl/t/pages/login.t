@@ -3,7 +3,7 @@
 # Tests for weblogin page handling after login responses.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2012, 2013
+# Copyright 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -275,5 +275,5 @@ compare_fields (\%output, \%check, @fields);
 #@output = index_wrapper ($weblogin);
 # Check print_login_page (forced_login = 1)
 
-unlink ('krb5cc_test', 't/data/test.keyring');
+unlink ('krb5cc_test', 't/data/test.keyring', 't/data/test.keyring.lock');
 rmtree ('./t/tmp');

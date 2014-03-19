@@ -4,9 +4,9 @@
  * Handle configuration parsing for the module configuration, storing the
  * results in appropriate data structures for use by the rest of the module.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Based on original code by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013
+ * Copyright 2002, 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -48,6 +48,7 @@ APLOG_USE_MODULE(webauth);
 
 DIRN(AppTokenLifetime,   "lifetime of app tokens")
 DIRN(AuthType,           "additional AuthType alias")
+DIRN(CookiePath,         "path scope for WebAuth cookies")
 DIRN(Cred,               "credential to obtain")
 DIRN(CredCacheDir,       "path to the credential cache directory")
 DIRN(Debug,              "whether to log debug messages")
@@ -114,6 +115,7 @@ enum {
 #endif
     E_AppTokenLifetime,
     E_AuthType,
+    E_CookiePath,
     E_Cred,
     E_CredCacheDir,
     E_Debug,
@@ -292,6 +294,7 @@ mwa_dir_config_merge(apr_pool_t *pool, void *basev, void *overv)
     oconf = overv;
 
     MERGE_INT(app_token_lifetime);
+    MERGE_PTR(cookie_path);
     MERGE_SET(do_logout);
     MERGE_SET(dont_cache);
     MERGE_SET(extra_redirect);
@@ -353,7 +356,8 @@ fatal_config(server_rec *s, const char *dir, apr_pool_t *ptemp)
  * from an Apache configuration directive.
  */
 void
-mwa_config_init(server_rec *server, struct server_config *bconf, apr_pool_t *p)
+mwa_config_init(server_rec *server, struct server_config *bconf UNUSED,
+                apr_pool_t *p)
 {
     struct server_config *sconf;
     int status;
@@ -385,19 +389,6 @@ mwa_config_init(server_rec *server, struct server_config *bconf, apr_pool_t *p)
     /* Initialize the mutex. */
     if (sconf->mutex == NULL)
         apr_thread_mutex_create(&sconf->mutex, APR_THREAD_MUTEX_DEFAULT, p);
-
-    /*
-     * Load the keyring into the configuration struct.  If the configuration
-     * we're passed in has a keyring loaded and it matches ours, use that.
-     * Otherwise, initialize the keyring with our configuration settings.
-     */
-    if (sconf->ring == NULL) {
-        if (bconf->ring != NULL
-            && strcmp(sconf->keyring_path, bconf->keyring_path) == 0)
-            sconf->ring = bconf->ring;
-        else
-            mwa_cache_keyring(server, sconf);
-    }
 
     /* Unlink any existing service token cache so that we'll get a new one. */
     if (unlink(sconf->st_cache_path) < 0 && errno != ENOENT)
@@ -535,6 +526,9 @@ cfg_str(cmd_parms *cmd, void *mconf, const char *arg)
     /* Directory scope only. */
     case E_AppTokenLifetime:
         err = parse_interval(cmd, arg, &dconf->app_token_lifetime);
+        break;
+    case E_CookiePath:
+        dconf->cookie_path = apr_pstrdup(cmd->pool, arg);
         break;
     case E_FailureURL:
         dconf->failure_url = apr_pstrdup(cmd->pool, arg);
@@ -808,6 +802,7 @@ const command_rec webauth_cmds[] = {
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  RSRC_ORAUTH, ExtraRedirect),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  RSRC_ORAUTH, TrustAuthzIdentity),
 
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   OR_AUTHCFG,  CookiePath),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  OR_AUTHCFG,  DoLogout),
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  OR_AUTHCFG,  DontCache),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   OR_AUTHCFG,  LoginCanceledURL),

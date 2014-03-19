@@ -1,13 +1,14 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl
-dnl Written by Russ Allbery <rra@stanford.edu>
-dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013
+dnl Written by Russ Allbery <eagle@eyrie.org>
+dnl Copyright 2002, 2003, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
+dnl    2013, 2014
 dnl    The Board of Trustees of the Leland Stanford Junior University
 dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [4.5.5], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.6.0], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -17,8 +18,9 @@ AM_MAINTAINER_MODE
 
 AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
+AC_SYS_LARGEFILE
 AM_PROG_CC_C_O
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_INSTALL
 LT_INIT
 RRA_LD_VERSION_SCRIPT
@@ -114,7 +116,7 @@ AS_IF([test x"$rra_use_remctl" = x"true"],
     [RRA_LIB_REMCTL_SWITCH
      AC_CHECK_FUNCS([remctl_set_ccache remctl_set_timeout])
      RRA_LIB_REMCTL_RESTORE])
-RRA_LIB_SSL
+RRA_LIB_OPENSSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
 

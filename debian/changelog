@@ -1,10 +1,60 @@
-webauth (4.5.5-1~bpo70+1) wheezy-backports; urgency=low
+webauth (4.6.0-1~bpo70+1) wheezy-backports; urgency=medium
 
   * Backport to stable.
   * Revert the migration to Apache 2.4 and restore Apache 2.2 handling of
     module installation and enabling, but keep the new package names.
 
  -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 20:05:10 -0700
+
+webauth (4.6.0-1) unstable; urgency=medium
+
+  * New upstream release.
+    - New mod_webauth configuration directive, WebAuthCookiePath, which
+      scopes all cookies set by mod_webauth within the directive scope to
+      the given path.  Be sure that any WebAuthDoLogout URL is scoped with
+      the same path.  When using this directive, ensure all protected
+      portions of the site are covered by a directive and none of the
+      scopes are overlapping.
+    - WebAuthOptional should now work properly with Apache 2.4.
+    - Do not delete mod_webauth notes after using them, which prevents
+      some double-redirects to WebLogin during subrequests.
+    - mod_webauth and mod_webkdc now maintain separate in-memory keyrings
+      for each virtual host, and WebAuthKeyring, WebKdcKeyring, and
+      related directives are now properly honored in virtual host
+      configuration.  This fixes keyring leaks between virtual hosts when
+      using the ITK MPM.
+    - Be more thorough in telling browsers to not cache WebLogin
+      responses, redirects and logout pages, and WebAuthDontCache pages.
+    - All keyring writes are now locked with a separate lock file (the
+      keyring file name with ".lock" appended) in the same directory.
+    - Keyring updates now preserve ownership and permissions where
+      possible.
+    - Use the authenticated identity returned by the WebKDC for
+      multifactor authentication in WebLogin rather than preserving the
+      user's original entry.  The WebKDC may have canonicalized.
+    - Support a remctl-based password change protocol in WebLogin and in
+      libwebauth via the new webauth_krb5_change_config API.
+    - Set the correct template variable when the code field is left blank
+      on the WebLogin multifactor form.
+    - Map unknown realm and invalid principal errors during Kerberos
+      authentication to WA_PEC_USER_REJECTED instead of a generic Kerberos
+      error so that WebLogin will present a more helpful error message.
+    - Fix a bug in the workaround for invalid XML from the WebKDC.
+    - Log a more detailed message during WebLogin password change
+      failures.
+  * Add the upstream signing key to debian/upstream/signing-key.asc and
+    configure uscan to do signature validation.  Configure uscan to
+    download the xz tarball instead of the gz tarball.
+  * Remove now-unnecessary override of dh_builddeb to use xz compression.
+  * Update standards version to 3.9.5 (no changes required).
+
+ -- Russ Allbery <rra@debian.org>  Tue, 18 Mar 2014 22:59:18 -0700
+
+webauth (4.5.5-2) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 08 Sep 2013 10:51:03 -0700
 
 webauth (4.5.5-1) experimental; urgency=low
 
@@ -44,8 +94,12 @@ webauth (4.5.5-1) experimental; urgency=low
     - Better error display for multifactor authentication errors.
     - Rate limiting and replay detection are now also applied to the
       multifactor login page.
+    - Fix replay detection by correcting choice of memcached keys.
+    - Support staying on the code entry page after an error when using an
+      SMS method for multifactor.  Local template changes are required to
+      take advantage of this feature.
 
- -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 19:56:26 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 28 Aug 2013 22:02:11 -0700
 
 webauth (4.5.3-5) unstable; urgency=low
 

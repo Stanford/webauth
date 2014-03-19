@@ -5,7 +5,7 @@
  * WebAuth code and are therefore provided by the library, even though they
  * don't fit naturally into the WebAuth API structure.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *

@@ -2,7 +2,7 @@
 #
 # Written by Roland Schemers
 # Rewritten as a module by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2003, 2013
+# Copyright 2003, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,7 +43,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0600';
 }
 
 #############################################################################
@@ -272,6 +272,7 @@ sub build_page {
                   environment_misc      => _environment_misc(),
                   extra_tests_title     => $args->{extra_title},
                   extra_tests           => $args->{extra_tests},
+                  logout                => $args->{logout} || '/tests/logout',
                   remote_user           => $ENV{REMOTE_USER},
                   unauth_location       => $args->{unauth_loc} || 0,
     );

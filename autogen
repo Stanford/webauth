@@ -2,16 +2,16 @@
 #
 # Run this shell script to bootstrap as necessary after a fresh checkout.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2004, 2006, 2009, 2012, 2013
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2004, 2006, 2009, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 set -e
 
+# Regenerate all the autotools files.
 autoreconf -i --force
-rm -rf autom4te.cache
 
 # Generate manual pages.
 version=`grep '^WebAuth' NEWS | head -1 | cut -d' ' -f2`
@@ -35,7 +35,11 @@ lib/encoding-rules include/webauth/tokens.h                     \
     webauth_token_webkdc_proxy webauth_token_webkdc_service     \
     > lib/rules-tokens.c
 
-# Generate protocol documentation.
-cd docs
-xml2rfc protocol.xml protocol.html
-xml2rfc protocol.xml protocol.txt
+# Generate protocol documentation if xml2rfc is available.
+if command -v xml2rfc 2>&1 >/dev/null ; then
+    cd docs
+    xml2rfc --html protocol.xml protocol.html
+    xml2rfc --text protocol.xml protocol.txt
+else
+    echo 'xml2rfc not found, not building protocol documentation' >&2
+fi

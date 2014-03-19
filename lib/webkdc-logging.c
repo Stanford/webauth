@@ -5,7 +5,7 @@
  * only supports logging a <requestTokenRequest> from the WebLogin server.
  *
  * Originally written by Roland Schemers
- * Substantially updated by Russ Allbery <rra@stanford.edu>
+ * Substantially updated by Russ Allbery <eagle@eyrie.org>
  * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

@@ -2,8 +2,8 @@
  * Core Apache WebKDC module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013
- *     The Board of Trustees of the Leland Stanford Junior University
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013,
+ *     2014 The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
@@ -27,6 +27,29 @@
 #include <webauth/webkdc.h>
 
 APLOG_USE_MODULE(webkdc);
+
+
+/*
+ * Called at any entry point where we may be doing WebKDC operations that need
+ * a keyring.  Do lazy initialization of the in-memory keyring from the disk
+ * file and store it in the virtual host context.  Returns true if the keyring
+ * could be loaded correctly and false otherwise.
+ */
+static bool
+ensure_keyring_loaded(MWK_REQ_CTXT *rc)
+{
+    int s;
+
+    /* FIXME: Should use a per-virtual-host mutex instead of a global one. */
+    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING);
+    if (rc->sconf->ring != NULL) {
+        mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING);
+        return true;
+    }
+    s = mwk_cache_keyring(rc->r->server, rc->sconf);
+    mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING);
+    return (s == WA_ERR_NONE && rc->sconf->ring != NULL);
+}
 
 
 /*
@@ -266,7 +289,7 @@ parse_requesterCredential(MWK_REQ_CTXT *rc, apr_xml_elem *e,
 
         if (token == NULL)
             return MWK_ERROR;
-        if (rc->sconf->ring == NULL)
+        if (!ensure_keyring_loaded(rc))
             return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                      mwk_func, true);
         status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_SERVICE, token,
@@ -358,7 +381,7 @@ parse_webkdc_proxy_token(MWK_REQ_CTXT *rc, char *token,
     int status;
     struct webauth_token *data;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, true);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_WEBKDC_PROXY, token,
@@ -392,7 +415,7 @@ parse_login_token(MWK_REQ_CTXT *rc, char *token,
     int status;
     struct webauth_token *data;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, true);
     status = webauth_token_decode(rc->ctx, WA_TOKEN_LOGIN, token,
@@ -501,7 +524,7 @@ make_token(MWK_REQ_CTXT *rc, struct webauth_token *data, const char **token,
 {
     int status;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
                                  "no keyring", mwk_func, true);
     status = webauth_token_encode(rc->ctx, data, rc->sconf->ring, token);
@@ -1311,7 +1334,7 @@ parse_service_token(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     const char *at = get_attr_value(rc, e, "type", 1, mwk_func);
     char *msg, *token;
 
-    if (rc->sconf->ring == NULL)
+    if (!ensure_keyring_loaded(rc))
         return set_errorResponse(rc, WA_PEC_SERVER_FAILURE, "no keyring",
                                  mwk_func, true);
 
@@ -1497,6 +1520,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
      */
     *subject_out = "<unknown>";
     *req_subject_out = "<unknown>";
+
+    if (!ensure_keyring_loaded(rc))
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "no keyring", mwk_func, true);
 
     memset(&request, 0, sizeof(request));
     request.client_ip = rc->r->useragent_ip;
@@ -2242,7 +2269,7 @@ handler_hook(request_rec *r)
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
                      "mod_webkdc: webauth_webkdc_config failed: %s",
                      webauth_error_message(rc.ctx, status));
-        return DECLINED;
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     /* Set up the user information service configuration. */
@@ -2259,9 +2286,13 @@ handler_hook(request_rec *r)
             ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
                          "mod_webkdc: webauth_user_config failed: %s",
                          webauth_error_message(rc.ctx, status));
-            return DECLINED;
+            return HTTP_INTERNAL_SERVER_ERROR;
         }
     }
+
+    /* Ensure we can load the keyring. */
+    if (!ensure_keyring_loaded(&rc))
+        return HTTP_INTERNAL_SERVER_ERROR;
 
     /* Ensure the client sent POST with the right content type. */
     if (r->method_number != M_POST)

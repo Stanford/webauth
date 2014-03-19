@@ -1,0 +1,31 @@
+#!/usr/bin/perl
+#
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2014
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use warnings;
+
+use WebAuth::Tests qw(build_page);
+
+# Text for the page.  The user should be authenticated when they go to this
+# page but not be authenticated after following a link to the unauth page.
+my @extended = ('You are accessing a page with a limited cookie scope and'
+                . " have successfully authenticated as $ENV{REMOTE_USER}."
+                . '  Click <a href="/tests/auth/test14unauth">here</a> to'
+                . ' verify that the authentication credentials do not leak'
+                . ' to other URLs.');
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 14,
+    test_desc     => 'test cookie path restrictions',
+    extended_desc => \@extended,
+    logout        => '/tests/path/test14logout',
+);
+
+print "Content-type: text/html\n\n";
+print build_page(\%settings);

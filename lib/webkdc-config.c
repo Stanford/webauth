@@ -1,8 +1,8 @@
 /*
  * Interface for configuring the WebKDC portion of the library.
  *
- * Written by Russ Allbery <rra@stanford.edu>
- * Copyright 2011, 2013
+ * Written by Russ Allbery <eagle@eyrie.org>
+ * Copyright 2011, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -42,19 +42,16 @@ int
 webauth_webkdc_config(struct webauth_context *ctx,
                       const struct webauth_webkdc_config *config)
 {
-    int s;
     struct webauth_webkdc_config *webkdc;
 
     /* Verify that the new configuration is sane. */
     if (config->local_realms == NULL) {
-        s = WA_ERR_INVALID;
-        wai_error_set(ctx, s, "local realms must be present");
-        return s;
+        wai_error_set(ctx, WA_ERR_INVALID, "local realms must be present");
+        return WA_ERR_INVALID;
     }
     if (config->permitted_realms == NULL) {
-        s = WA_ERR_INVALID;
-        wai_error_set(ctx, s, "permitted realms must be present");
-        return s;
+        wai_error_set(ctx, WA_ERR_INVALID, "permitted realms must be present");
+        return WA_ERR_INVALID;
     }
 
     /* Copy the configuration into the context. */

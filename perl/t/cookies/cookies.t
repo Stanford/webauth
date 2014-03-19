@@ -108,7 +108,8 @@ for my $c (@{ $weblogin->{'__HEADER_PROPS'}{'-cookie'} }) {
 }
 is ($cookie->name, $cookie_name, 'SSO cookie with no content was set');
 my $expires = str2time ($cookie->expires);
-is ($expires, time - 60 * 60 * 24, '... and set to expire immediately');
+ok ($expires >= time - 60 * 60 * 24 - 2 && $expires <= time - 60 * 60 * 24,
+    '... and set to expire immediately');
 
 # Check clearing an SSO cookie by setting the public computer checkbox
 # and nothing else.  That shouldn't clear it, as it should only be cleared

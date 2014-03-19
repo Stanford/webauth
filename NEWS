@@ -1,6 +1,126 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.6.0 (2014-03-18)
+
+    mod_webauth supports a new configuration directive, WebAuthCookiePath,
+    which scopes all cookies set by mod_webauth to the given path.  This
+    allows separate sections of the same virtual host to be treated as
+    independent for authentication purposes.  This can be useful when
+    controlling factor restrictions via the user information service.
+    When using this directive with a logout link, be sure that the logout
+    configuration (WebAuthDoLogout) is subject to the same
+    WebAuthCookiePath directive or it will not work properly.  Be aware
+    that the current version of mod_webauth does not correctly handle
+    receiving multiple cookies with the same name from the browser.  When
+    using this directive, ensure that all WebAuth-protected portions of
+    the site use this directive and none of the scopes are overlapping.
+
+    WebAuthOptional should now work properly with Apache 2.4.  Thanks to
+    Benjamin Coddington for the patches.
+
+    Don't delete notes in mod_webauth after using them for authentication
+    in case the authentication is happening in a subrequest and the parent
+    request has not yet completed.  Deleting the note could cause two
+    redirects to WebLogin due to an ordering issue when processing notes
+    and subrequests.  Patch from Benjamin Coddington.
+
+    mod_webauth and mod_webkdc now maintain separate in-memory keyrings
+    per virtual host, and the WebAuthKeyring, WebKdcKeyring, and related
+    directives are now correctly honored in the virtual host configuration
+    and can be meaningfully set to different values.  This allows the
+    modules to work properly with the ITK MPM with separate keyrings owned
+    by different users for each virtual host so that proper privilege
+    separation between virtual hosts is maintained.  When using the
+    modules in this configuration, configure each virtual host with
+    WebAuthKeyring or WebKdcKeyring directives pointing to separate
+    keyring files writable by the user that virtual host will use.  Thanks
+    to Vegard Edvardsen for the patch.
+
+    Be even more thorough in telling browsers not to cache responses from
+    WebLogin, redirects and logout pages from mod_webauth, and any page
+    marked with WebAuthDontCache.  Add private and max-age=0 to the
+    existing Cache-Control headers, add Vary: *, and (for WebLogin pages)
+    set an expiration time in the past.
+
+    webauth_keyring_write and webauth_keyring_auto_update now lock the
+    keyring, using a separate lock file named by appending ".lock" to the
+    name of the keyring.  This applies to the keyrings used by
+    mod_webauth, mod_webkdc, and the wa_keyring utility and ensures that
+    only one process attempts to update a keyring at the same time.  These
+    functions continue to use atomic replacement on all writes, and no
+    locks are used for reading the keyring.
+
+    WebAuth keyring updates via either mod_webauth's and mod_webkdc's
+    auto-update support or via wa_keyring now preserve the keyring
+    ownership and permissions where possible, with the exception that the
+    permissions are not preserved if the old permissions included group
+    access and the group ownership could not be preserved.
+
+    Use the authenticated identity returned by the WebKDC as the username
+    for multifactor authentication in WebLogin rather than preserving what
+    the user originally typed.  The WebKDC may have done Kerberos
+    canonicalization and aname to localname mapping.
+
+    The WebAuth Kerberos API now supports Kerberos password change via the
+    remctl protocol, which is more robust than the kpasswd protocol when
+    password changes can take some time.  This can be configured via the
+    new webauth_krb5_change_config function.  The remote remctl server
+    must provide a command and subcommand that takes a single argument,
+    the new password, and changes the password for the authenticated
+    principal that sent the command.
+
+    The WebAuth::Krb5 change_password function now takes an optional args
+    parameter that can be used to set the same configuration that can be
+    set with webauth_krb5_change_config.
+
+    WebLogin now supports using the remctl-based password change protocol
+    instead of kpasswd.  This is controlled by setting
+    $PASSWORD_CHANGE_HOST and several other variables in the WebLogin
+    configuration.  See docs/weblogin-config for more information.
+
+    Set the correct template variable when the code field is left blank on
+    the WebLogin multifactor form.
+
+    Map unknown realm and invalid principal errors during Kerberos
+    authentication in mod_webkdc to WA_PEC_USER_REJECTED instead of a
+    generic Kerberos error.  This will display a more accurate error
+    message to the user of WebLogin instead of a generic internal error
+    message.
+
+    Correct a bug in the workaround for parsing of invalid XML from the
+    WebKDC in WebLogin that caused it to not be effective.
+
+    Log a more detailed error message on WebAuth exceptions during
+    WebLogin password change.
+
+    Fix configure probes for OpenSSL on platforms without transitive
+    shared library dependencies.
+
+    Update to rra-c-util 5.3:
+
+    * Avoid leaking dummy symbols into shared libraries.
+    * Probe for libdl for OpenSSL libraries (required on AIX).
+    * Distinguish failure to format output in asprintf wrappers.
+    * Check return status of snprintf properly.
+    * Better remctld process management in the test suite.
+    * Better memory management in Kerberos tests.
+    * Fix syntax error when buiding portable/krb5.h with a C++ compiler.
+    * Skip Perl critic tests with read-only source directory.
+
+    Update to C TAP Harness 3.0:
+
+    * Add new diag_file_add and _remove API to the C TAP library.
+    * Add new test_cleanup_register API to the C TAP library.
+    * Suppress lazy plans and test summaries if the test failed with bail.
+    * Add warn_unused_result gcc attributes to relevant functions.
+    * Reopen standard input for tests to /dev/null.
+    * Clean up inherited file descriptors from the test harness.
+
 WebAuth 4.5.5 (2013-08-28)
+
+    Fix replay detection in WebLogin to use the same memcached object
+    naming convention when registering authentications and when checking
+    for a previous authentication.
 
     If the login is rejected by the user information service, WebLogin now
     displays a more specific error instead of the generic "something went
@@ -13,6 +133,12 @@ WebAuth 4.5.5 (2013-08-28)
 
     If enabled, rate limiting and replay detection are also applied to the
     multifactor login page in addition to the password login page.
+
+    Support remembering that the user has been sent an SMS message already
+    when redisplaying the multifactor login page after an error.  For this
+    to work properly, local templates will have to be updated to set the
+    form parameter multifactor_sentauth if an SMS message has already been
+    sent.  See the sample multifactor.tmpl file for an example.
 
 WebAuth 4.5.4 (2013-08-16)
 

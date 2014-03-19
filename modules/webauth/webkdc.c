@@ -2,7 +2,7 @@
  * Management of service tokens and WebKDC queries.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011, 2012, 2013
+ * Copyright 2002, 2003, 2004, 2006, 2009, 2010, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -558,6 +558,11 @@ set_app_state(struct webauth_context *ctx, server_rec *server,
     const void *as;
     size_t length;
 
+    if (sconf->ring == NULL) {
+        ap_log_error(APLOG_MARK, APLOG_ERR, 0, server, "mod_webauth: cannot"
+                     " create application state: no keyring available");
+        return;
+    }
     token->app_state = NULL;
     token->app_state_len = 0;
     memset(&app, 0, sizeof(app));

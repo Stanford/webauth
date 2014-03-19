@@ -4,7 +4,7 @@
  * This header defines preprocessor symbols and configuration information that
  * is common to all of the WebAuth header files.
  *
- * Written by Roland Schemers and Russ Allbery <rra@stanford.edu>
+ * Written by Roland Schemers and Russ Allbery <eagle@eyrie.org>
  * Copyright 2002, 2003, 2008, 2009, 2010, 2011
  *     The Board of Trustees of the Leland Stanford Junior University
  *

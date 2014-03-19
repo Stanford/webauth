@@ -8,7 +8,7 @@
  * care what they're encrypting.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2006, 2009, 2010, 2011, 2012, 2013
+ * Copyright 2002, 2003, 2006, 2009, 2010, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -35,8 +35,10 @@
 #include <webauth/tokens.h>
 
 /*
- * An ivec to pass to the AES encryption function.  This is always 0 since we
- * use nonce as ivec.
+ * An IV to pass to the AES encryption function.  Since the first block of any
+ * token is a random nonce, this is uninteresting and therefore always set to
+ * all zeroes.  The random nonce will randomize the rest of the CBC mode
+ * encryption.
  */
 static unsigned char aes_ivec[AES_BLOCK_SIZE] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -228,17 +230,13 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
 
     /* Basic sanity check. */
     needed = T_HINT_S + T_NONCE_S + T_HMAC_S;
-    if (length < needed + needed % AES_BLOCK_SIZE) {
-        wai_error_set(ctx, WA_ERR_CORRUPT, "token too short");
-        return WA_ERR_CORRUPT;
-    }
+    if (length < needed + needed % AES_BLOCK_SIZE)
+        return wai_error_set(ctx, WA_ERR_CORRUPT, "token too short");
 
     /* Create our decryption key. */
     s = AES_set_decrypt_key(key->data, key->length * 8, &aes_key);
-    if (s != 0) {
-        s = WA_ERR_BAD_KEY;
-        return openssl_error(ctx, s, "cannot set encryption key");
-    }
+    if (s != 0)
+        return openssl_error(ctx, WA_ERR_BAD_KEY, "cannot set encryption key");
 
     /*
      * Decrypt everything except the time at the front.  We intentionally skip
@@ -259,22 +257,16 @@ decrypt_token(struct webauth_context *ctx, const unsigned char *input,
                 length - T_ATTR_O, computed_hmac, NULL);
     if (hmac == NULL)
         return openssl_error(ctx, WA_ERR_CORRUPT, "cannot compute HMAC");
-    if (memcmp(output + T_HMAC_O, computed_hmac, T_HMAC_S) != 0) {
-        wai_error_set(ctx, WA_ERR_BAD_HMAC, NULL);
-        return WA_ERR_BAD_HMAC;
-    }
+    if (memcmp(output + T_HMAC_O, computed_hmac, T_HMAC_S) != 0)
+        return wai_error_set(ctx, WA_ERR_BAD_HMAC, NULL);
 
     /* Check padding length and data validity. */
     plen = output[length - 1];
-    if (plen > AES_BLOCK_SIZE || plen > length) {
-        wai_error_set(ctx, WA_ERR_CORRUPT, "token padding corrupt");
-        return WA_ERR_CORRUPT;
-    }
+    if (plen > AES_BLOCK_SIZE || plen > length)
+        return wai_error_set(ctx, WA_ERR_CORRUPT, "token padding corrupt");
     for (i = length - plen; i < length - 1; i++)
-        if (output[i] != plen) {
-            wai_error_set(ctx, WA_ERR_CORRUPT, "token padding corrupt");
-            return WA_ERR_CORRUPT;
-        }
+        if (output[i] != plen)
+            return wai_error_set(ctx, WA_ERR_CORRUPT, "token padding corrupt");
 
     /*
      * Shift the interersting data up to the start of the output buffer, store
@@ -308,10 +300,8 @@ webauth_token_decrypt(struct webauth_context *ctx, const void *input,
     *output_len = 0;
 
     /* Sanity-check our keyring. */
-    if (ring->entries->nelts == 0) {
-        wai_error_set(ctx, WA_ERR_BAD_KEY, "empty keyring");
-        return WA_ERR_BAD_KEY;
-    }
+    if (ring->entries->nelts == 0)
+        return wai_error_set(ctx, WA_ERR_BAD_KEY, "empty keyring");
 
     /*
      * Create a buffer to hold the decrypted output.  We don't need to include

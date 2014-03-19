@@ -3,7 +3,7 @@
 # Tests on WebLogin::token_rights
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2012, 2013
+# Copyright 2010, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -78,6 +78,6 @@ is (${$rights}[0]{'name'}, 'afs/testrealm.org', '... and name is correct');
 is (${$rights}[0]{'type'}, 'krb5', '... and type is correct');
 is (${$rights}[0]{'instance'}, 'testrealm.org', '... and instance is correct');
 
-unlink ($WebKDC::Config::KEYRING_PATH);
+unlink ($WebKDC::Config::KEYRING_PATH, "$WebKDC::Config::KEYRING_PATH.lock");
 unlink ('krb5cc_test');
 rmtree ('./t/tmp');

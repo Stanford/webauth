@@ -2,7 +2,7 @@
 #
 # Build script for WebAuth distribution.
 #
-# Written by Russ Allbery <rra@stanford.edu>
+# Written by Russ Allbery <eagle@eyrie.org>
 # Copyright 2003, 2004, 2005, 2006, 2009, 2013
 #     The Board of Trustees of the Leland Stanford Junior University
 #
@@ -17,7 +17,7 @@ use Module::Build;
 # Basic package configuration.
 my $build = Module::Build->new(
     module_name          => 'WebAuth',
-    dist_author          => 'Russ Allbery <rra@stanford.edu>',
+    dist_author          => 'Russ Allbery <eagle@eyrie.org>',
     license              => 'mit',
     recursive_test_files => 1,
     add_to_cleanup       => [qw(webauth_keyring webauth_keyring2)],
@@ -49,6 +49,16 @@ my $build = Module::Build->new(
         'Time::Duration'   => 0,
     },
 );
+
+# Work around a bug in the version of Module::Build that shipped with RHEL 5.
+if ($Module::Build::VERSION <= 0.2807) {
+    for my $param (qw(extra_compiler_flags extra_linker_flags)) {
+        my $value = $build->$param;
+        if (ref($value) eq 'ARRAY' && @{$value} == 1) {
+            $build->$param($build->split_like_shell($value->[0]));
+        }
+    }
+}
 
 # Generate the build script.
 $build->create_build_script;
