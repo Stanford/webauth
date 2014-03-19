@@ -34,6 +34,9 @@ webauth (4.6.0-1) UNRELEASED; urgency=medium
     - Fix a bug in the workaround for invalid XML from the WebKDC.
     - Log a more detailed message during WebLogin password change
       failures.
+  * Add the upstream signing key to debian/upstream/signing-key.asc and
+    configure uscan to do signature validation.  Configure uscan to
+    download the xz tarball instead of the gz tarball.
   * Remove now-unnecessary override of dh_builddeb to use xz compression.
   * Update standards version to 3.9.5 (no changes required).
 
