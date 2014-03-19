@@ -35,6 +35,7 @@ webauth (4.6.0-1) UNRELEASED; urgency=medium
     - Log a more detailed message during WebLogin password change
       failures.
   * Remove now-unnecessary override of dh_builddeb to use xz compression.
+  * Update standards version to 3.9.5 (no changes required).
 
  -- Russ Allbery <rra@debian.org>  Tue, 18 Mar 2014 20:08:35 -0700
 
