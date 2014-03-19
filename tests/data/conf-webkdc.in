@@ -1,2 +1,3 @@
-# remctld configuration for running WebKDC function tests.
+# remctld configuration for running WebKDC and Kerberos function tests.
+kadmin password @abs_top_srcdir@/tests/data/cmd-password stdin=2 ANYUSER
 test ALL @abs_top_srcdir@/tests/data/cmd-webkdc ANYUSER

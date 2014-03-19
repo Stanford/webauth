@@ -117,6 +117,17 @@ Remove the key with ID I<id> from the key ring.
 
 =back
 
+For any of the commands that change the keyring, B<wa_keyring> must have
+write access to the directory containing the keyring, since keyrings are
+updated by writing out the new file to a separate name and then atomically
+replacing the file.
+
+Ownership (user and group) of the existing keyring file will be preserved
+if possible without overwriting the existing file.  Permissions will also
+be preserved, with the exception that permissions will not be copied to
+the new file if the old file was group-readable or group-writable and
+setting the group ownership failed.
+
 =head1 EXAMPLES
 
 Add a key to the keyring valid as of the current time:
@@ -162,8 +173,8 @@ Roland Schemers <schemers@stanford.edu>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2002, 2004, 2005 The Board of Trustees of the Leland Stanford
-Junior University
+Copyright 2002, 2004, 2005, 2014 The Board of Trustees of the Leland
+Stanford Junior University
 
 Copying and distribution of this file, with or without modification, are
 permitted in any medium without royalty provided the copyright notice and

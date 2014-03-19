@@ -3,7 +3,7 @@
  *
  * Written by Roland Schemers
  * Updated for current TAP library support by Russ Allbery
- * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2012, 2013
+ * Copyright 2002, 2003, 2006, 2008, 2009, 2010, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -12,6 +12,8 @@
 #include <config.h>
 #include <portable/krb5.h>
 #include <portable/system.h>
+
+#include <time.h>
 
 #include <tests/tap/basic.h>
 #include <tests/tap/kerberos.h>
@@ -23,7 +25,7 @@
  * An address list for testing.  The data structure is completely different
  * between MIT and Heimdal.
  */
-static const unsigned char test_addr_data[4] = { 171, 67, 225, 134 };
+static const unsigned char test_addr_data[4] = { 192, 0, 2, 10 };
 #ifdef HAVE_KRB5_MIT
 static const krb5_address test_addr = {
     KV5M_ADDRESS, ADDRTYPE_INET, 4, (unsigned char *) test_addr_data
@@ -41,8 +43,15 @@ static krb5_addresses *const test_addrlist_ptr
 #endif
 
 #define CHECK(ctx, s, m) check_status((ctx), (s), (m), __FILE__, __LINE__)
+#define CHECK_CHANGE(ctx, s, m) \
+    check_change((ctx), (s), (m), __FILE__, __LINE__)
 
 
+/*
+ * Check that a WebAuth call succeeded.  If it didn't, display the error
+ * message with diag in addition to reporting a failure.  Normally called via
+ * the CHECK() macro.
+ */
 static void
 check_status(struct webauth_context *ctx, int s, const char *message,
              const char *file, unsigned long line)
@@ -55,9 +64,36 @@ check_status(struct webauth_context *ctx, int s, const char *message,
 
 
 /*
+ * Check the result of a password change.
+ *
+ * Unfortunately, the result reporting from the Kerberos password change
+ * protocol does not work properly through NAT (although the password is
+ * changed), so these password changes may fail with "Incorrect net address"
+ * errors.  Detect that case and report it as a skip.
+ */
+static void
+check_change(struct webauth_context *ctx, int s, const char *message,
+             const char *file, unsigned long line)
+{
+    const char *error;
+
+    if (s != WA_ERR_KRB5) {
+        check_status(ctx, s, message, file, line);
+        return;
+    }
+    error = webauth_error_message(ctx, s);
+    if (strstr(error, "Incorrect net address") != NULL)
+        skip("password change status bogus behind NAT");
+    else
+        check_status(ctx, s, message, file, line);
+}
+
+
+/*
  * Obtain Kerberos credentials from the configured keytab, but set addresses
  * on the ticket.  This tests encoding of tickets with addresses (which has
- * had bugs in the past).  Returns the path to a new Kerberos cache.
+ * had bugs in the past).  Returns the path to a new Kerberos cache or NULL if
+ * we can't get tickets because the KDC won't let us.
  */
 static char *
 kinit_with_addresses(struct kerberos_config *config)
@@ -103,7 +139,15 @@ kinit_with_addresses(struct kerberos_config *config)
         bail_krb5(ctx, code, "cannot open keytab %s", config->keytab);
     code = krb5_get_init_creds_keytab(ctx, &creds, kprinc, keytab, 0, krbtgt,
                                       opts);
-    if (code != 0)
+
+    /*
+     * If the return status is KRB5KRB_AP_ERR_BADADDR, the KDC is enforcing a
+     * requirement that we only get our own ticket addresses, so we can't run
+     * this check.
+     */
+    if (code == KRB5KRB_AP_ERR_BADADDR)
+        return NULL;
+    else if (code != 0)
         bail_krb5(ctx, code, "cannot get Kerberos tickets");
 
     /* Store them in the ticket cache. */
@@ -135,7 +179,7 @@ main(void)
     struct webauth_context *ctx;
     struct webauth_krb5 *kc;
     struct kerberos_config *config;
-    char *server, *cp, *prealm, *cache, *tmpdir;
+    char *server, *cp, *prealm, *cache, *tmpdir, *password;
     void *sa, *tgt, *ticket, *tmp;
     size_t salen, tgtlen, ticketlen;
     time_t expiration;
@@ -146,7 +190,7 @@ main(void)
     /* Read the configuration information. */
     config = kerberos_setup(TAP_KRB_NEEDS_BOTH);
     
-    plan(48);
+    plan(53);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -287,16 +331,20 @@ main(void)
 
     /* Test getting a ticket with addresses and then exporting it. */
     cache = kinit_with_addresses(config);
-    s = webauth_krb5_new(ctx, &kc);
-    CHECK(ctx, s, "Creating a new context");
-    s = webauth_krb5_init_via_cache(ctx, kc, cache);
-    CHECK(ctx, s, "Initializing from a cache of address-locked tickets");
-    tgt = NULL;
-    s = webauth_krb5_export_cred(ctx, kc, NULL, &tgt, &tgtlen, NULL);
-    CHECK(ctx, s, "Exporting a TGT");
-    ok(tgt != NULL, "...and the TGT is not NULL");
-    free(cache);
-    webauth_krb5_free(ctx, kc);
+    if (cache == NULL)
+        skip_block(4, "Cannot get tickets with a specific address");
+    else {
+        s = webauth_krb5_new(ctx, &kc);
+        CHECK(ctx, s, "Creating a new context");
+        s = webauth_krb5_init_via_cache(ctx, kc, cache);
+        CHECK(ctx, s, "Initializing from a cache of address-locked tickets");
+        tgt = NULL;
+        s = webauth_krb5_export_cred(ctx, kc, NULL, &tgt, &tgtlen, NULL);
+        CHECK(ctx, s, "Exporting a TGT");
+        ok(tgt != NULL, "...and the TGT is not NULL");
+        free(cache);
+        webauth_krb5_free(ctx, kc);
+    }
 
     /* Test specifying an explicit cache file and getting it back. */
     s = webauth_krb5_new(ctx, &kc);
@@ -310,6 +358,30 @@ main(void)
     is_string(cache, ccache, "...and the name is correct");
     webauth_krb5_free(ctx, kc);
     ok(access(cache, F_OK) < 0, "...and the cache is destroyed on free");
+
+    /*
+     * Test password change.
+     *
+     * Unfortunately, the Kerberos password change protocol does not work
+     * properly through NAT, so these password changes may fail with
+     * "Incorrect net address" errors.  Detect that case and skip the tests.
+     */
+    s = webauth_krb5_new(ctx, &kc);
+    CHECK(ctx, s, "Creating a new context");
+    s = webauth_krb5_init_via_password(ctx, kc, config->userprinc,
+                                       config->password, "kadmin/changepw",
+                                       NULL, NULL, NULL, NULL);
+    CHECK(ctx, s, "kadmin/changepw initialization from password");
+    basprintf(&password, "%s_tmp%lu", config->password,
+              (unsigned long) time(NULL));
+    s = webauth_krb5_change_password(ctx, kc, password);
+    CHECK_CHANGE(ctx, s, "Password change");
+    s = webauth_krb5_init_via_password(ctx, kc, config->userprinc,
+                                       password, "kadmin/changepw",
+                                       NULL, NULL, NULL, NULL);
+    CHECK(ctx, s, "kadmin/changepw initialization from new password");
+    s = webauth_krb5_change_password(ctx, kc, config->password);
+    CHECK_CHANGE(ctx, s, "Change password back");
 
     /* Clean up. */
     unlink(cache);

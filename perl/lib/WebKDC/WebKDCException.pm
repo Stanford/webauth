@@ -37,7 +37,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0600';
 }
 
 # Export the error codes.  This list MUST be kept in sync and follow the same
@@ -336,7 +336,7 @@ wrapper around the verbose_message method.
 
 =head1 AUTHOR
 
-Roland Schemers and Russ Allbery <rra@stanford.edu>
+Roland Schemers and Russ Allbery <eagle@eyrie.org>
 
 =head1 SEE ALSO
 

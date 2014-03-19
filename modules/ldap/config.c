@@ -4,7 +4,7 @@
  * Handle configuration parsing for the module configuration, storing the
  * results in appropriate data structures for use by the rest of the module.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Based on original code by Anton Ushakov
  * Copyright 2003, 2004, 2006, 2008, 2009, 2010, 2011, 2012, 2013
  *     The Board of Trustees of the Leland Stanford Junior University

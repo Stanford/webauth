@@ -1,7 +1,7 @@
 # Automake makefile for WebAuth.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2009, 2010, 2011, 2012, 2013
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2009, 2010, 2011, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -34,6 +34,7 @@ PERL_FILES = perl/Build.PL perl/MANIFEST perl/MANIFEST.SKIP		    \
 	perl/lib/WebKDC/XmlDoc.pm perl/lib/WebKDC/XmlElement.pm		    \
 	perl/lib/WebLogin.pm perl/t/TODO perl/t/cookies/cookies.t	    \
 	perl/t/cookies/factor-token.t perl/t/data/README		    \
+	perl/t/data/cmd-password perl/t/data/conf-password		    \
 	perl/t/data/pages/confirm/device-expiring			    \
 	perl/t/data/pages/confirm/expired-password			    \
 	perl/t/data/pages/confirm/no-pwexpiration			    \
@@ -104,7 +105,7 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	lib/encoding-rules lib/internal.h lib/libwebauth.map		    \
 	lib/libwebauth.pc.in lib/libwebauth.sym perl/MANIFEST		    \
 	perl/MANIFEST.SKIP tests/TESTS tests/config/README		    \
-	tests/data/cmd-webkdc tests/data/creds				    \
+	tests/data/cmd-password tests/data/cmd-webkdc tests/data/creds	    \
 	tests/data/generate-krb5-conf tests/data/id.acl tests/data/keyring  \
 	tests/data/make-krb5-cred tests/data/make-tokens		    \
 	tests/data/perl.conf tests/data/perlcriticrc tests/data/perltidyrc  \
@@ -205,7 +206,8 @@ modules_webkdc_mod_webkdc_la_LDFLAGS = -module -shared -avoid-version \
 modules_webkdc_mod_webkdc_la_LIBADD = lib/libwebauth.la $(APACHE_LIBS)
 
 bin_PROGRAMS = tools/wa_keyring
-tools_wa_keyring_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)
+tools_wa_keyring_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS) $(CRYPTO_CPPFLAGS)
+tools_wa_keyring_LDFLAGS = $(CRYPTO_LDFLAGS)
 tools_wa_keyring_LDADD = lib/libwebauth.la util/libutil.a \
 	portable/libportable.la $(CRYPTO_LIBS)
 dist_man_MANS = tools/wa_keyring.1
@@ -306,11 +308,11 @@ install-exec-local: $(BINDINGS_INSTALL)
 CLEANFILES = lib/libwebauth.pc perl/t/data/keyring perl/t/data/tokens.conf \
 	perl/t/lib/Test/RRA.pm perl/t/lib/Test/RRA/Automake.pm		   \
 	perl/t/lib/Test/RRA/Config.pm
-DISTCLEANFILES = include/webauth/defines.h
-MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in config.h.in~	 \
-	configure docs/protocol.html docs/protocol.txt lib/rules-cache.c \
-	lib/rules-keyring.c lib/rules-krb5.c lib/rules-tokens.c		 \
-	m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4	 \
+DISTCLEANFILES = config.h.in~ include/webauth/defines.h
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in configure	\
+	docs/protocol.html docs/protocol.txt lib/rules-cache.c		\
+	lib/rules-keyring.c lib/rules-krb5.c lib/rules-tokens.c		\
+	m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4	\
 	m4/lt~obsolete.m4 tools/wa_keyring.1
 
 # Clean up the results of running the test suite under gcov.  Also run make
@@ -324,6 +326,7 @@ clean-local:
 
 # Remove the Perl files we copied over if srcdir != builddir.
 distclean-local:
+	rm -rf autom4te.cache
 	set -e; if [ x"$(builddir)" != x"$(srcdir)" ] ; then	\
 	    for f in $(PERL_FILES) ; do				\
 		rm -f "$(builddir)/$$f" ;			\
@@ -352,18 +355,19 @@ warnings:
 	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
-check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/errors-t \
-	tests/lib/factors-t tests/lib/hex-t tests/lib/interval-t	  \
-	tests/lib/keyring-t tests/lib/keys-t tests/lib/krb5-t		  \
-	tests/lib/krb5-cred-t tests/lib/krb5-tgt-t tests/lib/userinfo-t	  \
-	tests/lib/token-crypto-t tests/lib/token-decode-t		  \
-	tests/lib/token-encode-t tests/lib/token-merge-t		  \
-	tests/lib/was-cache-t tests/lib/webkdc-krb-t			  \
-	tests/lib/webkdc-login-t tests/lib/webkdc-mf-t			  \
-	tests/portable/asprintf-t tests/portable/mkstemp-t		  \
-	tests/portable/setenv-t tests/portable/snprintf-t		  \
-	tests/portable/strlcat-t tests/portable/strlcpy-t		  \
-	tests/portable/strndup-t tests/util/messages-t tests/util/xmalloc
+check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/errors-t  \
+	tests/lib/factors-t tests/lib/hex-t tests/lib/interval-t	   \
+	tests/lib/keyring-t tests/lib/keys-t tests/lib/krb5-t		   \
+	tests/lib/krb5-cred-t tests/lib/krb5-remctl-t tests/lib/krb5-tgt-t \
+	tests/lib/userinfo-t tests/lib/token-crypto-t			   \
+	tests/lib/token-decode-t tests/lib/token-encode-t		   \
+	tests/lib/token-merge-t tests/lib/was-cache-t			   \
+	tests/lib/webkdc-krb-t tests/lib/webkdc-login-t			   \
+	tests/lib/webkdc-mf-t tests/portable/asprintf-t			   \
+	tests/portable/mkstemp-t tests/portable/setenv-t		   \
+	tests/portable/snprintf-t tests/portable/strlcat-t		   \
+	tests/portable/strlcpy-t tests/portable/strndup-t		   \
+	tests/util/messages-t tests/util/xmalloc
 tests_runtests_CPPFLAGS = -DSOURCE='"$(abs_top_srcdir)/tests"' \
 	-DBUILD='"$(abs_top_builddir)/tests"'
 check_LIBRARIES = tests/tap/libtap.a
@@ -406,6 +410,10 @@ tests_lib_krb5_cred_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_krb5_cred_t_LDFLAGS = $(KRB5_LDFLAGS)
 tests_lib_krb5_cred_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
 	util/libutil.a portable/libportable.la $(KRB5_LIBS)
+tests_lib_krb5_remctl_t_CPPFLAGS = $(KRB5_CPPFLAGS) $(AM_CPPFLAGS)
+tests_lib_krb5_remctl_t_LDFLAGS = $(KRB5_LDFLAGS)
+tests_lib_krb5_remctl_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
+	portable/libportable.la $(KRB5_LIBS)
 tests_lib_krb5_tgt_t_CPPFLAGS = $(APRUTIL_CPPFLAGS) $(AM_CPPFLAGS)
 tests_lib_krb5_tgt_t_LDFLAGS = $(APRUTIL_LDFLAGS) $(KRB5_LDFLAGS)
 tests_lib_krb5_tgt_t_LDADD = tests/tap/libtap.a lib/libwebauth.la \
@@ -480,7 +488,7 @@ check-local: $(check_PROGRAMS) $(srcdir)/tests/TESTS $(BINDINGS_CHECK)
 	@set -e; if [ -f perl/Build ] ; then				\
 	    echo '' ;							\
 	    cd perl && LD_LIBRARY_PATH='$(abs_top_builddir)/lib/.libs'	\
-		./Build test ;						\
+		REMCTLD='$(PATH_REMCTLD)' ./Build test ;		\
 	fi
 
 # Used by maintainers to run the main test suite under valgrind.  Suppress

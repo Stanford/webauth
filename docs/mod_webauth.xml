@@ -5,9 +5,10 @@
 <modulesynopsis metafile="mod_webauth.xml.meta">
   <name>mod_webauth</name>
   <description>Support for the WebAuth protocol</description>
-  <status>Contributed</status>
+  <status>External</status>
   <sourcefile>mod_webauth.c</sourcefile>
   <identifier>webauth_module</identifier>
+  <compatibility>Apache 2.0 and higher</compatibility>
 
   <summary>
     <p>
@@ -21,7 +22,7 @@
     </p>
   </summary>
 
-  <section>
+  <section id="config">
     <title>Minimal Config File</title>
 
     <p>
@@ -51,7 +52,7 @@ WebAuthWebKdcPrincipal service/webkdc
     </p>
   </section>
 
-  <section>
+  <section id="basics">
     <title>Using WebAuth Authentication</title>
 
     <p>
@@ -81,8 +82,8 @@ WebAuthWebKdcPrincipal service/webkdc
     </p>
   </section>
 
-  <section>
-    <title><a name="sectionenv">Environment Variables</a></title>
+  <section id="environment">
+    <title>Environment Variables</title>
 
     <p>
       This module provides some information as additional environment
@@ -229,13 +230,13 @@ WEBAUTH_USER=schemers
     </p>
   </section>
 
-  <section>
-    <title><a name="factors">Authentication Factors</a></title>
+  <section id="factors">
+    <title>Authentication Factors</title>
 
     <p>
       Below are the authentication factors that can be required via
       WebAuth directives or queried from the <a
-      href="#sectionenv">environmental variables</a>
+      href="#environment">environmental variables</a>
       WEBAUTH_FACTORS_INITIAL and WEBAUTH_FACTORS_SESSION.
     </p>
 
@@ -325,7 +326,7 @@ WEBAUTH_USER=schemers
     </table>
   </section>
 
-  <section>
+  <section id="proxy">
     <title>Using WebAuth with Proxy Servers</title>
 
     <p>
@@ -405,7 +406,7 @@ WEBAUTH_USER=schemers
     </note>
   </section>
 
-  <section>
+  <section id="perl">
     <title>Perl Integration</title>
 
     <p>
@@ -442,12 +443,12 @@ print "The authenticated user is $REMOTE_USER\n";
 
     <p>
       Any of the environment variables described in the
-      <a href="#sectionenv">environment variables</a> section may be
+      <a href="#environment">environment variables</a> section may be
       accessed this way.
     </p>
   </section>
 
-  <section>
+  <section id="php">
     <title>PHP 4.x and 5.x Integration</title>
 
     <p>
@@ -495,12 +496,12 @@ print "The authenticated user is $WEBAUTH_USER\n";
     </p>
     <p>
       Any of the environment variables described in the
-      <a href="#sectionenv">environment variables</a> section may be
+      <a href="#enivronment">environment variables</a> section may be
       accessed this way.
     </p>
   </section>
 
-  <section>
+  <section id="java">
     <title>Java/Tomcat/mod_jk Integration</title>
 
     <p>
@@ -631,7 +632,7 @@ WEBAUTH_USER is set to:
     </p>
   </section>
 
-  <section>
+  <section id="credentials">
     <title>Requesting Credentials</title>
 
     <p>
@@ -712,7 +713,7 @@ WEBAUTH_USER is set to:
     </note>
   </section>
 
-  <section>
+  <section id="debugging">
     <title>Debugging mod_webauth</title>
 
     <p>
@@ -746,7 +747,7 @@ WebAuthDebug on
     </example>
   </section>
 
-  <section>
+  <section id="loadbalance">
     <title>Setting up load-balanced WebAuth servers</title>
 
     <p>
@@ -879,12 +880,13 @@ done
     </example>
   </section>
 
-  <section>
+  <section id="license">
     <title>Manual License</title>
 
     <p>
-      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012, 2013
-      The Board of Trustees of the Leland Stanford Junior University
+      Copyright 2002, 2003, 2004, 2005, 2006, 2009, 2010, 2011, 2012,
+      2013, 2014 The Board of Trustees of the Leland Stanford Junior
+      University
     </p>
     <p>
       Copying and distribution of this file, with or without modification,
@@ -1056,6 +1058,88 @@ WebAuthAuthType StanfordAuth
       <example>
         <title>Example</title>
 WebAuthCredCacheDir conf/webauth/credcache
+      </example>
+    </usage>
+  </directivesynopsis>
+
+
+  <directivesynopsis>
+    <name>WebAuthCookiePath</name>
+    <description>
+      Path scope of cookies set by the module
+    </description>
+    <syntax>WebAuthCookiePath <em>scope</em></syntax>
+    <default>/</default>
+    <contextlist>
+      <context>directory</context>
+      <context>.htaccess</context>
+    </contextlist>
+
+    <usage>
+      <p>
+        Normally, all WebAuth cookies use a path of "/" and will be sent
+        by the browser for all requests to that server or virtual host.
+        This setting can be used to restrict the scope of cookies (which
+        include app, proxy, and cred cookies) to a particular URL path
+        prefix.  This may be useful if different sections of a virtual
+        host must be handled differently by user information service
+        policy and therefore must use separate credential sets.  It allows
+        different portions of the same virtual host to be treated as
+        separate destination "sites" from the perspective of single
+        sign-on and browser authentication credential management.
+      </p>
+      <p>
+        The <em>scope</em> argument should be the URL or a prefix of the
+        URL by which the resource affected by this directive is accessed.
+        The module has no way of checking this, so use care in setting the
+        scope.  An incorrect scope may result in cookies being set but not
+        returned by the browser, which can cause a redirect loop between
+        the WebAuth-protected site and the WebLogin service.
+      </p>
+      <p>
+        The <em>scope</em> argument follows the normal rules for
+        path-based scope for cookies using the "path=" cookie parameter as
+        described in <a href="http://tools.ietf.org/search/rfc6265">RFC
+        6265</a>.
+      </p>
+
+      <note>
+        <title>Warning</title>
+        <p>
+          Currently, the mod_webauth module does not deal properly with
+          requests containing multiple cookies of the same name.  The
+          first cookie will be used and the rest ignored, which results in
+          undefined behavior since the order of cookies is not
+          deterministic.  Therefore, if the
+          <directive>WebAuthCookiePath</directive> directive is used
+          within a virtual host, all WebAuth-protected URLs in that
+          virtual host should use this directive and all protected URLs
+          should be within one and only one path scope.  In other words,
+          ensure that the browser will know that only one set of cookies
+          could apply to any given URL so that it will never send more than
+          one cookie with the same name.
+        </p>
+        <p>
+          This restriction will hopefully be lifted in future versions of
+          WebAuth.
+        </p>
+      </note>
+
+      <example>
+        <title>Example</title>
+# In the following example, no other URLs in this virtual host should be
+# protected by WebAuth to avoid creating potentially conflicting cookies
+# with a path scope of /.
+&lt;Location "/content"&gt;
+  AuthType WebAuth
+  Require vald-user
+  WebAuthCookiePath /content
+&lt;/Location&gt;
+&lt;Location "/manage"&gt;
+  AuthType WebAuth
+  Require user admin1 admin2
+  WebAuthCookiePath /manage
+&lt;/Location&gt;
       </example>
     </usage>
   </directivesynopsis>
@@ -1430,7 +1514,7 @@ WebAuthLastUseUpdateInterval 10m
 
   <directivesynopsis>
     <name>WebAuthKeyring</name>
-    <description>Name of the file containing the webauth keyring
+    <description>Name of the file containing the WebAuth keyring
     </description>
     <syntax>WebAuthKeyring <em>path</em></syntax>
     <default>(none)</default>
@@ -1441,12 +1525,24 @@ WebAuthLastUseUpdateInterval 10m
 
     <usage>
       <p>
-        This is the name of the file containing the webauth keyring, which
-        is a file that contains the server's private AES key(s).
+        This is the name of the file containing the WebAuth keyring, which
+        is a file that contains the server's private AES key(s).  It must
+        be readable by the Apache user.
       </p>
       <p>
-        The keyring file gets read once per child and cached for the
-        duration of a child.
+        The keyring file is read when the first request for a virtual host
+        is received.  Each child maintains an in-memory cached keyring for
+        each virtual host.  These keyrings are only reloaded from disk
+        when Apache refreshes its configuration.  If the keyring is
+        changed by an external process (<code>wa_keyring</code>, for
+        instance), Apache must be told to reload configuration files in
+        order to pick up the change.
+      </p>
+      <p>
+        When using the ITK Apache MPM, there should be a separate keyring
+        for each unique virtual host user that will be doing WebAuth.  This
+        maintains proper privilege separation by assigning each user a
+        separate keyring.
       </p>
       <p>
         If the path is not absolute, then it will be treated as being
@@ -1479,10 +1575,26 @@ WebAuthKeyRing conf/webauth/keyring
     <usage>
       <p>
         This directive controls whether or not we auto-update the keyring
-        file.  This includes creating it if it doesn't exist, and
-        generating a new key before the old key expires, and periodically
-        garbage collecting old keys.  Note that auto updating only occurs
-        on server startup and restarts.
+        file.  This includes creating it if it doesn't exist, generating a
+        new key before the old key expires, and periodically
+        garbage-collecting old keys.  Updating only occurs on server
+        startup and restarts.
+      </p>
+
+      <p>
+        If auto-update is enabled, Apache must have write access to the
+        directory containing the keyring, since keyrings are updated by
+        writing out the new file to a separate name and then atomically
+        replacing the file.
+      </p>
+
+      <p>
+        Ownership (user and group) of the existing keyring file will be
+        preserved if possible without overwriting the existing file.
+        Permissions will also be preserved, with the exception that
+        permissions will not be copied to the new file if the old file was
+        group-readable or group-writable and setting the group ownership
+        failed.
       </p>
 
       <note>
@@ -1490,7 +1602,7 @@ WebAuthKeyRing conf/webauth/keyring
         <p>
           This directive should be turned off if multiple servers are
           sharing the same keyring file so the keyring file can be
-          manually updated.  That too will eventually be automated.
+          manually updated.
         </p>
       </note>
 

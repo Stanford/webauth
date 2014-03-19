@@ -44,7 +44,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0600';
 }
 
 # Map protocol error codes to the error codes that we're going to use internal
@@ -303,7 +303,7 @@ sub request_token_request {
 
     # Parse the response.  For some reason, XML::Parser exceptions tend to
     # start with a newline.
-    $root = eval { WebKDC::XmlElement->new ($http_res->content) };
+    $root = eval { WebKDC::XmlElement->new ($content) };
     if ($@) {
         my $error = $@;
         $error =~ s{ \A \s+ }{}xms;
@@ -554,7 +554,7 @@ and there was no child of the given name, instead just return undef.
 
 =head1 AUTHOR
 
-Roland Schemers and Russ Allbery <rra@stanford.edu>.
+Roland Schemers and Russ Allbery <eagle@eyrie.org>.
 
 =head1 SEE ALSO
 

@@ -5,7 +5,7 @@
  * various ways, such as parsing and combining them and determining whether
  * one is a subset of another.  Those utility functions are collected here.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

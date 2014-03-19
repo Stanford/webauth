@@ -5,9 +5,10 @@
 <modulesynopsis metafile="mod_webkdc.xml.meta">
   <name>mod_webkdc</name>
   <description>WebAuth WebKDC module</description>
-  <status>Contributed</status>
+  <status>External</status>
   <sourcefile>mod_webkdc.c</sourcefile>
   <identifier>webkdc_module</identifier>
+  <compatibility>Apache 2.0 and higher</compatibility>
 
   <summary>
     <p>
@@ -29,7 +30,7 @@
     </p>
   </summary>
 
-  <section>
+  <section id="setup">
     <title>Setting up the WebKDC</title>
     <p>
       The minimal configuration for the WebKDC requires two things: a
@@ -66,7 +67,7 @@
     </p>
   </section>
 
-  <section>
+  <section id="config">
     <title>Minimal Config File</title>
 
     <p>
@@ -94,7 +95,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
     </example>
   </section>
 
-  <section>
+  <section id="logging">
     <title>WebKDC Logging</title>
 
     <p>
@@ -359,7 +360,7 @@ WebKdcTokenAcl conf/webkdc/token.acl
     </dl>
   </section>
 
-  <section>
+  <section id="multiple">
     <title>Setting up Multiple WebKDCs</title>
 
     <p>
@@ -516,12 +517,12 @@ done
     </p>
   </section>
 
-  <section>
+  <section id="license">
     <title>Manual License</title>
 
     <p>
-      Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012 The Board
-      of Trustees of the Leland Stanford Junior University
+      Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2014 The
+      Board of Trustees of the Leland Stanford Junior University
     </p>
     <p>
       Copying and distribution of this file, with or without modification,
@@ -701,11 +702,23 @@ WebKdcKerberosFactors p
     <usage>
       <p>
         This is the name of the file containing the WebKDC's keyring,
-        which stores the server's private AES keys.  The keyring file is
-        read on startup and cached for the duration of an Apache child
-        process, so if it is changed by an external process
-        (<code>wa_keyring</code>, for instance), Apache must be told to
-        reload configuration files in order to pick up the change.
+        which stores the server's private AES keys.  It must be readable
+        by the Apache user.
+      </p>
+      <p>
+        The keyring file is read when the first request for a virtual host
+        is received.  Each child maintains an in-memory cached keyring for
+        each virtual host.  These keyrings are only reloaded from disk
+        when Apache refreshes its configuration.  If the keyring is
+        changed by an external process (<code>wa_keyring</code>, for
+        instance), Apache must be told to reload configuration files in
+        order to pick up the change.
+      </p>
+      <p>
+        When using the ITK Apache MPM, there should be a separate keyring
+        for each unique virtual host user that will be serving as a
+        WebKDC.  This maintains proper privilege separation by assigning
+        each user a separate keyring.
       </p>
       <p>
         If the path is not absolute, it will considered relative to
@@ -739,9 +752,25 @@ WebKdcKeyring conf/webkdc/keyring
       <p>
         This directive controls whether or not we auto-update the keyring
         file.  This includes creating it if it doesn't exist, generating a
-        new key before the old key expires, and periodically garbage
-        collecting old keys.  Note that auto updating only occurs on
-        server startup and restarts.
+        new key before the old key expires, and periodically
+        garbage-collecting old keys.  Updating only occurs on server
+        startup and restarts.
+      </p>
+
+      <p>
+        If auto-update is enabled, Apache must have write access to the
+        directory containing the keyring, since keyrings are updated by
+        writing out the new file to a separate name and then atomically
+        replacing the file.
+      </p>
+
+      <p>
+        Ownership (user and group) of the existing keyring file will be
+        preserved if possible without overwriting the existing file.
+        Permissions will also be preserved, with the exception that
+        permissions will not be copied to the new file if the old file was
+        group-readable or group-writable and setting the group ownership
+        failed.
       </p>
 
       <note>

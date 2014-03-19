@@ -2,7 +2,7 @@
  * General WebAuth utility functions.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2009, 2010
+ * Copyright 2002, 2009, 2010, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -35,7 +35,7 @@ static char hex[] = "0123456789abcdef";
  * encoded in hex.
  */
 size_t
-webauth_hex_encoded_length(size_t length)
+wai_hex_encoded_length(size_t length)
 {
     return length * 2;
 }
@@ -46,7 +46,7 @@ webauth_hex_encoded_length(size_t length)
  * the decoded data.
  */
 int
-webauth_hex_decoded_length(size_t length, size_t *out_length)
+wai_hex_decoded_length(size_t length, size_t *out_length)
 {
     if (length % 2) {
         *out_length = 0;
@@ -65,8 +65,8 @@ webauth_hex_decoded_length(size_t length, size_t *out_length)
  * WA_ERR code.
  */
 int
-webauth_hex_encode(const char *input, size_t input_len, char *output,
-                   size_t *output_len, size_t max_output_len)
+wai_hex_encode(const char *input, size_t input_len, char *output,
+               size_t *output_len, size_t max_output_len)
 {
     size_t out_len;
     unsigned char *s;
@@ -97,8 +97,8 @@ webauth_hex_encode(const char *input, size_t input_len, char *output,
  * max_output_len is the size of the buffer.  Returns a WA_ERR code.
  */
 int
-webauth_hex_decode(char *input, size_t input_len, char *output,
-                   size_t *output_len, size_t max_output_len)
+wai_hex_decode(char *input, size_t input_len, char *output,
+               size_t *output_len, size_t max_output_len)
 {
     unsigned char *s = (unsigned char *) input;
     unsigned char *d = (unsigned char *) output;

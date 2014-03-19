@@ -1,7 +1,7 @@
 /*
  * Test suite for factor code manipulation.
  *
- * Written by Russ Allbery <rra@stanford.edu>
+ * Written by Russ Allbery <eagle@eyrie.org>
  * Copyright 2011, 2013
  *     The Board of Trustees of the Leland Stanford Junior University
  *

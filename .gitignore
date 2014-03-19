@@ -1,5 +1,6 @@
 /Makefile.in
 /aclocal.m4
+/autom4te.cache/
 /build-aux/
 /config-mod.h
 /config.h
@@ -56,6 +57,7 @@
 /tests/lib/keys-t
 /tests/lib/krb5-t
 /tests/lib/krb5-cred-t
+/tests/lib/krb5-remctl-t
 /tests/lib/krb5-tgt-t
 /tests/lib/random-t
 /tests/lib/token-crypto-t

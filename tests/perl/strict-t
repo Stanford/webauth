@@ -11,8 +11,8 @@
 # The canonical version of this file is maintained in the rra-c-util package,
 # which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 #
-# Written by Russ Allbery <rra@stanford.edu>
-# Copyright 2012, 2013
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,9 +42,16 @@ use lib "$ENV{SOURCE}/tap/perl";
 use Test::More;
 use Test::RRA qw(use_prereq);
 use Test::RRA::Automake qw(automake_setup perl_dirs);
+use Test::RRA::Config qw(@STRICT_IGNORE @STRICT_PREREQ);
 
 # Load prerequisite modules.
 use_prereq('Test::Strict');
+
+# Check whether all prerequisites are available, and skip the test if any of
+# them are not.
+for my $module (@STRICT_PREREQ) {
+    use_prereq($module);
+}
 
 # Set up Automake testing.  This must be done after loading Test::Strict,
 # since it wants to use FindBin to locate this script.
@@ -52,7 +59,7 @@ automake_setup();
 
 # Run the actual tests.  We also want to check warnings.
 $Test::Strict::TEST_WARNINGS = 1;
-all_perl_files_ok(perl_dirs());
+all_perl_files_ok(perl_dirs({ skip => [@STRICT_IGNORE] }));
 
 # Suppress "used only once" warnings.
 END { $Test::Strict::TEST_WARNINGS = 0 }

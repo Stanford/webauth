@@ -3,7 +3,7 @@
 # Test the password change functions in WebLogin module.
 #
 # Written by Jon Robertson <jonrober@stanford.edu>
-# Copyright 2010, 2013
+# Copyright 2010, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -12,7 +12,7 @@ use strict;
 use warnings;
 
 use lib ('t/lib', 'lib', 'blib/arch');
-use Util qw (get_userinfo create_keyring);
+use Util qw(contents get_userinfo create_keyring remctld_spawn remctld_stop);
 
 use CGI;
 use Template;
@@ -40,12 +40,13 @@ my $kerberos_config = 0;
 # Get the username we need to change, and its current password.
 my $fname_passwd = 't/data/test.password';
 my ($username, $password) = get_userinfo ($fname_passwd) if -f $fname_passwd;
-if ($username && $password) {
+if ($username && $password && -f 't/data/test.principal'
+      && -f 't/data/test.keytab') {
     $kerberos_config = 1;
 }
 
 if ($kerberos_config) {
-    plan tests => 15;
+    plan tests => 19;
 } else {
     plan skip_all => 'Kerberos tests not configured';
 }
@@ -75,38 +76,111 @@ $weblogin->query->param ('password', $password);
 $weblogin->query->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
 my ($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
-is ($error, undef, '... with no error');
-ok (verify_password ($username, $newpassword), '... and password was changed');
 
-# And undo it.
-$weblogin->query->param ('password', $newpassword);
-$weblogin->query->param ('new_passwd1', $password);
-($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
-is ($error, undef, '... with no error');
-ok (verify_password ($username, $password), '... and password was changed');
+# If this test is being run behind NAT, the Kerberos password change protocol
+# may fail.  MIT returns "Incorrect net address" and Heimdal returns "Unable
+# to reach any changepw server".  Detect those errors and skip the remaining
+# tests that require talking to the server.
+#
+# It looks like the password is often changed despite the error reported to
+# the client, so if this looks like what happened, also change the password
+# back just in case.
+SKIP: {
+    if ($error &&
+        ($error =~ /Incorrect net address/
+         || $error =~ /Unable to reach any changepw server/)) {
+        $weblogin->query->param ('password', $newpassword);
+        $weblogin->query->param ('new_passwd1', $password);
+        ($status, $error) = $weblogin->change_user_password;
+        skip 'Password change fails (behind NAT?)', 13;
+    }
 
-# Test going to change_user_password with password but not CPT (should work)
+    is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
+    is ($error, undef, '... with no error');
+    ok (verify_password ($username, $newpassword),
+        '... and password was changed');
+
+    # And undo it.
+    $weblogin->query->param ('password', $newpassword);
+    $weblogin->query->param ('new_passwd1', $password);
+    ($status, $error) = $weblogin->change_user_password;
+    is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
+    is ($error, undef, '... with no error');
+    ok (verify_password ($username, $password),
+        '... and password was changed');
+
+    # Test going to change_user_password with password but not CPT (should
+    # work)
+    $weblogin->param ('CPT', '');
+    $query = new CGI;
+    $weblogin->query ($query);
+    $weblogin->query->param ('username', $username);
+    $weblogin->query->param ('password', $password);
+    $weblogin->query->param ('new_passwd1', $newpassword);
+    ($status, $error) = $weblogin->change_user_password;
+    is ($status, WebKDC::WK_SUCCESS,
+        'changing the password with old password but no CPT works');
+    is ($error, undef, '... with no error');
+    ok (verify_password ($username, $newpassword),
+        '... and password was changed');
+
+    # And undo it.
+    $weblogin->query->param ('password', $newpassword);
+    $weblogin->query->param ('new_passwd1', $password);
+    ($status, $error) = $weblogin->change_user_password;
+    is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
+    is ($error, undef, '... with no error');
+    ok (verify_password ($username, $password),
+        '... and password was changed');
+
+    # Test trying a simple password 'abc' (should not work)
+    # FIXME: Test exact error code, not isn't.  Allow success or failure if
+    # it's not strong enough password (and if success, change the password
+    # back).
+    $query = new CGI;
+    $weblogin->query ($query);
+    $weblogin->query->param ('username', $username);
+    $weblogin->query->param ('password', $password);
+    $weblogin->query->param ('new_passwd1', 'cat');
+    $weblogin->add_changepw_token;
+    ($status, $error) = $weblogin->change_user_password;
+    isnt ($status, WebKDC::WK_SUCCESS,
+          'changing the password to dictionary word fails');
+}
+
+# Start a remctl server so that we can check the remctl-based password change.
+my $principal = contents ('t/data/test.principal');
+remctld_spawn ($principal, 't/data/test.keytab', 't/data/conf-password');
+
+# Set the configuration to use the local remctl we just spawned.
+$WebKDC::Config::PASSWORD_CHANGE_SERVER     = 'localhost';
+$WebKDC::Config::PASSWORD_CHANGE_PORT       = 14373;
+$WebKDC::Config::PASSWORD_CHANGE_PRINC      = $principal;
+$WebKDC::Config::PASSWORD_CHANGE_COMMAND    = 'kadmin';
+$WebKDC::Config::PASSWORD_CHANGE_SUBCOMMAND = 'password';
+
+# Do the password change.
 $weblogin->param ('CPT', '');
-$query = new CGI;
-$weblogin->query ($query);
 $weblogin->query->param ('username', $username);
 $weblogin->query->param ('password', $password);
 $weblogin->query->param ('new_passwd1', $newpassword);
+$weblogin->add_changepw_token;
 ($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS,
-    'changing the password with old password but no CPT works');
+is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
 is ($error, undef, '... with no error');
-ok (verify_password ($username, $newpassword), '... and password was changed');
 
-# And undo it.
-$weblogin->query->param ('password', $newpassword);
-$weblogin->query->param ('new_passwd1', $password);
-($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, '... as does changing it back');
-is ($error, undef, '... with no error');
-ok (verify_password ($username, $password), '... and password was changed');
+# Stop remctld and make sure the correct information was written.
+remctld_stop;
+my ($id, $pass);
+if (open (DATA, '<', 'password-input')) {
+    $id = <DATA>;
+    chomp $id;
+    $pass = <DATA>;
+    close DATA;
+}
+unlink 'password-input';
+is ($id, $username, '... and saw correct user principal');
+is ($pass, $newpassword, '... and password');
 
 # Test going to change_user_password no CPT or password (should not work).
 $query = new CGI;
@@ -117,19 +191,6 @@ $weblogin->param ('CPT', '');
 ($status, $error) = $weblogin->change_user_password;
 isnt ($status, WebKDC::WK_SUCCESS,
       'changing the password without password or CPT fails');
-
-# Test trying a simple password 'abc' (should not work)
-# FIXME: Test exact error code, not isn't.  Allow success or failure if it's
-# not strong enough password (and if success, change the password back).
-$query = new CGI;
-$weblogin->query ($query);
-$weblogin->query->param ('username', $username);
-$weblogin->query->param ('password', $password);
-$weblogin->query->param ('new_passwd1', 'cat');
-$weblogin->add_changepw_token;
-($status, $error) = $weblogin->change_user_password;
-isnt ($status, WebKDC::WK_SUCCESS,
-    'changing the password to dictionary word fails');
 
 # Test creating CPT, then sending different username to change_user_password
 # (should not work)
@@ -144,4 +205,4 @@ $weblogin->query->param ('username', $username.'_doe');
 isnt ($status, WebKDC::WK_SUCCESS, 'changing the password of a user fails');
 
 # Clean up the keyring.
-unlink ($WebKDC::Config::KEYRING_PATH);
+unlink ($WebKDC::Config::KEYRING_PATH, "$WebKDC::Config::KEYRING_PATH.lock");

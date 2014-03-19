@@ -34,7 +34,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0600';
 }
 
 # An internaml method to convert the tree returned by XML::Parse into a tree
@@ -358,7 +358,7 @@ Convert this XML element (and, recursively, all of its children) to XML.
 
 =head1 AUTHOR
 
-Roland Schemers and Russ Allbery <rra@stanford.edu>
+Roland Schemers and Russ Allbery <eagle@eyrie.org>
 
 =head1 SEE ALSO
 

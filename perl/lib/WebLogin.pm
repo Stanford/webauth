@@ -1,10 +1,10 @@
 # WebLogin interactions with the browser for WebAuth
 #
 # Written by Roland Schemers <schemers@stanford.edu>
-# Extensive updates by Russ Allbery <rra@stanford.edu>
+# Extensive updates by Russ Allbery <eagle@eyrie.org>
 # Rewritten for CGI::Application by Jon Robertson <jonrober@stanford.edu>
 # Copyright 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-#     2013 The Board of Trustees of the Leland Stanford Junior University
+#     2013, 2014 The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -68,7 +68,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0505';
+    $VERSION = '4.0600';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -374,8 +374,7 @@ sub print_headers {
         my $cookie;
 
         # Expire the cookies with no values.
-        if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft')
-              && $value eq '') {
+        if (($name =~ /^webauth_wpt/ || $name eq 'webauth_wft') && !$value) {
             $cookie = $self->expire_cookie ($name, $secure);
 
         # If told not to remember the login, expire the SSO cookies on display
@@ -440,15 +439,19 @@ sub print_headers {
         push (@ca, $cookie);
     }
 
-    # Now, print out the page header with the appropriate cookies.
+    # Now, print out the page header with the appropriate cookies and with all
+    # the HTTP headers required to tell all browser to, no, really, don't
+    # cache.
     my @params;
     if ($return_url) {
         push (@params, -location => $return_url,
               -status => $use_303 ? '303 See Also' : '302 Moved');
     }
     push (@params, -cookie => [@ca]) if @ca;
-    $self->header_props (-type => 'text/html', -Pragma => 'no-cache',
-                         -Cache_Control => 'no-cache, no-store', @params);
+    my $cache_control = 'private, no-cache, no-store, max-age=0';
+    $self->header_props (-type => 'text/html', -expires => '-1d',
+                         -Pragma => 'no-cache', -Vary => '*',
+                         -Cache_Control => $cache_control, @params);
     return '';
 }
 
@@ -668,7 +671,6 @@ sub print_error_page {
     # Print out the error page.
     my %args = (cookies => $resp->cookies);
     $self->print_headers (\%args);
-    $self->header_add (-expires => 'now');
     my $content = $self->tt_process ($pagename, $params);
     if ($content) {
         return $content;
@@ -1241,10 +1243,14 @@ sub add_changepw_token {
     print STDERR "adding a kadmin/changepw cred token for $username\n"
         if $self->param ('debug');
 
-    # Create a ticket for kadmin/changepw with the user name and password.
-    my ($ticket, $expires);
-    my $changepw = 'kadmin/changepw';
-    if ($WebKDC::Config::DEFAULT_REALM) {
+    # Create a ticket for the password change principal with the username and
+    # password.
+    my ($ticket, $expires, $changepw);
+    if ($WebKDC::Config::PASSWORD_CHANGE_SERVER) {
+        $changepw = $WebKDC::Config::PASSWORD_CHANGE_PRINC;
+    }
+    $changepw ||= 'kadmin/changepw';
+    if ($WebKDC::Config::DEFAULT_REALM && $changepw !~ /\@/) {
         $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
     }
     eval {
@@ -1253,8 +1259,8 @@ sub add_changepw_token {
         ($ticket, $expires) = $context->export_cred ($changepw);
     };
     if ($@) {
-        print STDERR "failed to create kadmin/changepw credential for"
-            . " $username: $@\n" if $self->param ('logging');
+        print STDERR "failed to create $changepw credential for $username:"
+            . " $@\n" if $self->param ('logging');
         return;
     }
 
@@ -1325,7 +1331,7 @@ sub change_user_password {
             print STDERR $e->message(), "\n" if $self->param ('logging');
             return ($e->status(), $msg);
         } elsif (ref $e and $e->isa('WebAuth::Exception')) {
-            print STDERR "WebAuth exception $e->{detail} $e->{status}\n"
+            print STDERR "WebAuth exception while changing password: $e\n"
                 if $self->param ('logging');
             if ($e->{status} == WA_ERR_TOKEN_EXPIRED) {
                 $msg = "failed to change password for $username:"
@@ -1352,10 +1358,29 @@ sub change_user_password {
     }
 
     # Change the password and return any error status plus exception object.
+    my $changepw;
+    if ($WebKDC::Config::PASSWORD_CHANGE_SERVER) {
+        $changepw = $WebKDC::Config::PASSWORD_CHANGE_PRINC;
+    }
+    $changepw ||= 'kadmin/changepw';
+    if ($WebKDC::Config::DEFAULT_REALM && $changepw !~ /\@/) {
+        $changepw .= '@' . $WebKDC::Config::DEFAULT_REALM;
+    }
     eval {
         my $context = $wa->krb5_new;
         $context->import_cred ($token->data);
-        $context->change_password ($password);
+        my $args = { protocol => 'kpasswd' };
+        if ($WebKDC::Config::PASSWORD_CHANGE_SERVER) {
+            $args = {
+                protocol   => 'remctl',
+                host       => $WebKDC::Config::PASSWORD_CHANGE_SERVER,
+                port       => $WebKDC::Config::PASSWORD_CHANGE_PORT,
+                identity   => $changepw,
+                command    => $WebKDC::Config::PASSWORD_CHANGE_COMMAND,
+                subcommand => $WebKDC::Config::PASSWORD_CHANGE_SUBCOMMAND,
+            };
+        }
+        $context->change_password ($password, $args);
     };
     my $e = $@;
     if (ref $e and $e->isa('WebKDC::WebKDCException')) {
@@ -1807,15 +1832,16 @@ sub handle_login_error {
         return $self->print_login_page ($status, $req->request_token,
                                         $req->service_token);
 
-    # Multifactor was required and the KDC says the user can give it.  If we
-    # got here because the user already had a proxy token, we may not know
-    # what the username is, so get it from the response.
+    # Multifactor was required and the KDC says the user can give it.  If the
+    # WebKDC knows who the user is, always use the authenticated identity from
+    # the WebKDC, rather than whatever the user typed, since we may have done
+    # Kerberos canonicalization during the authentication.
     } elsif ($status == WK_ERR_MULTIFACTOR_REQUIRED) {
         print STDERR "multifactor required for login\n"
             if $self->param ('debug');
 
         my $req = $self->{request};
-        unless ($q->param ('username')) {
+        if (defined $resp->subject) {
             $q->param ('username', $resp->subject);
         }
         return $self->print_multifactor_page ($req->request_token,
@@ -2172,7 +2198,7 @@ sub multifactor : Runmode {
             return $self->handle_login_error ($status, $error);
         }
     } else {
-        $self->template_params ({err_otp_missing => 1});
+        $self->template_params ({err_multifactor_missing => 1});
     }
 
     if ($q->param ('multifactor_sentauth')) {
@@ -2654,7 +2680,7 @@ This is called from the config screen.
 
 =head1 AUTHORS
 
-Roland Schemers, Russ Allbery <rra@stanford.edu>, and Jon Robertson
+Roland Schemers, Russ Allbery <eagle@eyrie.org>, and Jon Robertson
 <jonrober@stanford.edu>.
 
 =head1 SEE ALSO
