@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.6.0 (unreleased)
+WebAuth 4.6.0 (2014-03-18)
 
     mod_webauth supports a new configuration directive, WebAuthCookiePath,
     which scopes all cookies set by mod_webauth to the given path.  This
