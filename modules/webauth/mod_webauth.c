@@ -213,14 +213,16 @@ static void
 nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
 {
     char *cookie;
+    const char *path = "/";
 
     if (if_set && find_cookie(rc, name) == NULL)
         return;
 
+    if (rc->dconf->cookie_path != NULL)
+        path = rc->dconf->cookie_path;
     cookie = apr_psprintf(rc->r->pool,
                           "%s=; path=%s; expires=%s;%s",
-                          rc->dconf->cookie_path,
-                          name,
+                          name, path,
                           "Thu, 26-Mar-1998 00:00:01 GMT",
                           is_https(rc->r) ? "secure" : "");
     if (rc->sconf->debug)
