@@ -29,22 +29,27 @@ APLOG_USE_MODULE(webauth);
 #endif
 
 
-static int
+/*
+ * Called at any entry point where we may be doing WebAuth operations that
+ * need a keyring.  Do lazy initialization of the in-memory keyring from the
+ * disk file and store it in the virtual host context.  Returns true if the
+ * keyring could be loaded correctly and false otherwise.
+ */
+static bool
 ensure_keyring_loaded(MWA_REQ_CTXT *rc)
 {
-    apr_thread_mutex_lock(rc->sconf->mutex);
+    int s;
 
+    apr_thread_mutex_lock(rc->sconf->mutex);
     if (rc->sconf->ring != NULL) {
         apr_thread_mutex_unlock(rc->sconf->mutex);
-        return 1;
+        return true;
     }
-
-    /* Perform last minute loading of the keyring. */
-    mwa_cache_keyring(rc->r->server, rc->sconf);
-
+    s = mwa_cache_keyring(rc->r->server, rc->sconf);
     apr_thread_mutex_unlock(rc->sconf->mutex);
-    return (rc->sconf->ring != NULL);
+    return (s == WA_ERR_NONE && rc->sconf->ring != NULL);
 }
+
 
 static void
 dont_cache(MWA_REQ_CTXT *rc)
@@ -600,6 +605,7 @@ static int
 handler_hook(request_rec *r)
 {
     struct server_config *sconf;
+    MWA_REQ_CTXT *rc;
     MWA_SERVICE_TOKEN *st;
     apr_int32_t flags;
 
@@ -612,6 +618,16 @@ handler_hook(request_rec *r)
         return DECLINED;
 
     sconf = ap_get_module_config(r->server->module_config, &webauth_module);
+
+    /*
+     * Create a module context and try to load the keyring.  If this fails,
+     * we'll notice and print out diagnostic information later.
+     */
+    rc = apr_pcalloc(r->pool, sizeof(MWA_REQ_CTXT));
+    rc->r = r;
+    rc->dconf = ap_get_module_config(r->per_dir_config, &webauth_module);
+    rc->sconf = sconf;
+    ensure_keyring_loaded(rc);
 
     r->content_type = "text/html";
 
@@ -2012,6 +2028,10 @@ mod_webauth_check_access(request_rec *r)
         return DECLINED;
     }
 
+    /* If we can't load the keyring, return a fatal error. */
+    if (!ensure_keyring_loaded(rc))
+        return HTTP_INTERNAL_SERVER_ERROR;
+
     /* check to see if SSL is required */
     if (rc->sconf->require_ssl && !is_https(r)) {
         if (rc->sconf->ssl_redirect) {
@@ -2088,6 +2108,10 @@ check_user_id_hook(request_rec *r)
           strcmp(at, rc->sconf->auth_type) != 0))) {
         return DECLINED;
     }
+
+    /* If we can't load the keyring, return a fatal error. */
+    if (!ensure_keyring_loaded(rc))
+        return HTTP_INTERNAL_SERVER_ERROR;
 
 #ifndef HTTPD24
     status = mod_webauth_check_access(r);

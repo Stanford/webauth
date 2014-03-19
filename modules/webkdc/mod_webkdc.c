@@ -2,8 +2,8 @@
  * Core Apache WebKDC module code.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013
- *     The Board of Trustees of the Leland Stanford Junior University
+ * Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2010, 2011, 2012, 2013,
+ *     2014 The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
  */
@@ -29,22 +29,28 @@
 APLOG_USE_MODULE(webkdc);
 
 
-static int
+/*
+ * Called at any entry point where we may be doing WebKDC operations that need
+ * a keyring.  Do lazy initialization of the in-memory keyring from the disk
+ * file and store it in the virtual host context.  Returns true if the keyring
+ * could be loaded correctly and false otherwise.
+ */
+static bool
 ensure_keyring_loaded(MWK_REQ_CTXT *rc)
 {
-    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING);
+    int s;
 
+    /* FIXME: Should use a per-virtual-host mutex instead of a global one. */
+    mwk_lock_mutex(rc, MWK_MUTEX_KEYRING);
     if (rc->sconf->ring != NULL) {
         mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING);
-        return 1;
+        return true;
     }
-
-    /* Perform last minute loading of the keyring. */
-    mwk_cache_keyring(rc->r->server, rc->sconf);
-
+    s = mwk_cache_keyring(rc->r->server, rc->sconf);
     mwk_unlock_mutex(rc, MWK_MUTEX_KEYRING);
-    return (rc->sconf->ring != NULL);
+    return (s == WA_ERR_NONE && rc->sconf->ring != NULL);
 }
+
 
 /*
  * if msg has any whitespace or double quotes in it, enclose
@@ -1515,6 +1521,10 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
     *subject_out = "<unknown>";
     *req_subject_out = "<unknown>";
 
+    if (!ensure_keyring_loaded(rc))
+        return set_errorResponse(rc, WA_PEC_SERVER_FAILURE,
+                                 "no keyring", mwk_func, true);
+
     memset(&request, 0, sizeof(request));
     request.client_ip = rc->r->useragent_ip;
 
@@ -2259,7 +2269,7 @@ handler_hook(request_rec *r)
         ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
                      "mod_webkdc: webauth_webkdc_config failed: %s",
                      webauth_error_message(rc.ctx, status));
-        return DECLINED;
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
 
     /* Set up the user information service configuration. */
@@ -2276,9 +2286,13 @@ handler_hook(request_rec *r)
             ap_log_error(APLOG_MARK, APLOG_CRIT, 0, r->server,
                          "mod_webkdc: webauth_user_config failed: %s",
                          webauth_error_message(rc.ctx, status));
-            return DECLINED;
+            return HTTP_INTERNAL_SERVER_ERROR;
         }
     }
+
+    /* Ensure we can load the keyring. */
+    if (!ensure_keyring_loaded(&rc))
+        return HTTP_INTERNAL_SERVER_ERROR;
 
     /* Ensure the client sent POST with the right content type. */
     if (r->method_number != M_POST)
