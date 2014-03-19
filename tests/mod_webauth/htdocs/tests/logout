@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+#
+# Written by Roland Schemers
+# Copyright 2003, 2013, 2014
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use warnings;
+
+use WebAuth::Tests qw(build_page);
+
+print "Content-type: text/html\n\n";
+
+print<<EOS;
+
+<html>
+
+<hr>
+
+Clearing webauth cookie. You should be logged out.
+<br>
+Click <a href="index.html">here</a> to return.
+EOS
+
+print "</html>";
+

@@ -24,6 +24,7 @@ my %settings = (
     test_number   => 14,
     test_desc     => 'test cookie path restrictions',
     extended_desc => \@extended,
+    logout        => '/tests/path/test14logout',
 );
 
 print "Content-type: text/html\n\n";
