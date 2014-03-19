@@ -126,13 +126,13 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
 	$(srcdir)/config.h.in $(srcdir)/config-mod.h.in \
 	$(top_srcdir)/tests/data/conf-webkdc.in \
-	$(top_srcdir)/portable/asprintf.c \
-	$(top_srcdir)/portable/strlcpy.c \
+	$(top_srcdir)/portable/strlcat.c \
 	$(top_srcdir)/portable/snprintf.c \
+	$(top_srcdir)/portable/strlcpy.c \
+	$(top_srcdir)/portable/strndup.c \
+	$(top_srcdir)/portable/asprintf.c \
 	$(top_srcdir)/portable/mkstemp.c \
 	$(top_srcdir)/portable/setenv.c \
-	$(top_srcdir)/portable/strndup.c \
-	$(top_srcdir)/portable/strlcat.c \
 	$(am__dist_weblogin_SCRIPTS_DIST) \
 	$(top_srcdir)/build-aux/depcomp $(dist_man_MANS) \
 	$(am__dist_image_DATA_DIST) $(am__dist_template_DATA_DIST) \
