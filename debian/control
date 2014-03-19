@@ -153,7 +153,7 @@ Description: Development files for WebAuth authentication
 Package: libwebkdc-perl
 Section: perl
 Architecture: all
-Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.5.0),
+Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.6.0),
  libcgi-application-perl, libcgi-application-plugin-autorunmode-perl,
  libcgi-application-plugin-forward-perl,
  libcgi-application-plugin-tt-perl, libcgi-fast-perl,
