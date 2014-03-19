@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
 <?rfc private="WebAuth Documentation"?>
 <?rfc toc="yes" symrefs="yes"?>
-<rfc>
+<rfc category="info" docName="draft-allbery-webauth-00" ipr="trust200902">
   <front>
     <title>WebAuth Technical Specification</title>
     <author initials='R.' surname='Schemers' fullname='Roland Schemers'>
