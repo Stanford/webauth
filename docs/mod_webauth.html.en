@@ -1013,9 +1013,7 @@ WebAuthAuthType StanfordAuth
         </p>
       </div>
 
-      <div class="example"><h3>Example</h3><p><code>
-        
-# In the following example, no other URLs in this virtual host should be
+      <div class="example"><h3>Example</h3><pre># In the following example, no other URLs in this virtual host should be
 # protected by WebAuth to avoid creating potentially conflicting cookies
 # with a path scope of /.
 &lt;Location "/content"&gt;
@@ -1027,8 +1025,7 @@ WebAuthAuthType StanfordAuth
   AuthType WebAuth
   Require user admin1 admin2
   WebAuthCookiePath /manage
-&lt;/Location&gt;
-      </code></p></div>
+&lt;/Location&gt;</pre></div>
     
 </div>
 <div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>

@@ -1127,6 +1127,7 @@ WebAuthCredCacheDir conf/webauth/credcache
 
       <example>
         <title>Example</title>
+<pre>
 # In the following example, no other URLs in this virtual host should be
 # protected by WebAuth to avoid creating potentially conflicting cookies
 # with a path scope of /.
@@ -1140,6 +1141,7 @@ WebAuthCredCacheDir conf/webauth/credcache
   Require user admin1 admin2
   WebAuthCookiePath /manage
 &lt;/Location&gt;
+</pre>
       </example>
     </usage>
   </directivesynopsis>
