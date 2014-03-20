@@ -2,6 +2,14 @@
 
 WebAuth 4.6.0 (2014-03-18)
 
+    WARNING: When upgrading to this release, you will need to change the
+    ownership of the mod_webauth keyring file (named in the WebAuthKeyring
+    Apache directive) to the user and group the Apache child processes run
+    as.  (This is controlled by the User and Group Apache directives and
+    is often something like www-data.)  Previous versions would create
+    this file readable only by root, but, as of this release, it must be
+    readable and writable by the Apache child processes.
+
     mod_webauth supports a new configuration directive, WebAuthCookiePath,
     which scopes all cookies set by mod_webauth to the given path.  This
     allows separate sections of the same virtual host to be treated as
