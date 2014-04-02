@@ -1,5 +1,12 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.6.1 (unreleased)
+
+    In WebLogin, verify that the username form field was sent before
+    attempting to do multifactor operations and return an error if it
+    isn't, avoiding undefined variable warnings and other errors deeper in
+    the WebLogin code.
+
 WebAuth 4.6.0 (2014-03-18)
 
     WARNING: When upgrading to this release, you will need to change the

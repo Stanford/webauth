@@ -2159,6 +2159,12 @@ sub multifactor : Runmode {
     my ($self) = @_;
     my $q = $self->query;
 
+    # The username should always be set here.
+    if (!defined ($q->param ('username'))) {
+        $self->template_params ({err_confirm => 1});
+        return $self->print_error_page;
+    }
+
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.
     my %cart = CGI::Cookie->fetch;
@@ -2217,6 +2223,12 @@ sub multifactor : Runmode {
 sub multifactor_sendauth : Runmode {
     my ($self) = @_;
     my $q = $self->query;
+
+    # The username should always be set here.
+    if (!defined ($q->param ('username'))) {
+        $self->template_params ({err_confirm => 1});
+        return $self->print_error_page;
+    }
 
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.
