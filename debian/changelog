@@ -2,6 +2,7 @@ webauth (4.6.0-3) UNRELEASED; urgency=medium
 
   * Tighten dependency of libwebkdc-perl on libwebauth-perl to ensure that
     the remctl password change API is available.
+  * Refresh debian/copyright with current upstream LICENSE file.
 
  -- Russ Allbery <rra@debian.org>  Wed, 19 Mar 2014 14:08:04 -0700
 

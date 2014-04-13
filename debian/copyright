@@ -1,13 +1,13 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Contact: WebAuth Development Team <webauth-info@lists.stanford.edu>
 Source: http://webauth.stanford.edu/
-Copyright: 2002-2012
+Copyright: 2002-2014
     The Board of Trustees of the Leland Stanford Junior University
 License: Expat
 
 Files: *
-Copyright: 2000-2002, 2004-2012 Russ Allbery <rra@stanford.edu>
-  2001-2013 The Board of Trustees of the Leland Stanford Junior University
+Copyright: 2000-2002, 2004-2014 Russ Allbery <eagle@eyrie.org>
+  2001-2014 The Board of Trustees of the Leland Stanford Junior University
 License: Expat
 
 Files: HACKING INSTALL conf/README conf/sample-webauth.conf
@@ -18,13 +18,14 @@ Files: HACKING INSTALL conf/README conf/sample-webauth.conf
  docs/mod_webkdc.html.en docs/mod_webkdc.xml docs/protocol.html
  docs/protocol.txt docs/protocol.xml docs/test-plan docs/userauth
  docs/weblogin-config docs/weblogin-cookies docs/weblogin-flow
- docs/weblogin-testing perl/lib/WebAuth/KeyringEntry.pod perl/t/data/README
- tests/data/creds/README tests/mod_webauth/htdocs/ldaptests/index.html
+ docs/weblogin-testing perl/lib/WebAuth/KeyringEntry.pod
+ perl/t/data/README tests/data/creds/README
+ tests/mod_webauth/htdocs/ldaptests/index.html
  tests/mod_webauth/htdocs/tests/index.html
  tests/mod_webauth/htdocs/tests/php/test1.php
  tests/mod_webauth/htdocs/tests/test.tt2 tools/wa_keyring.1
  tools/wa_keyring.pod
-Copyright: 2002-2013
+Copyright: 2002-2014
     The Board of Trustees of the Leland Stanford Junior University
 License: all-permissive
  Copying and distribution of this file, with or without modification, are
@@ -34,7 +35,7 @@ License: all-permissive
 
 Files: Makefile.in
 Copyright: 1994-2013 Free Software Foundation, Inc.
-  2009-2013 The Board of Trustees of the Leland Stanford Junior University
+  2009-2014 The Board of Trustees of the Leland Stanford Junior University
 License: FSF-unlimited and Expat
 
 Files: aclocal.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4
@@ -88,7 +89,8 @@ License: FSF-configure, and GPL-2+ with Libtool exception or Expat
 
 Files: m4/apache.m4 m4/apr.m4 m4/aprutil.m4 m4/curl.m4 m4/gssapi.m4
  m4/krb5-config.m4 m4/krb5.m4 m4/ld-version.m4 m4/ldap.m4 m4/lib-depends.m4
- m4/lib-pathname.m4 m4/remctl.m4 m4/snprintf.m4 m4/ssl.m4 m4/vamacros.m4
+ m4/lib-helper.m4 m4/lib-pathname.m4 m4/openssl.m4 m4/remctl.m4
+ m4/snprintf.m4 m4/vamacros.m4
 Copyright: 2005-2013
     The Board of Trustees of the Leland Stanford Junior University
   2008-2010 Free Software Foundation, Inc.
@@ -124,7 +126,7 @@ License: rra-public-domain
 
 Files: portable/snprintf.c tests/portable/snprintf-t.c
 Copyright: 1995 Patrick Powell
-  2000-2006 Russ Allbery <rra@stanford.edu>
+  2000-2006 Russ Allbery <eagle@eyrie.org>
   2001 Hrvoje Niksic
   2009-2010 The Board of Trustees of the Leland Stanford Junior University
 License: Powell-snprintf
@@ -135,7 +137,7 @@ License: Powell-snprintf
 Files: util/messages.c util/messages.h util/xmalloc.c util/xmalloc.h
 Copyright: 1991, 1994-2003 The Internet Software Consortium and Rich Salz
   2004-2006 Internet Systems Consortium, Inc.
-  2008-2010, 2012
+  2008-2010, 2012-2014
     The Board of Trustees of the Leland Stanford Junior University
 License: ISC
  Permission to use, copy, modify, and distribute this software for any
