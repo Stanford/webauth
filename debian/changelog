@@ -6,6 +6,8 @@ webauth (4.6.0-3) UNRELEASED; urgency=medium
   * Tighten dependency of libwebkdc-perl on libwebauth-perl to ensure that
     the remctl password change API is available.
   * Refresh debian/copyright with current upstream LICENSE file.
+  * Remove now-unneeded Lintian override for the upstream signing key.
+  * Add a Lintian override for the dual-licensed protocol specification.
 
  -- Russ Allbery <rra@debian.org>  Wed, 19 Mar 2014 14:08:04 -0700
 
