@@ -1,4 +1,4 @@
-webauth (4.6.0-3) UNRELEASED; urgency=medium
+webauth (4.6.0-3) unstable; urgency=medium
 
   * Handle ownership change of the mod_webauth keyring in the
     libapache2-webauth transition package as well, since that's the
@@ -9,7 +9,7 @@ webauth (4.6.0-3) UNRELEASED; urgency=medium
   * Remove now-unneeded Lintian override for the upstream signing key.
   * Add a Lintian override for the dual-licensed protocol specification.
 
- -- Russ Allbery <rra@debian.org>  Wed, 19 Mar 2014 14:08:04 -0700
+ -- Russ Allbery <rra@debian.org>  Sun, 13 Apr 2014 13:46:27 -0700
 
 webauth (4.6.0-2) unstable; urgency=medium
 
