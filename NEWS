@@ -2,6 +2,11 @@
 
 WebAuth 4.6.1 (unreleased)
 
+    Support for AuthType StanfordAuth (for backward compatibility with
+    WebAuth 2.5) was broken in WebAuth 4.6.0, causing mod_webauth to
+    reject all accesses to resources protected with that AuthType.  This
+    has been fixed in this release.
+
     In WebLogin, verify that the username form field was sent before
     attempting to do multifactor operations and return an error if it
     isn't, avoiding undefined variable warnings and other errors deeper in
