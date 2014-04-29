@@ -32,7 +32,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0600';
+    $VERSION = '4.0601';
 }
 
 # Create a new, empty request.
