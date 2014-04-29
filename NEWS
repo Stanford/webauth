@@ -7,6 +7,16 @@ WebAuth 4.6.1 (unreleased)
     reject all accesses to resources protected with that AuthType.  This
     has been fixed in this release.
 
+    Show the expiring password warning in WebLogin if the browser request
+    was a POST.  Previously, it was skipped if the user had a REMOTE_USER
+    preference or if the browser presented a single sign-on cookie.  This
+    was too conservative, not warning in cases when REMOTE_USER failed,
+    when the browser presented an expired single sign-on cookie (systems
+    that are suspended rather than shut down, for example), and when the
+    user has to do multifactor authentication.  Checking for a POST is a
+    closer match for when we can force a confirmation screen without too
+    much user disruption.
+
     In WebLogin, verify that the username form field was sent before
     attempting to do multifactor operations and return an error if it
     isn't, avoiding undefined variable warnings and other errors deeper in

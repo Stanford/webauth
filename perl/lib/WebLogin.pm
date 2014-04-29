@@ -739,16 +739,17 @@ sub print_confirm_page {
     $return_url .= "?WEBAUTHR=" . $resp->response_token . ";";
     $return_url .= ";WEBAUTHS=" . $resp->app_state . ";" if $resp->app_state;
 
-    # Find out if the user is within the window to have a password
-    # warning.  Skip if using remote_user or the user already has a
-    # single-sign-on cookie.
+    # Find out if the user is within the window to have a password warning.
+    # Present this warning only if the request was a POST, indicating that the
+    # user provided some authentication credentials.  This avoids warning
+    # (and, more importantly, inserting a confirmation screen) if the user
+    # otherwise could have just been redirected to the destination without any
+    # WebLogin interaction, such as via REMOTE_USER or a single sign-on
+    # cookie.
     my $expire_warning = 0;
-    if (!$q->cookie ($self->param ('remuser_cookie'))
-        && !$self->param ('wpt_cookie')
-        && $WebKDC::Config::EXPIRING_PW_URL) {
-
+    if ($q->request_method eq 'POST' && $WebKDC::Config::EXPIRING_PW_URL) {
         my $expiring = $resp->password_expiration;
-        if (defined $expiring
+        if (defined ($expiring)
             && (($expiring - time) < $WebKDC::Config::EXPIRING_PW_WARNING)) {
 
             # Set template variable for expiring password.
