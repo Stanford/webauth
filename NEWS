@@ -27,6 +27,8 @@ WebAuth 4.6.1 (unreleased)
     disabled.  Otherwise, there is no opportunity for the user to change
     identities.
 
+    Fix compilation when remctl support is not enabled.
+
 WebAuth 4.6.0 (2014-03-18)
 
     WARNING: When upgrading to this release, you will need to change the
