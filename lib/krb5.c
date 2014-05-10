@@ -1292,8 +1292,9 @@ fail:
 }
 #else /* !HAVE_REMCTL */
 static int
-remctl_generic(struct webauth_context *ctx, struct webauth_krb5 *kc UNUSED,
-               const char *password UNUSED)
+remctl_change_password(struct webauth_context *ctx,
+                       struct webauth_krb5 *kc UNUSED,
+                       const char *password UNUSED)
 {
     wai_error_set(ctx, WA_ERR_UNIMPLEMENTED, "not built with remctl support");
     return WA_ERR_UNIMPLEMENTED;
@@ -1326,6 +1327,14 @@ webauth_krb5_change_config(struct webauth_context *ctx,
                            struct webauth_krb5_change_config *config)
 {
     int s = WA_ERR_NONE;
+
+    /* If not built with remctl support, reject that method. */
+#ifndef HAVE_REMCTL
+    if (config->protocol == WA_CHANGE_REMCTL) {
+        s = WA_ERR_UNIMPLEMENTED;
+        return wai_error_set(ctx, s, "not built with remctl support");
+    }
+#endif
 
     /* Verify that the new configuration is sane. */
     if (config->protocol == WA_CHANGE_REMCTL) {
