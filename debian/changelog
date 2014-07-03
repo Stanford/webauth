@@ -1,3 +1,12 @@
+webauth (4.6.0-4) unstable; urgency=medium
+
+  * Use an executable debian/libwebauth-perl.install file and some Perl
+    code in debian/rules to pull the correct Perl arch-specific vendor
+    module path from Perl during the build.  Should fix builds with Perl
+    5.20.  Thanks, Niko Tyni and gregor herrmann.  (Closes: #752903)
+
+ -- Russ Allbery <rra@debian.org>  Wed, 02 Jul 2014 21:54:21 -0700
+
 webauth (4.6.0-3) unstable; urgency=medium
 
   * Handle ownership change of the mod_webauth keyring in the

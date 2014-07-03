@@ -16,6 +16,9 @@ ifndef PERL
     PERL = /usr/bin/perl
 endif
 
+# Ask Perl for the vendor arch-specific module directory.
+PERL_VENDORARCH := $(shell perl -MConfig -e 'print $$Config{vendorarch}')
+
 %:
 	dh $@ --parallel --with apache2,autoreconf
 
@@ -31,8 +34,8 @@ override_dh_auto_install:
 	dh_auto_install
 	chmod a+x debian/tmp/usr/share/weblogin/*.fcgi
 	mkdir -p debian/tmp/usr/share/perl5
-	mv debian/tmp/usr/lib/perl5/WebKDC* debian/tmp/usr/share/perl5
-	mv debian/tmp/usr/lib/perl5/WebLogin* debian/tmp/usr/share/perl5
+	mv debian/tmp$(PERL_VENDORARCH)/WebKDC* debian/tmp/usr/share/perl5
+	mv debian/tmp$(PERL_VENDORARCH)/WebLogin* debian/tmp/usr/share/perl5
 
 override_dh_installchangelogs:
 	dh_installchangelogs NEWS
