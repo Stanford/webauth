@@ -806,6 +806,7 @@ sub print_confirm_page {
     $bypass = 0 if $factor_warning;
     $bypass = 0 if $history;
     $bypass = 0 if $resp->authz_subject;
+    $bypass = 0 if $resp->permitted_authz;
     $bypass = 0 if $user_message;
     if ($bypass and $bypass eq 'id') {
         $bypass = ($token_type eq 'id') ? 1 : 0;
