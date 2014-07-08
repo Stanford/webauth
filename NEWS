@@ -22,6 +22,11 @@ WebAuth 4.6.1 (unreleased)
     isn't, avoiding undefined variable warnings and other errors deeper in
     the WebLogin code.
 
+    If a user may switch to a different authorization identity, force
+    display of the confirmation page in WebLogin even if this is normally
+    disabled.  Otherwise, there is no opportunity for the user to change
+    identities.
+
 WebAuth 4.6.0 (2014-03-18)
 
     WARNING: When upgrading to this release, you will need to change the
