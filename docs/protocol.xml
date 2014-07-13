@@ -1237,8 +1237,19 @@
     <multifactorRequired>
       <factor>{factor-code}</factor>
       <!-- repeat for each factor code required by the WAS -->
+
       <!-- present if user has configured a multifactor method -->
-      <configuredFactor>{factor-code}</configuredFactor>
+      <!-- name is intended for display to the user in a list -->
+      <!-- device is included in login token -->
+      <!-- prompt indicates the user must be prompted for an OTP,
+           may be omitted if set to true (the default) -->
+      <!-- default indicates whether this should be the default
+           mechanism, may be omitted if set to false -->
+      <!-- the same {factor-code} may occur multiple times -->
+      <configuredFactor name="{method-name}"
+          device="{device-id}"
+          prompt="false"
+          default="true">{factor-code}</configuredFactor>
       <!-- repeat for each possible authentication method available
            for that user that would satisfy a requirement of the WAS
            or site policy, omitting "m" -->
@@ -1697,6 +1708,14 @@
             request is fresh.  For example, tokens of this type with a ct
             older then 5 minutes will get flagged by the server (WAS or
             WebKDC) as being stale.</t>
+
+            <t hangText='did (string)'>
+            <vspace blankLines='0'/>A unique device ID corresponding to
+            this authentication request, and matching the device attribute
+            of a &lt;configuredFactor> element in a
+            &lt;requestTokenResponse> reply.  Included in a login token to
+            tell the WebKDC which authentication device the user
+            chose.</t>
 
             <t hangText='ec (string)'>
             <vspace blankLines='0'/>Error code from the WebKDC.  This will
@@ -2303,9 +2322,10 @@
 
         <section anchor='tokenlogin' title='login Token Encoding'>
           <t>A login token is used by the WebLogin component of the WebKDC
-          to communicate a username and password or one-time-password code
-          to the rest of the WebKDC when it needs to authenticate a
-          user.</t>
+          to communicate an authentication request to the WebKDC.  This
+          always contains a username, and may contain a password,
+          one-time password (OTP), or device identifier to use for
+          authetnication.</t>
 
           <figure>
             <preamble>Token format:</preamble>
@@ -2316,14 +2336,20 @@
   [p={password}]
   [otp={one-time-password-code}]
   [ott={one-time-password-factor}]
+  [did={device-id}]
             </artwork>
           </figure>
 
           <t>All attributes are AES-encrypted in the WebKDC's private key.
-          One of p or otp must be provided.  If otp is provided, ott may
-          also be provided (but is not required).  It should be a factor
-          code (generally one of the oN factors) indicating what type of
-          OTP this code is for.</t>
+          One of p, otp, or did must be provided.  If otp is provided, did
+          and ott may also be provided (but are not required by the
+          WebAuth protocol, although they may be required by local site
+          configuration).  did should be a device ID chosen from the
+          device attributes of &lt;configuredFactor> tags in the
+          &lt;requestTokenResponse> reply.  ott should be a factor code
+          (generally one of the oN factors) indicating what type of OTP
+          this code is for, or a factor code indicating what type of
+          authentication to attempt with this device.</t>
         </section>
 
         <section anchor='tokenapp' title='app Token Encoding'>
@@ -2652,13 +2678,20 @@
           <vspace blankLines='0'/>Document the IV used for token
           encryption and be explicit about the security requirements for
           nonces and key rotation.</t>
+
+          <t hangText='3.6.0 (2014-07-10, rra)'>
+          <vspace blankLines='0'/>Add attributes for &lt;configuredFactor>
+          tags in &lt;requestTokenResponse> to provide WebLogin with more
+          information about possible factors.  Add the did token attribute
+          to login tokens to communicate the ID of the device with which
+          the user is attempting to authenticate.</t>
         </list>
       </t>
     </section>
 
     <section anchor='license' title='License'>
-      <t>Copyright 2006, 2008, 2009, 2010, 2011, 2012, 2013 The Board of
-      Trustees of the Leland Stanford Junior University</t>
+      <t>Copyright 2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014 The
+      Board of Trustees of the Leland Stanford Junior University</t>
 
       <t>Copying and distribution of this file, with or without
       modification, are permitted in any medium without royalty provided
