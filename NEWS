@@ -34,6 +34,10 @@ WebAuth 4.6.1 (unreleased)
     combination of those factors with any other factor class will result
     in a synthensized multifactor factor.
 
+    Warn in the mod_webauth documentation that, when using credential
+    delegation to a load-balanced pool, all members of that pool must have
+    the same Kerberos identity.
+
 WebAuth 4.6.0 (2014-03-18)
 
     WARNING: When upgrading to this release, you will need to change the

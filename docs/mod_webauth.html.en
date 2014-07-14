@@ -723,7 +723,21 @@ JkEnvVar WEBAUTH_TOKEN_EXPIRATION "&lt;UNSET&gt;"</pre></div>
 &lt;/Location&gt;</pre></div>
 
     <div class="note">
-      <h3>Warning</h3>
+      <h3>Warning for Load-Balanced Pools</h3>
+      <p>
+        If you are using delegated credentials with a pool of servers
+        behind a load balancer (see <a href="#loadbalance">the section on
+        load balancing</a>), each system in the pool must use the same
+        Kerberos identity when requesting credentials.  Otherwise, the
+        delegated credentials will be locked to the one principal that
+        requested them and the other hosts will not be able to use them,
+        which will cause problems if a given client moves from one pool
+        member to another.
+      </p>
+    </div>
+
+    <div class="note">
+      <h3>Warning for Active Directory</h3>
       <p>
         If you are using Active Directory as your KDC, be aware that
         Active Directory Kerberos tickets can be relatively large because
@@ -775,7 +789,12 @@ WebAuthDebug on
       multiple WebAuth servers for load balancing and redundancy.  In
       order to achieve this, the WebAuth keyring has to be shared between
       the WebAuth servers.  The Kerberos keytab file does not have to be
-      shared; each system can use a separate keytab file.
+      shared; each system can use a separate keytab file.  (There is one
+      exception to this last rule: credential delegation.  If you are
+      using credential delegation with a load-balanced pool, all servers
+      in the pool must share the same Kerberos keytab file as well as the
+      keyring.  See <a href="#credentials">the warning under requesting
+      credentials</a> for more information.)
     </p>
 
     <div class="note">
