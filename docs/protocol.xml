@@ -88,7 +88,7 @@
           WebKDC is referred to as the WebLogin service.  When the WebKDC
           receives one of these, it will first see if the request includes
           a cookie that contains cached credentials.  If the request
-          contains a valid cookie, this cookie is used to obtain a new
+          contains a valid cookie, this cookie is used to obtain new
           credentials and the user is redirected back to the WAS (unless
           the WAS has requested the user reauthenticate).  This is the way
           that WebAuth implements single sign-on.</t>
@@ -103,10 +103,10 @@
           future requests, and one that gets sent back to the WAS, which
           will verify it upon receipt.</t>
 
-          <t>The second type of the WebKDC handles consist of XML messages
-          that get POSTed to the WebKDC via HTTPS directly from a WAS.
-          These message are used to establish keys for the WAS servers or
-          to request additional credentials for a user.</t>
+          <t>The second type of request the WebKDC handles consists of XML
+          messages that get POSTed to the WebKDC via HTTPS directly from a
+          WAS.  These messages are used to establish keys for the WAS
+          servers or to request additional credentials for a user.</t>
 
           <t>The WebKDC is also responsible for ensuring that the server
           making a request is authorized to make the request.  For
@@ -160,7 +160,7 @@
             <t hangText='request (encrypted with session key)'>
             <vspace blankLines='0'/>The request token contains the request
             from a WAS for a token (usually an id token) from the WebKDC.
-            It is AES-encrypted in a session key from a webkdc-service
+            It is AES-encrypted using a session key from a webkdc-service
             token, and contains information like the return URL and type
             of token requested.  A webkdc-service token is always included
             in a request along with a request token.</t>
@@ -219,7 +219,7 @@
         are only valid for a short period of time (5 minutes by
         default).  Any attempt to re-use them after that will fail.  If a
         user bookmarks a URL with a token in it (or hits their "back"
-        button) then one of three things can happen:
+        button) then exactly one of these three things will happen:
           <list style='symbols'>
             <t>The user has a valid cookie. In this case, the token in the
             URL is ignored (but still stripped out from the URL before
@@ -248,10 +248,22 @@
           requesting a service token.  This message contains a KRB_AP_REQ
           for the WebKDC's server principal, which the WebKDC uses to
           authenticate the server making the request.  The WebKDC will
-          then send back the service token and a copy the session key that
-          is also encrypted (in the WebKDC's key) inside of the service
-          token.  The WAS will need both to make future requests to the
-          WebKDC.  The whole transaction itself is protected with TLS or
+          then send back two pieces of data: a session key, and a service
+          token encrypted with the WebKDC's private key and containing the
+          same session key.  The service token is opaque to the WebAuth
+          Application Server; it just stores this token and provides it to
+          the WebKDC later when making requests.</t>
+
+          <t>This mechanism allows the WebKDC to not have to store the
+          session key locally.  For subsequent requests, the WAS will
+          encrypt the request in the session key and provide a copy of the
+          service token alongside the request.  The WebKDC will decrypt
+          the service token with its private key, recover the session key,
+          and use it to decrypt and validate the request.  This means the
+          WebKDC does not have to store any keys other than the private
+          key that is used to encrypt the service tokens.</t>
+
+          <t>The whole transaction itself is protected with TLS or
           SSL.</t>
 
           <t>There are no long term keys stored on the WebKDC itself other
@@ -272,7 +284,7 @@
           issue is partially mitigated by the use of TLS or SSL to further
           protect the transaction.  This seems to be an acceptable risk,
           but it's worth being aware of.  The Kerberos infrastructure
-          should obviously use as strong of keys as possible.</t>
+          should obviously use the strongest keys possible.</t>
         </section>
 
         <section anchor='kmprivatekeys' title='Distributing and Managing
@@ -323,7 +335,7 @@
           server that receives a token is able to decrypt and verify
           it.  Note that we are only talking about the WebAuth protocol
           here.  Applications must solve their own synchronization issues
-          as well when using a pool of servers as a front end.</t>
+          when using a pool of servers as a front end.</t>
 
           <t>For the WebKDC, all we need to do is distribute the same key
           ring across all the WebKDCs.  Post-dating new keys when adding
@@ -335,8 +347,8 @@
           app-tokens.  The second question is how to deal with session
           keys.</t>
 
-          <t>Responses from the WebKDC come back to the WAS encrypted
-          in the session key, not the WAS server's private key.  If the
+          <t>Responses from the WebKDC come back to the WAS encrypted with
+          the session key, not the WAS server's private key.  If the
           response comes back to a different WAS server, it will not have
           the same session key that the requesting WAS server had.  One
           could work around this by sharing the same service token and
@@ -350,7 +362,7 @@
           transmitted alongside the returned token, not inside it, so that
           the WAS doesn't have to know the session key to read it.  To use
           this method, the WAS server creates an app token (which is
-          encrypted in its private key, shared among all the sytsems in
+          encrypted with its private key, shared among all the sytsems in
           the pool), includes in it the session key, and sends this as the
           state in the request token.  Since the WebKDC returns this state
           along with its response, any WAS in the pool can then decrypt
@@ -440,7 +452,7 @@
             the WAS constructs a request token, asking for an id token.
             The request token also contains the return URL, requested type
             of token, and any additional desired options.  It may also
-            contain an app token with the session key encrypted in the
+            contain an app token with the session key encrypted with the
             WAS's private key (for handling server pools).  The request
             token is encrypted with the AES session key shared between the
             WAS and the WebKDC.  The WAS then returns a temporary redirect
@@ -637,7 +649,7 @@
           on the user's behalf.  In this case, the WAS must request a
           proxy token, which it will then use to request additional
           credentials via the XML interface.  In the below discussion, we
-          assume the US already has a webkdc-proxy cookie and the WebKDC
+          assume the UA already has a webkdc-proxy cookie and the WebKDC
           can use single sign-on, but this is not required.  If there is
           no webkdc-proxy cookie, the user will be prompted for
           authentication and then everything else will proceed as
@@ -747,7 +759,7 @@
 
         <t>The credentials returned by the WebKDC in a credential token
         SHOULD encode an expiration time that cannot be manipulated by the
-        WAS so that the WAS is need not be trusted to honor credential
+        WAS so that the WAS need not be trusted to honor credential
         expiration.</t>
       </section>
 
@@ -1153,7 +1165,7 @@
           webkdc-service token instead of a Kerberos authenticator, and
           the proxy token received from the user's browser is also
           included.  In this form of the request, the WAS also includes a
-          request token, encrypted in the session key of the
+          request token, encrypted with the session key of the
           webkdc-service token, to prove that it has possession of the
           session key.</t>
 
@@ -1932,7 +1944,7 @@
             <vspace blankLines='0'/>Traditional password
             authentication.</t>
 
-            <t hangText='rm (random multifactor'>
+            <t hangText='rm (random multifactor)'>
             <vspace blankLines='0'/>The user was subject to a random chance
             of being challenged with a requirement for a multifactor
             authentication method and happened not to be challenged.  If
@@ -2008,7 +2020,7 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the WebKDC's private
+          <t>All attributes are AES-encrypted using the WebKDC's private
           key.  The server that initially requested the token will also
           receive {session-key} and {expiration-time} out-of-band from the
           token itself.  That additional data must also be stored by the
@@ -2038,7 +2050,7 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the WebKDC's private
+          <t>All attributes are AES-encrypted using the WebKDC's private
           key.</t>
 
           <t>As a special case, krb5 webkdc-proxy tokens that the WebKDC
@@ -2094,7 +2106,7 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the WebKDC's private
+          <t>All attributes are AES-encrypted using the WebKDC's private
           key.</t>
 
           <t>webkdc-factor tokens are only valid when presented in
@@ -2167,8 +2179,8 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the webkdc-service token
-          session key.</t>
+          <t>All attributes are AES-encrypted using the webkdc-service
+          token session key.</t>
 
           <t>The value of ct is used to prevent replay attacks.  Values
           older than a certain time (probably 5 minutes by default) should
@@ -2195,7 +2207,7 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the webkdc-service token
+          <t>All attributes are AES-encrypted using the webkdc-service token
           session key.</t>
 
           <t>The value of ct is used to prevent replay attacks.  Values
@@ -2227,8 +2239,8 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the webkdc-service token
-          session key.</t>
+          <t>All attributes are AES-encrypted using the webkdc-service
+          token session key.</t>
 
           <t>If "at" is krb5, then "sad" (subject authenticator data) is a
           KRB_AP_REQ for the WAS service principal (as determined from the
@@ -2274,8 +2286,8 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the webkdc-service token
-          session key.</t>
+          <t>All attributes are AES-encrypted using the webkdc-service
+          token session key.</t>
 
           <t>In addition to the webkdc-proxy token, a proxy token provides
           all the same authentication information about a user as an id
@@ -2326,8 +2338,8 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the webkdc-service token
-          session key.</t>
+          <t>All attributes are AES-encrypted using the webkdc-service
+          token session key.</t>
         </section>
 
         <section anchor='tokenlogin' title='login Token Encoding'>
@@ -2350,11 +2362,11 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the WebKDC's private key.
-          One of p, otp, or did must be provided.  If otp is provided, did
-          and ott may also be provided (but are not required by the
-          WebAuth protocol, although they may be required by local site
-          configuration).  did should be a device ID chosen from the
+          <t>All attributes are AES-encrypted using the WebKDC's private
+          key.  One of p, otp, or did must be provided.  If otp is
+          provided, did and ott may also be provided (but are not required
+          by the WebAuth protocol, although they may be required by local
+          site configuration).  did should be a device ID chosen from the
           device attributes of &lt;configuredFactor> tags in the
           &lt;requestTokenResponse> reply.  ott should be a factor code
           (generally one of the oN factors) indicating what type of OTP
@@ -2383,7 +2395,7 @@
             </artwork>
           </figure>
 
-          <t>All attributes are AES-encrypted in the WAS's private
+          <t>All attributes are AES-encrypted using the WAS's private
           key.</t>
 
           <t>app tokens are normally created on first receipt of an id
@@ -2520,7 +2532,7 @@
       name cookies.</t>
 
       <t>Note that proxy tokens and credential tokens are originally
-      encrypted in the webkdc-service token session key, but are
+      encrypted with the webkdc-service token session key, but are
       re-encrypted using the WAS private key before being stored in a
       cookie.</t>
 
@@ -2695,7 +2707,8 @@
           information about possible factors.  Add the did token attribute
           to login tokens to communicate the ID of the device with which
           the user is attempting to authenticate.  Add new mp and v factor
-          codes.</t>
+          codes.  Wording and grammar clarifications, thanks to Adam
+          Lewenberg.</t>
         </list>
       </t>
     </section>
