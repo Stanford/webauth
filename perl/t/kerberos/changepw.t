@@ -167,7 +167,7 @@ $weblogin->query->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
 ($status, $error) = $weblogin->change_user_password;
 SKIP: {
-    if ($error =~ /operation not supported/) {
+    if ($error && $error =~ /operation not supported/) {
         skip 'not built with remctl support', 2;
     }
     is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
@@ -185,7 +185,7 @@ if (open (DATA, '<', 'password-input')) {
 }
 unlink 'password-input';
 SKIP: {
-    if ($error =~ /operation not supported/) {
+    if ($error && $error =~ /operation not supported/) {
         skip 'not built with remctl support', 2;
     }
     is ($id, $username, '... and saw correct user principal');
