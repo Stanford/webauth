@@ -29,6 +29,11 @@ WebAuth 4.6.1 (unreleased)
 
     Fix compilation when remctl support is not enabled.
 
+    Add new factors mp (mobile push) and v (voice), which count as
+    separate classes for determining multifactor.  This means the
+    combination of those factors with any other factor class will result
+    in a synthensized multifactor factor.
+
 WebAuth 4.6.0 (2014-03-18)
 
     WARNING: When upgrading to this release, you will need to change the

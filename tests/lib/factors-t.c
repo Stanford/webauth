@@ -2,7 +2,7 @@
  * Test suite for factor code manipulation.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2013
+ * Copyright 2011, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -25,7 +25,7 @@ main(void)
     struct webauth_factors *one, *two, *result;
     apr_array_header_t *factors;
 
-    plan(45);
+    plan(49);
 
     if (apr_initialize() != APR_SUCCESS)
         bail("cannot initialize APR");
@@ -56,6 +56,18 @@ main(void)
            "...and contains multifactor");
     is_int(0, webauth_factors_contains(ctx, one, "rm"),
            "...and does not contain random multifactor");
+
+    /* Test the same with the newer mp and v factors. */
+    one = webauth_factors_parse(ctx, "p,mp");
+    is_string("p,mp,m", webauth_factors_string(ctx, one),
+              "Parsed p,mp into p,mp,m");
+    is_int(1, webauth_factors_contains(ctx, one, "m"),
+           "...and contains multifactor");
+    one = webauth_factors_parse(ctx, "v,p");
+    is_string("v,p,m", webauth_factors_string(ctx, one),
+              "Parsed v,p into v,p,m");
+    is_int(1, webauth_factors_contains(ctx, one, "m"),
+           "...and contains multifactor");
 
     /* Check parsing the empty string. */
     one = webauth_factors_parse(ctx, "");

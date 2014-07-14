@@ -282,6 +282,13 @@ WEBAUTH_USER=schemers
         </td>
       </tr>
       <tr>
+        <td><code>mp</code></td><td>mobile push</td>
+        <td>
+          User approved an out-of-band push notification to a mobile
+          device
+        </td>
+      </tr>
+      <tr>
         <td><code>o</code></td><td>OTP</td>
         <td>Session or initial authentication via one-time password</td>
       </tr>
@@ -307,6 +314,12 @@ WEBAUTH_USER=schemers
       <tr>
         <td><code>u</code></td><td>unknown</td>
         <td>Session or initial authentication via an unknown method</td>
+      </tr>
+      <tr>
+        <td><code>v</code></td><td>voice</td>
+        <td>
+          User approved authentication via voice telephone call
+        </td>
       </tr>
       <tr>
         <td><code>x</code></td><td>X.509</td>

@@ -5,7 +5,7 @@
               This file is generated from xml source: DO NOT EDIT
         XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       -->
-<title>mod_webauth - Apache HTTP Server</title>
+<title>mod_webauth - Apache HTTP Server Version 2.5</title>
 <link href="../style/css/manual.css" rel="stylesheet" media="all" type="text/css" title="Main stylesheet" />
 <link href="../style/css/manual-loose-100pc.css" rel="alternate stylesheet" media="all" type="text/css" title="No Sidebar - Default font size" />
 <link href="../style/css/manual-print.css" rel="stylesheet" media="print" type="text/css" /><link rel="stylesheet" type="text/css" href="../style/css/prettify.css" />
@@ -15,12 +15,12 @@
 <link href="../images/favicon.ico" rel="shortcut icon" /></head>
 <body>
 <div id="page-header">
-<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
-<p class="apache">Apache HTTP Server Version 2.4</p>
+<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/quickreference.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p>
+<p class="apache">Apache HTTP Server Version 2.5</p>
 <img alt="" src="../images/feather.gif" /></div>
 <div class="up"><a href="./"><img title="&lt;-" alt="&lt;-" src="../images/left.gif" /></a></div>
 <div id="path">
-<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.4</a> &gt; <a href="./">Modules</a></div>
+<a href="http://www.apache.org/">Apache</a> &gt; <a href="http://httpd.apache.org/">HTTP Server</a> &gt; <a href="http://httpd.apache.org/docs/">Documentation</a> &gt; <a href="../">Version 2.5</a> &gt; <a href="./">Modules</a></div>
 <div id="page-content">
 <div id="preamble"><h1>Apache Module mod_webauth</h1>
 <div class="toplang">
@@ -344,6 +344,13 @@ WEBAUTH_USER=schemers</pre></div>
         </td>
       </tr>
       <tr>
+        <td><code>mp</code></td><td>mobile push</td>
+        <td>
+          User approved an out-of-band push notification to a mobile
+          device
+        </td>
+      </tr>
+      <tr>
         <td><code>o</code></td><td>OTP</td>
         <td>Session or initial authentication via one-time password</td>
       </tr>
@@ -369,6 +376,12 @@ WEBAUTH_USER=schemers</pre></div>
       <tr>
         <td><code>u</code></td><td>unknown</td>
         <td>Session or initial authentication via an unknown method</td>
+      </tr>
+      <tr>
+        <td><code>v</code></td><td>voice</td>
+        <td>
+          User approved authentication via voice telephone call
+        </td>
       </tr>
       <tr>
         <td><code>x</code></td><td>X.509</td>
@@ -2559,7 +2572,7 @@ WebAuthWebKdcURL https://webkdc.stanford.edu/webkdc-service/
 <p><span>Available Languages: </span><a href="../en/mod/mod_webauth.html" title="English">&nbsp;en&nbsp;</a></p>
 </div><div class="top"><a href="#page-header"><img src="../images/up.gif" alt="top" /></a></div>
 <div id="footer">
-<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/directives.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div><script type="text/javascript"><!--//--><![CDATA[//><!--
+<p class="menu"><a href="../mod/">Modules</a> | <a href="../mod/quickreference.html">Directives</a> | <a href="http://wiki.apache.org/httpd/FAQ">FAQ</a> | <a href="../glossary.html">Glossary</a> | <a href="../sitemap.html">Sitemap</a></p></div><script type="text/javascript"><!--//--><![CDATA[//><!--
 if (typeof(prettyPrint) !== 'undefined') {
     prettyPrint();
 }

@@ -15,7 +15,7 @@
  * random multifactor factor.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2012, 2013
+ * Copyright 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,11 +50,13 @@ struct webauth_factors;
 #define WA_FA_DEVICE               "d"
 #define WA_FA_HUMAN                "h"
 #define WA_FA_KERBEROS             "k"
+#define WA_FA_MOBILE_PUSH          "mp"
 #define WA_FA_MULTIFACTOR          "m"
 #define WA_FA_OTP                  "o"
 #define WA_FA_PASSWORD             "p"
 #define WA_FA_RANDOM_MULTIFACTOR   "rm"
 #define WA_FA_UNKNOWN              "u"
+#define WA_FA_VOICE                "v"
 #define WA_FA_X509                 "x"
 
 BEGIN_DECLS

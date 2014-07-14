@@ -20,7 +20,7 @@
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='November' year='2013' />
+    <date month='July' year='2014' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1909,6 +1909,11 @@
             password plus X.509, or an X.509 authentication from a smart
             card requiring a PIN.</t>
 
+            <t hangText='mp (mobile push)'>
+            <vspace blankLines='0'/>The user approved an out-of-band push
+            notification to a mobile device as part of the authentication
+            process.</t>
+
             <t hangText='o (OTP)'>
             <vspace blankLines='0'/>Some one-time password method was used
             for authentication.  This factor code is often used in
@@ -1942,6 +1947,11 @@
             some authentication mechanism handled external to the WebLogin
             server and no information about that method is available.</t>
 
+            <t hangText='v (voice)'>
+            <vspace blankLines='0'/>The user indicated approval of the
+            authentication via a callback over voice telephone as part of
+            the authentication process.</t>
+
             <t hangText='x (X.509)'>
             <vspace blankLines='0'/>Some form of X.509 authentication was
             used.  Whether this is via a smart card is site-defined.  This
@@ -1966,7 +1976,7 @@
         <t>Implementations may automatically add the m (multifactor)
         factor to the factors for an authentication if factors from more
         than one different authentication method are present (two or more
-        from the set of h, o, p, and x, for example).  If an
+        from the set of h, mp, o, p, v, and x, for example).  If an
         implementation does this, the c, k, rm, and u factors must not be
         considered when deciding whether to add an m factor.</t>
 
@@ -2684,7 +2694,8 @@
           tags in &lt;requestTokenResponse> to provide WebLogin with more
           information about possible factors.  Add the did token attribute
           to login tokens to communicate the ID of the device with which
-          the user is attempting to authenticate.</t>
+          the user is attempting to authenticate.  Add new mp and v factor
+          codes.</t>
         </list>
       </t>
     </section>
