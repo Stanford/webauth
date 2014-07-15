@@ -24,6 +24,7 @@
 #include <tests/tap/webauth.h>
 #include <webauth/basic.h>
 #include <webauth/keys.h>
+#include <webauth/krb5.h>
 #include <webauth/webkdc.h>
 
 /* Test cases to run without any local realms. */
@@ -557,6 +558,7 @@ main(void)
     apr_array_header_t *local_realms, *permitted_realms;
     struct kerberos_config *krbconf;
     struct webauth_context *ctx;
+    struct webauth_krb5 *kc;
     struct webauth_keyring *ring;
     struct webauth_webkdc_config config;
     char *keyring, *tmpdir;
@@ -687,20 +689,41 @@ main(void)
 
 #ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_CCACHE_NAME
     /*
-     * If built with FAST support, obtain a credential cache to use for FAST
-     * armor and then run the tests that assume no local realm again.  The
-     * authentications should then happen using FAST and succeed as before.
+     * If built with FAST support, check if FAST actually works.  (It might
+     * not, even with FAST support in the build, if the KDC doesn't support
+     * FAST.)
      */
     cache = getenv("KRB5CCNAME");
     if (cache == NULL)
         bail("KRB5CCNAME not set after Kerberos initialization");
-    config.fast_armor_path = cache;
-    s = webauth_webkdc_config(ctx, &config);
+    s = webauth_krb5_new(ctx, &kc);
     if (s != WA_ERR_NONE)
-        diag("configuration failed: %s", webauth_error_message(ctx, s));
-    is_int(WA_ERR_NONE, s, "Setting fast_armor_path succeeded");
-    for (i = 0; i < ARRAY_SIZE(tests_no_local); i++)
-        run_login_test(ctx, &tests_no_local[i], ring, krbconf);
+        bail("cannot initialize Kerberos: %s", webauth_error_message(ctx, s));
+    s = webauth_krb5_set_fast_armor_path(ctx, kc, cache);
+    if (s == WA_ERR_NONE)
+        s = webauth_krb5_init_via_password(ctx, kc, krbconf->userprinc,
+                                           krbconf->password, NULL,
+                                           krbconf->keytab,
+                                           krbconf->principal, NULL, NULL);
+    webauth_krb5_free(ctx, kc);
+
+    /*
+     * If FAST failed, skip the tests.  Otherwise, obtain a credential cache
+     * to use for FAST armor and then run the tests that assume no local realm
+     * again.  The authentications should then happen using FAST and succeed
+     * as before.
+     */
+    if (s != WA_ERR_NONE)
+        skip_block(2, "cannot authenticate with FAST");
+    else {
+        config.fast_armor_path = cache;
+        s = webauth_webkdc_config(ctx, &config);
+        if (s != WA_ERR_NONE)
+            diag("configuration failed: %s", webauth_error_message(ctx, s));
+        is_int(WA_ERR_NONE, s, "Setting fast_armor_path succeeded");
+        for (i = 0; i < ARRAY_SIZE(tests_no_local); i++)
+            run_login_test(ctx, &tests_no_local[i], ring, krbconf);
+    }
 #endif
 
     /* Clean up. */
