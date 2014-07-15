@@ -353,11 +353,15 @@ setup_cache(struct webauth_context *ctx, struct webauth_krb5 *kc,
  * Translate a Kerberos error code from a krb5_get_init_creds* function into
  * an appropriate WebAuth code, setting the WebAuth error message at the same
  * time.  Returns the WebAuth status code that we set.
+ *
+ * Older versions of MIT Kerberos returned EINVAL if the password was
+ * excessively long.
  */
 static int
 translate_error(struct webauth_context *ctx, krb5_error_code code)
 {
     switch (code) {
+    case EINVAL:
     case KRB5KDC_ERR_PREAUTH_FAILED:
     case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
