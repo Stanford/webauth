@@ -35,6 +35,11 @@ WebAuth 4.6.1 (unreleased)
     isn't, avoiding undefined variable warnings and other errors deeper in
     the WebLogin code.
 
+    Allow newlines, carriage returns, and tabs in the XML sent from the
+    WebKDC to the WebLogin server rather than replacing them with periods.
+    This fixes the display of <user-message> elements that contain
+    newlines.
+
     If a user may switch to a different authorization identity, force
     display of the confirmation page in WebLogin even if this is normally
     disabled.  Otherwise, there is no opportunity for the user to change

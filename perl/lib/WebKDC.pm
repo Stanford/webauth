@@ -1,7 +1,7 @@
 # Interact with the WebAuth WebKDC service.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011, 2012, 2013
+# Copyright 2002, 2003, 2004, 2005, 2006, 2008, 2009, 2011, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -296,10 +296,10 @@ sub request_token_request {
     # problems when users enter usernames that contain ISO 8859-1 characters
     # or use other encodings, causing those usernames to be reproduced in the
     # Kerberos error message.  For now, hack around this problem by replacing
-    # all non-ASCII characters or control characters with "." so that we can
-    # at least attempt to process the content.
+    # all non-ASCII characters or control characters (other than CR, LF, and
+    # tab) with "." so that we can at least attempt to process the content.
     my $content = $http_res->content;
-    $content =~ s{ [^\x20-\x7e] }{.}xmsg;
+    $content =~ s{ [^\n\r\t\x20-\x7e] }{.}xmsg;
 
     # Parse the response.  For some reason, XML::Parser exceptions tend to
     # start with a newline.
