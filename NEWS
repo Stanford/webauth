@@ -16,6 +16,10 @@ WebAuth 4.6.1 (unreleased)
 
     Fix parsing of the WebKdcKerberosFactors configuration directive.
 
+    Add a new webauth_krb5_set_fast_armor_path interface to libwebauth
+    that allows configuring a path to a FAST armor ticket cache before
+    authenticating with a password.
+
     Show the expiring password warning in WebLogin if the browser request
     was a POST.  Previously, it was skipped if the user had a REMOTE_USER
     preference or if the browser presented a single sign-on cookie.  This
