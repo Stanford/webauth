@@ -53,6 +53,9 @@ WebAuth 4.6.1 (unreleased)
     disabled.  Otherwise, there is no opportunity for the user to change
     identities.
 
+    Diagnose empty RT or ST parameters to WebLogin and return the same
+    error as when those parameters are missing entirely.
+
     Fix compilation when remctl support is not enabled.
 
     Add new factors mp (mobile push) and v (voice), which count as

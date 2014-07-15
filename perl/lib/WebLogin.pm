@@ -1444,9 +1444,6 @@ sub error_if_no_cookies {
 # If the user sent a password, force POST as a method.  Otherwise, if we
 # continue, the password may show up in referrer strings sent by the
 # browser to the remote site.
-#
-# err_bad_method was added as a form parameter with WebAuth 3.6.2.  Try to
-# adjust for old templates.
 sub error_password_no_post {
     my ($self) = @_;
     my $q = $self->query;
@@ -1458,20 +1455,21 @@ sub error_password_no_post {
     return $self->print_error_page;
 }
 
-# Check to see if we have a defined request token.  If not, display the error
-# page and tell the caller to skip to the next request.  Returns undef on
-# success and the page text on failure.
+# Check to see if we have request and webkdc-service tokens.  If not, display
+# the error page and tell the caller to skip to the next request.  Returns
+# undef on success and the page text on failure.
 sub error_no_request_token {
     my ($self) = @_;
     my $q = $self->query;
 
-    if (defined ($q->param ('RT')) && defined ($q->param ('ST'))) {
-        return undef;
+    if ($q->param ('RT') && $q->param ('ST')) {
+        return;
+    } else {
+        $self->template_params ({err_no_request_token => 1});
+        print STDERR "no request or service token\n"
+            if $self->param ('logging');
+        return $self->print_error_page;
     }
-
-    $self->template_params ({err_no_request_token => 1});
-    print STDERR "no request or service token\n" if $self->param ('logging');
-    return $self->print_error_page;
 }
 
 # Test for requirements of a password request:
