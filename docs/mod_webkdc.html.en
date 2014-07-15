@@ -54,6 +54,7 @@
 <div id="quickview"><h3 class="directives">Directives</h3>
 <ul id="toc">
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcdebug">WebKdcDebug</a></li>
+<li><img alt="" src="../images/down.gif" /> <a href="#webkdcfastarmorcache">WebKdcFastArmorCache</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdcidentityacl">WebKdcIdentityAcl</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdckerberosfactors">WebKdcKerberosFactors</a></li>
 <li><img alt="" src="../images/down.gif" /> <a href="#webkdckeyring">WebKdcKeyring</a></li>
@@ -585,6 +586,47 @@ done</pre></div>
       <div class="example"><h3>Example</h3><p><code>
         
 WebKdcDebug on
+      </code></p></div>
+    
+</div>
+<div class="top"><a href="#page-header"><img alt="top" src="../images/up.gif" /></a></div>
+<div class="directive-section"><h2><a name="WebKdcFastArmorCache" id="WebKdcFastArmorCache">WebKdcFastArmorCache</a> <a name="webkdcfastarmorcache" id="webkdcfastarmorcache">Directive</a></h2>
+<table class="directive">
+<tr><th><a href="directive-dict.html#Description">Description:</a></th><td>Path to crednetial cache for FAST armor tickets</td></tr>
+<tr><th><a href="directive-dict.html#Syntax">Syntax:</a></th><td><code>WebKdcFastArmorCache <em>path</em></code></td></tr>
+<tr><th><a href="directive-dict.html#Default">Default:</a></th><td><code>(none)</code></td></tr>
+<tr><th><a href="directive-dict.html#Context">Context:</a></th><td>server config, virtual host</td></tr>
+<tr><th><a href="directive-dict.html#Status">Status:</a></th><td>External</td></tr>
+<tr><th><a href="directive-dict.html#Module">Module:</a></th><td>mod_webkdc</td></tr>
+</table>
+      <p>
+        FAST (Flexible Authentication Secure Tunneling) is a way of
+        protecting the initial Kerberos AS-REQ exchange for a password
+        authentication with armor based on stronger keys, such as
+        randomly-generated keys in a keytab.  This directive specifies a
+        Kerberos ticket cache to use with FAST to protect any password
+        authentications done by the KDC.
+      </p>
+      <p>
+        The <em>path</em> argument must point to an existing Kerberos
+        ticket cache, not a keytab or other source of Kerberos keys.  To
+        maintain a Kerberos ticket cache from a keytab, use a program such
+        as <a href="http://www.eyrie.org/~eagle/software/kstart/">k5start</a>.
+        The <em>path</em> argument can be a path to a ticket cache on
+        disk, or any other Kerberos ticket cache specification that can be
+        read by the Apache server.
+      </p>
+      <p>
+        If this directive is set, FAST will be used and required for all
+        password authentications, and if FAST setup fails, the
+        authentication will fail.  If this directive is set and the
+        Kerberos KDC does not support FAST, all password authentications
+        will fail.
+      </p>
+
+      <div class="example"><h3>Example</h3><p><code>
+        
+WebKdcFastArmorCache /var/run/webkdc/krb5cc_armor
       </code></p></div>
     
 </div>

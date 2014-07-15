@@ -6,7 +6,7 @@
  * user information tests.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -538,6 +538,18 @@ static const struct wat_login_test tests_id_acl[] = {
 };
 
 
+/*
+ * Log callback, used to turn internal warning messages into diagnostics to
+ * make test failures easier to understand.
+ */
+static void
+log_callback(struct webauth_context *ctx UNUSED, void *data UNUSED,
+             const char *message)
+{
+    diag("%s", message);
+}
+
+
 int
 main(void)
 {
@@ -551,6 +563,9 @@ main(void)
     int s;
     FILE *id_acl;
     size_t i;
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_CCACHE_NAME
+    const char *cache;
+#endif
 
     /* Load the Kerberos configuration. */
     krbconf = kerberos_setup(TAP_KRB_NEEDS_BOTH);
@@ -568,6 +583,11 @@ main(void)
         bail("cannot create memory pool");
     if (webauth_context_init_apr(&ctx, pool) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
+
+    /* Set log callbacks for info and higher. */
+    webauth_log_callback(ctx, WA_LOG_INFO, log_callback, NULL);
+    webauth_log_callback(ctx, WA_LOG_NOTICE, log_callback, NULL);
+    webauth_log_callback(ctx, WA_LOG_WARN, log_callback, NULL);
 
     /* Load the precreated keyring that we'll use for token encryption. */
     keyring = test_file_path("data/keyring");
@@ -664,6 +684,24 @@ main(void)
         diag("configuration failed: %s", webauth_error_message(ctx, s));
     is_int(WA_ERR_NONE, s, "Clearing id_acl_path succeeded");
     test_tmpdir_free(tmpdir);
+
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_CCACHE_NAME
+    /*
+     * If built with FAST support, obtain a credential cache to use for FAST
+     * armor and then run the tests that assume no local realm again.  The
+     * authentications should then happen using FAST and succeed as before.
+     */
+    cache = getenv("KRB5CCNAME");
+    if (cache == NULL)
+        bail("KRB5CCNAME not set after Kerberos initialization");
+    config.fast_armor_path = cache;
+    s = webauth_webkdc_config(ctx, &config);
+    if (s != WA_ERR_NONE)
+        diag("configuration failed: %s", webauth_error_message(ctx, s));
+    is_int(WA_ERR_NONE, s, "Setting fast_armor_path succeeded");
+    for (i = 0; i < ARRAY_SIZE(tests_no_local); i++)
+        run_login_test(ctx, &tests_no_local[i], ring, krbconf);
+#endif
 
     /* Clean up. */
     apr_terminate();

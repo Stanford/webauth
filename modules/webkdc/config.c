@@ -46,6 +46,7 @@ APLOG_USE_MODULE(webkdc);
     static const type DF_ ## name = def;
 
 DIRN(Debug,               "whether to log debug messages")
+DIRN(FastArmorCache,      "path to credential cache for FAST armor tickets")
 DIRN(IdentityAcl,         "path to the identity ACL file")
 DIRN(KerberosFactors,     "list of factors used as initial factors")
 DIRN(Keyring,             "path to the keyring file")
@@ -66,6 +67,7 @@ DIRN(UserInfoIgnoreFail,  "ignore failure to get user information")
 
 enum {
     E_Debug,
+    E_FastArmorCache,
     E_IdentityAcl,
     E_KerberosFactors,
     E_Keyring,
@@ -163,6 +165,7 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
     bconf = basev;
     oconf = overv;
 
+    MERGE_PTR(fast_armor_path);
     MERGE_PTR(identity_acl_path);
     MERGE_PTR(keyring_path);
     MERGE_PTR(keytab_path);
@@ -184,7 +187,6 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
 
     /* FIXME: Handle merging of local realm settings properly. */
     MERGE_ARRAY(local_realms);
-
     return conf;
 }
 
@@ -335,6 +337,9 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
     sconf = ap_get_module_config(cmd->server->module_config, &webkdc_module);
 
     switch (directive) {
+    case E_FastArmorCache:
+        sconf->fast_armor_path = apr_pstrdup(cmd->pool, arg);
+        break;
     case E_IdentityAcl:
         sconf->identity_acl_path = ap_server_root_relative(cmd->pool, arg);
         break;
@@ -391,6 +396,7 @@ cfg_str(cmd_parms *cmd, void *mconf UNUSED, const char *arg)
     case E_KerberosFactors:
         factor = apr_array_push(sconf->kerberos_factors);
         *factor = apr_pstrdup(cmd->pool, arg);
+        break;
     default:
         err = unknown_error(cmd, directive, "cfg_str");
         break;
@@ -471,6 +477,7 @@ cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
 
 const command_rec webkdc_cmds[] = {
     DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  Debug),
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   FastArmorCache),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   IdentityAcl),
     DIRECTIVE(AP_INIT_ITERATE, cfg_str,   KerberosFactors),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   Keyring),

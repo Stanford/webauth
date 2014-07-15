@@ -97,6 +97,7 @@ AC_CHECK_FUNCS([krb5_cc_get_full_name \
     krb5_free_string \
     krb5_get_init_creds_opt_alloc \
     krb5_get_init_creds_opt_set_default_flags \
+    krb5_get_init_creds_opt_set_fast_ccache_name \
     krb5_principal_get_realm \
     krb5_principal_set_realm \
     krb5_unparse_name_flags \
