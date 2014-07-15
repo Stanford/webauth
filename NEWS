@@ -30,6 +30,14 @@ WebAuth 4.6.1 (unreleased)
     closer match for when we can force a confirmation screen without too
     much user disruption.
 
+    When translating Kerberos errors, treat KRB5_KDC_UNREACH (cannot
+    contact any KDC for realm) as a user rejected error instead of a
+    Kerberos error.  This avoids returning an internal error from WebLogin
+    and instead tells the user the username is invalid.  This is not
+    always correct, since the unreachable KDC could be the local KDC, but
+    it's better than the previous behavior of throwing internal errors
+    when users enter email addresses as their username.
+
     In WebLogin, verify that the username form field was sent before
     attempting to do multifactor operations and return an error if it
     isn't, avoiding undefined variable warnings and other errors deeper in

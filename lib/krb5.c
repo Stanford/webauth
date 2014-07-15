@@ -366,6 +366,7 @@ translate_error(struct webauth_context *ctx, krb5_error_code code)
     case KRB5KDC_ERR_KEY_EXP:
         ctx->status = WA_PEC_CREDS_EXPIRED;
         break;
+    case KRB5_KDC_UNREACH:
     case KRB5_REALM_CANT_RESOLVE:
     case KRB5_REALM_UNKNOWN:
     case KRB5KDC_ERR_POLICY:
