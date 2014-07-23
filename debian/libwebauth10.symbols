@@ -42,6 +42,7 @@ libwebauth.so.10 libwebauth10 #MINVER#
  webauth_krb5_prepare_via_cred@WEBAUTH_4_5 4.5.0
  webauth_krb5_read_auth@WEBAUTH_4_5 4.5.0
  webauth_krb5_read_auth_data@WEBAUTH_4_5 4.5.0
+ webauth_krb5_set_fast_armor_path@WEBAUTH_4_5 4.6.1
  webauth_log_callback@WEBAUTH_4_5 4.5.0
  webauth_parse_interval@WEBAUTH_4_5 4.5.0
  webauth_token_decode@WEBAUTH_4_5 4.5.0
