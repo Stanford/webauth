@@ -1,0 +1,66 @@
+#!/usr/bin/perl
+#
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2014
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use strict;
+use warnings;
+
+use WebAuth::Tests qw(build_page run_test);
+
+# Text for the page.
+my @extended = ('Testing that WebAuthAuthType StanfordAuth along with '
+                .'AuthType StanfordAuth successfully authenticates the '
+                .'user and fills out the additional environment variables '
+                .'used by WebAuth 2.5.  Ignore the failure for AuthType '
+                .'in the standard tests.');
+
+# Set information for the tests.
+my %settings = (
+    test_number   => 11,
+    test_desc     => 'testing for StanfordAuth support',
+    extended_desc => \@extended,
+    extra_title   => 'Performing StanfordAuth test',
+    extra_tests   => stanfordauth_test(),
+);
+
+print "Content-type: text/html\n\n";
+print build_page(\%settings);
+
+#############################################################################
+# Tests only for this page
+#############################################################################
+
+# Check to make sure the query string is not set.
+sub stanfordauth_test {
+    my @tests;
+    my $user = $ENV{SU_AUTH_USER};
+    my $age  = $ENV{SU_AUTH_AGE};
+
+    my $record = run_test('SU_AUTH_USER',
+                          (defined($user) && $user ne '') ? 'PASS' : 'FAIL',
+                          $user,
+                          'not set!',
+                          1);
+    push (@tests, $record);
+
+    $record = run_test('SU_AUTH_USER == WEBAUTH_USER',
+                       ($user eq $ENV{WEBAUTH_USER}) ? 'PASS' : 'FAIL',
+                       'they are equal',
+                       'they are not equal!',
+                       0);
+    push (@tests, $record);
+
+    my $age_okay = abs($age + $ENV{WEBAUTH_TOKEN_CREATION} - time) < 5;
+    $record = run_test('SU_AUTH_AGE',
+                       $age_okay ? 'PASS' : 'FAIL',
+                       'close to time - creation',
+                       $age,
+                       0);
+    push (@tests, $record);
+
+    return \@tests;
+}

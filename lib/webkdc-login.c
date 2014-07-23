@@ -553,6 +553,14 @@ do_login_krb(struct webauth_context *ctx,
     s = webauth_krb5_new(ctx, &kc);
     if (s != WA_ERR_NONE)
         return s;
+    if (ctx->webkdc->fast_armor_path != NULL) {
+        const char *path;
+
+        path = ctx->webkdc->fast_armor_path;
+        s = webauth_krb5_set_fast_armor_path(ctx, kc, path);
+        if (s != WA_ERR_NONE)
+            return s;
+    }
     s = webauth_krb5_init_via_password(ctx, kc, login->username,
                                        login->password, NULL,
                                        ctx->webkdc->keytab_path,

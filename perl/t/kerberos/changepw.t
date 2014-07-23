@@ -166,8 +166,13 @@ $weblogin->query->param ('password', $password);
 $weblogin->query->param ('new_passwd1', $newpassword);
 $weblogin->add_changepw_token;
 ($status, $error) = $weblogin->change_user_password;
-is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
-is ($error, undef, '... with no error');
+SKIP: {
+    if ($error && $error =~ /operation not supported/) {
+        skip 'not built with remctl support', 2;
+    }
+    is ($status, WebKDC::WK_SUCCESS, 'changing the password works');
+    is ($error, undef, '... with no error');
+}
 
 # Stop remctld and make sure the correct information was written.
 remctld_stop;
@@ -179,8 +184,13 @@ if (open (DATA, '<', 'password-input')) {
     close DATA;
 }
 unlink 'password-input';
-is ($id, $username, '... and saw correct user principal');
-is ($pass, $newpassword, '... and password');
+SKIP: {
+    if ($error && $error =~ /operation not supported/) {
+        skip 'not built with remctl support', 2;
+    }
+    is ($id, $username, '... and saw correct user principal');
+    is ($pass, $newpassword, '... and password');
+}
 
 # Test going to change_user_password no CPT or password (should not work).
 $query = new CGI;

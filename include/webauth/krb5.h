@@ -106,6 +106,18 @@ void webauth_krb5_free(struct webauth_context *, struct webauth_krb5 *)
     __attribute__((__nonnull__));
 
 /*
+ * Configure the path to a credential cache to use for FAST armor during
+ * password authentication requests, or NULL to disable use of FAST armor.  If
+ * this is set, FAST will be used and required for all password
+ * authentications, and Kerberos authentications will fail if FAST cannot be
+ * used.
+ */
+int webauth_krb5_set_fast_armor_path(struct webauth_context *,
+                                     struct webauth_krb5 *,
+                                     const char *)
+    __attribute__((__nonnull__(1, 2)));
+
+/*
  * Initialize a webauth_krb5 context from an existing ticket cache.  If the
  * provided cache name is NULL, krb5_cc_default is used.
  */

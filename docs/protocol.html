@@ -12,6 +12,28 @@
 	  a {
 	  text-decoration: none;
 	  }
+      /* info code from SantaKlauss at http://www.madaboutstyle.com/tooltip2.html */
+      a.info {
+          /* This is the key. */
+          position: relative;
+          z-index: 24;
+          text-decoration: none;
+      }
+      a.info:hover {
+          z-index: 25;
+          color: #FFF; background-color: #900;
+      }
+      a.info span { display: none; }
+      a.info:hover span.info {
+          /* The span will display just on :hover state. */
+          display: block;
+          position: absolute;
+          font-size: smaller;
+          top: 2em; left: -5em; width: 15em;
+          padding: 2px; border: 1px solid #333;
+          color: #900; background-color: #EEE;
+          text-align: left;
+      }
 	  a.smpl {
 	  color: black;
 	  }
@@ -402,18 +424,17 @@
 <link href="#rfc.section.5.4.10" rel="Chapter" title="5.4.10 app Token Encoding"/>
 <link href="#rfc.section.5.5" rel="Chapter" title="5.5 Kerberos Credential Encoding"/>
 <link href="#rfc.section.6" rel="Chapter" title="6 Cookie Formats"/>
-<link href="#rfc.references" rel="Chapter" title="7 References"/>
 <link href="#rfc.appendix.A" rel="Chapter" title="A Document Revision History"/>
 <link href="#rfc.appendix.B" rel="Chapter" title="B License"/>
 <link href="#rfc.authors" rel="Chapter"/>
 
 
-  <meta name="generator" content="xml2rfc version 2.4.3 - http://tools.ietf.org/tools/xml2rfc" />
+  <meta name="generator" content="xml2rfc version 2.4.8 - http://tools.ietf.org/tools/xml2rfc" />
   <link rel="schema.dct" href="http://purl.org/dc/terms/" />
 
   <meta name="dct.creator" content="Schemers, R. and R. Allbery" />
   <meta name="dct.identifier" content="urn:ietf:id:draft-allbery-webauth-00" />
-  <meta name="dct.issued" scheme="ISO8601" content="2013-11" />
+  <meta name="dct.issued" scheme="ISO8601" content="2014-7-23" />
   <meta name="dct.abstract" content="Defines the WebAuth protocol for authenticating users to web applications using only the basic capabilities of a web browser.  Authentication is handled by a central login server using a protocol local to the given site.  Authentication information is then passed to application servers via encrypted tokens in a URL and maintained by the browser as cookies." />
   <meta name="description" content="Defines the WebAuth protocol for authenticating users to web applications using only the basic capabilities of a web browser.  Authentication is handled by a central login server using a protocol local to the given site.  Authentication information is then passed to application servers via encrypted tokens in a URL and maintained by the browser as cookies." />
 
@@ -425,20 +446,20 @@
     <tbody>
     
     	<tr>
-  <td class="left">Network Working Group</td>
+  <td class="left"></td>
   <td class="right">R. Schemers</td>
 </tr>
 <tr>
-  <td class="left">Internet-Draft</td>
+  <td class="left"></td>
   <td class="right">R. Allbery</td>
 </tr>
 <tr>
-  <td class="left">Intended status: Informational</td>
+  <td class="left"></td>
   <td class="right">Stanford University</td>
 </tr>
 <tr>
-  <td class="left">Expires: May 5, 2014</td>
-  <td class="right">November 2013</td>
+  <td class="left"></td>
+  <td class="right">July 23, 2014</td>
 </tr>
 
     	
@@ -452,18 +473,6 @@
   <a href="#rfc.abstract">Abstract</a>
 </h1>
 <p>Defines the WebAuth protocol for authenticating users to web applications using only the basic capabilities of a web browser.  Authentication is handled by a central login server using a protocol local to the given site.  Authentication information is then passed to application servers via encrypted tokens in a URL and maintained by the browser as cookies.</p>
-<h1 id="rfc.status">
-  <a href="#rfc.status">Status of This Memo</a>
-</h1>
-<p>This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.</p>
-<p>Internet-Drafts are working documents of the Internet Engineering Task Force (IETF).  Note that other groups may also distribute working documents as Internet-Drafts.  The list of current Internet-Drafts is at http://datatracker.ietf.org/drafts/current/.</p>
-<p>Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time.  It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."</p>
-<p>This Internet-Draft will expire on May 5, 2014.</p>
-<h1 id="rfc.copyrightnotice">
-  <a href="#rfc.copyrightnotice">Copyright Notice</a>
-</h1>
-<p>Copyright (c) 2013 IETF Trust and the persons identified as the document authors.  All rights reserved.</p>
-<p>This document is subject to BCP 78 and the IETF Trust's Legal Provisions Relating to IETF Documents (http://trustee.ietf.org/license-info) in effect on the date of publication of this document.  Please review these documents carefully, as they describe your rights and restrictions with respect to this document.  Code Components extracted from this document must include Simplified BSD License text as described in Section 4.e of the Trust Legal Provisions and are provided without warranty as described in the Simplified BSD License.</p>
 
   
   <hr class="noprint" />
@@ -520,7 +529,6 @@
 <li>5.4.10.   <a href="#rfc.section.5.4.10">app Token Encoding</a></li>
 <li>5.5.   <a href="#rfc.section.5.5">Kerberos Credential Encoding</a></li>
 <li>6.   <a href="#rfc.section.6">Cookie Formats</a></li>
-<li>7.   <a href="#rfc.references">References</a></li>
 <li>Appendix A.   <a href="#rfc.appendix.A">Document Revision History</a></li>
 <li>Appendix B.   <a href="#rfc.appendix.B">License</a></li>
 <li><a href="#rfc.authors">Authors' Addresses</a></li>
@@ -548,9 +556,9 @@
 <p id="rfc.section.1.1.2.p.2">All interactions between the UA and WAS SHOULD be protected with TLS or SSL to prevent cookies being disclosed to an eavesdropper that could use those cookies to impersonate a user.  The secure flag SHOULD be set on all WAS cookies to request that the browser enforce this.</p>
 <h1 id="rfc.section.1.1.3"><a href="#rfc.section.1.1.3">1.1.3.</a> <a href="#compwkdc" id="compwkdc">WebKDC</a></h1>
 <p id="rfc.section.1.1.3.p.1">The WebKDC will listen for two different type of requests, distinguished by different URLs.</p>
-<p id="rfc.section.1.1.3.p.2">The first type of request are those requests coming from a UA after it has been redirected by a WAS.  This component of the WebKDC is referred to as the WebLogin service.  When the WebKDC receives one of these, it will first see if the request includes a cookie that contains cached credentials.  If the request contains a valid cookie, this cookie is used to obtain a new credentials and the user is redirected back to the WAS (unless the WAS has requested the user reauthenticate).  This is the way that WebAuth implements single sign-on.</p>
+<p id="rfc.section.1.1.3.p.2">The first type of request are those requests coming from a UA after it has been redirected by a WAS.  This component of the WebKDC is referred to as the WebLogin service.  When the WebKDC receives one of these, it will first see if the request includes a cookie that contains cached credentials.  If the request contains a valid cookie, this cookie is used to obtain new credentials and the user is redirected back to the WAS (unless the WAS has requested the user reauthenticate).  This is the way that WebAuth implements single sign-on.</p>
 <p id="rfc.section.1.1.3.p.3">If the cookie is not present or has expired, then the user will be prompted for their username and password.  After submitting this information back to the WebKDC, the WebKDC will then verify the username and password, using whatever protocol is suitable for that site (Kerberos is the default).  The WebKDC will the generate two "tokens".  One is placed in a cookie scoped for the WebKDC and used to provide single sign-on in future requests, and one that gets sent back to the WAS, which will verify it upon receipt.</p>
-<p id="rfc.section.1.1.3.p.4">The second type of the WebKDC handles consist of XML messages that get POSTed to the WebKDC via HTTPS directly from a WAS.  These message are used to establish keys for the WAS servers or to request additional credentials for a user.</p>
+<p id="rfc.section.1.1.3.p.4">The second type of request the WebKDC handles consists of XML messages that get POSTed to the WebKDC via HTTPS directly from a WAS.  These messages are used to establish keys for the WAS servers or to request additional credentials for a user.</p>
 <p id="rfc.section.1.1.3.p.5">The WebKDC is also responsible for ensuring that the server making a request is authorized to make the request.  For example, one WAS server can't use a "token" that was created for use by another WAS server.</p>
 <p id="rfc.section.1.1.3.p.6">All interactions between the UA or WAS and the WebKDC MUST be protected via TLS or SSL to prevent disclosure of passwords, as well as sensitive data such as the tokens which are used to provide single sign-on and access to application resources.</p>
 <h1 id="rfc.section.1.2"><a href="#rfc.section.1.2">1.2.</a> <a href="#tokens" id="tokens">WebAuth Tokens</a></h1>
@@ -564,7 +572,7 @@
   <dt>webkdc-proxy (encrypted with WebKDC private key)</dt>
   <dd style="margin-left: 4"><br/>The webkdc-proxy-token contains a user's proxied credentials (generally, but not necessarily, a Kerberos ticket-granting ticket).  It can only be decrypted by the WebKDC, and the WebKDC will only allow a webkdc-proxy token to be used by the server it was originally generated for.  The main use of a webkdc-proxy token is by the WebKDC itself to implement single sign-on; that webkdc-proxy token is usually put in a cookie scoped to the WebLogin service.  Its secondary use is to allow WAS servers to request credential-tokens.</dd>
   <dt>request (encrypted with session key)</dt>
-  <dd style="margin-left: 4"><br/>The request token contains the request from a WAS for a token (usually an id token) from the WebKDC.  It is AES-encrypted in a session key from a webkdc-service token, and contains information like the return URL and type of token requested.  A webkdc-service token is always included in a request along with a request token.</dd>
+  <dd style="margin-left: 4"><br/>The request token contains the request from a WAS for a token (usually an id token) from the WebKDC.  It is AES-encrypted using a session key from a webkdc-service token, and contains information like the return URL and type of token requested.  A webkdc-service token is always included in a request along with a request token.</dd>
   <dt>error (encrypted with session key)</dt>
   <dd style="margin-left: 4"><br/>An error token is returned by the WebKDC in the event of an unrecoverable error that occurred while asking for a token with a request token.</dd>
   <dt>id (encrypted with session key)</dt>
@@ -583,7 +591,7 @@
 <p id="rfc.section.1.2.p.4">Their exact formats are discussed in detail at the end of this document.</p>
 <h1 id="rfc.section.1.3"><a href="#rfc.section.1.3">1.3.</a> <a href="#keymgmt" id="keymgmt">Security Model and Key Management</a></h1>
 <p id="rfc.section.1.3.p.1">As mentioned in the previous section, tokens are at the heart of the WebAuth security model.  They are used to authenticate requests and responses between servers, as well as protect data that is stored in URLs and cookies.  Shared symmetric keys (session keys) are used to encrypt tokens between servers, and private keys are used to encrypt tokens meant for a only a single server to decrypt.</p>
-<p id="rfc.section.1.3.p.2">Also note that any tokens that appear in URLs are tokens that are only valid for a short period of time (5 minutes by default).  Any attempt to re-use them after that will fail.  If a user bookmarks a URL with a token in it (or hits their "back" button) then one of three things can happen: </p>
+<p id="rfc.section.1.3.p.2">Also note that any tokens that appear in URLs are tokens that are only valid for a short period of time (5 minutes by default).  Any attempt to re-use them after that will fail.  If a user bookmarks a URL with a token in it (or hits their "back" button) then exactly one of these three things will happen: </p>
 
 <ul>
   <li>The user has a valid cookie. In this case, the token in the URL is ignored (but still stripped out from the URL before passing it to the app), so there is no problem.</li>
@@ -593,10 +601,12 @@
 
 <p> </p>
 <h1 id="rfc.section.1.3.1"><a href="#rfc.section.1.3.1">1.3.1.</a> <a href="#kmsessionkeys" id="kmsessionkeys">Distributing and Managing           Session Keys</a></h1>
-<p id="rfc.section.1.3.1.p.1">In order to exchange session keys, a key distribution protocol is needed.  For this purpose, we use Kerberos and TLS/SSL to bootstrap and get the session keys.  The WAS that needs a session key will post an XML message to the WebKDC requesting a service token.  This message contains a KRB_AP_REQ for the WebKDC's server principal, which the WebKDC uses to authenticate the server making the request.  The WebKDC will then send back the service token and a copy the session key that is also encrypted (in the WebKDC's key) inside of the service token.  The WAS will need both to make future requests to the WebKDC.  The whole transaction itself is protected with TLS or SSL.</p>
-<p id="rfc.section.1.3.1.p.2">There are no long term keys stored on the WebKDC itself other its own private key.  Once the WAS obtains the service token and session key, it will cache them both until the service token expires.  Before the service token expires, the WAS must request a new service token and will be given a corresponding new session key.</p>
-<p id="rfc.section.1.3.1.p.3">The WebAuth protocol is designed so that other authentication mechanisms may be used to bootstrap, such as GSS-API or TLS client authentication between servers.  Kerberos is just the first implemented bootstrap authentication mechanism.</p>
-<p id="rfc.section.1.3.1.p.4">One potential issue here is that potentially weaker keys (Kerberos keytabs, which could be 3DES or even just DES) are being used to bootstrap into stronger WebAuth AES keys.  This issue is partially mitigated by the use of TLS or SSL to further protect the transaction.  This seems to be an acceptable risk, but it's worth being aware of.  The Kerberos infrastructure should obviously use as strong of keys as possible.</p>
+<p id="rfc.section.1.3.1.p.1">In order to exchange session keys, a key distribution protocol is needed.  For this purpose, we use Kerberos and TLS/SSL to bootstrap and get the session keys.  The WAS that needs a session key will post an XML message to the WebKDC requesting a service token.  This message contains a KRB_AP_REQ for the WebKDC's server principal, which the WebKDC uses to authenticate the server making the request.  The WebKDC will then send back two pieces of data: a session key, and a service token encrypted with the WebKDC's private key and containing the same session key.  The service token is opaque to the WebAuth Application Server; it just stores this token and provides it to the WebKDC later when making requests.</p>
+<p id="rfc.section.1.3.1.p.2">This mechanism allows the WebKDC to not have to store the session key locally.  For subsequent requests, the WAS will encrypt the request in the session key and provide a copy of the service token alongside the request.  The WebKDC will decrypt the service token with its private key, recover the session key, and use it to decrypt and validate the request.  This means the WebKDC does not have to store any keys other than the private key that is used to encrypt the service tokens.</p>
+<p id="rfc.section.1.3.1.p.3">The whole transaction itself is protected with TLS or SSL.</p>
+<p id="rfc.section.1.3.1.p.4">There are no long term keys stored on the WebKDC itself other its own private key.  Once the WAS obtains the service token and session key, it will cache them both until the service token expires.  Before the service token expires, the WAS must request a new service token and will be given a corresponding new session key.</p>
+<p id="rfc.section.1.3.1.p.5">The WebAuth protocol is designed so that other authentication mechanisms may be used to bootstrap, such as GSS-API or TLS client authentication between servers.  Kerberos is just the first implemented bootstrap authentication mechanism.</p>
+<p id="rfc.section.1.3.1.p.6">One potential issue here is that potentially weaker keys (Kerberos keytabs, which could be 3DES or even just DES) are being used to bootstrap into stronger WebAuth AES keys.  This issue is partially mitigated by the use of TLS or SSL to further protect the transaction.  This seems to be an acceptable risk, but it's worth being aware of.  The Kerberos infrastructure should obviously use the strongest keys possible.</p>
 <h1 id="rfc.section.1.3.2"><a href="#rfc.section.1.3.2">1.3.2.</a> <a href="#kmprivatekeys" id="kmprivatekeys">Distributing and Managing           Private Keys</a></h1>
 <p id="rfc.section.1.3.2.p.1">Both the WebKDC and the WAS servers need private keys to encrypt their tokens with.  These keys will be randomly-generated 128-bit AES keys (longer keys are supported if needed).  They are stored in key rings on the WebKDC or WAS server.  The key ring SHOULD support holding both currently valid keys and keys that will be valid in the future.</p>
 <p id="rfc.section.1.3.2.p.2">Since key rings are never sent over the network by the WebAuth protocol, WebAuth implementations can use whatever mechanism they wish to store keys.  However, the following data should be stored for each key: </p>
@@ -617,11 +627,11 @@
 <p id="rfc.section.1.3.2.p.4">There is no support in the WebAuth protocol itself for distributing key rings among pools of servers, but a mechanism such as SSH can be used.</p>
 <p id="rfc.section.1.3.2.p.5">Stand-alone servers (not part of a pool) SHOULD automatically generate new keys when needed on a restart.</p>
 <h1 id="rfc.section.1.3.3"><a href="#rfc.section.1.3.3">1.3.3.</a> <a href="#kmpool" id="kmpool">Supporting Server Pools</a></h1>
-<p id="rfc.section.1.3.3.p.1">In order to support server pools, we need to ensure that any server that receives a token is able to decrypt and verify it.  Note that we are only talking about the WebAuth protocol here.  Applications must solve their own synchronization issues as well when using a pool of servers as a front end.</p>
+<p id="rfc.section.1.3.3.p.1">In order to support server pools, we need to ensure that any server that receives a token is able to decrypt and verify it.  Note that we are only talking about the WebAuth protocol here.  Applications must solve their own synchronization issues when using a pool of servers as a front end.</p>
 <p id="rfc.section.1.3.3.p.2">For the WebKDC, all we need to do is distribute the same key ring across all the WebKDCs.  Post-dating new keys when adding them makes this task easier, since the key ring only has to be updated on all WebKDCs by the time the key becomes valid.</p>
 <p id="rfc.section.1.3.3.p.3">For a WAS, there are two issues.  First, we also need to distribute the key ring so all WAS servers can decrypt their app-tokens.  The second question is how to deal with session keys.</p>
-<p id="rfc.section.1.3.3.p.4">Responses from the WebKDC come back to the WAS encrypted in the session key, not the WAS server's private key.  If the response comes back to a different WAS server, it will not have the same session key that the requesting WAS server had.  One could work around this by sharing the same service token and session key across all the servers, but this would be painful and expensive to do.</p>
-<p id="rfc.section.1.3.3.p.5">The most flexible and recommended solution is for WAS servers to include some state (described below) in each request token.  The WebKDC treats this state as opaque data and returns it to the WAS server along with the requested token.  It is transmitted alongside the returned token, not inside it, so that the WAS doesn't have to know the session key to read it.  To use this method, the WAS server creates an app token (which is encrypted in its private key, shared among all the sytsems in the pool), includes in it the session key, and sends this as the state in the request token.  Since the WebKDC returns this state along with its response, any WAS in the pool can then decrypt the state with its private key, recover the session key, and then use that to decrypt the rest of the response.</p>
+<p id="rfc.section.1.3.3.p.4">Responses from the WebKDC come back to the WAS encrypted with the session key, not the WAS server's private key.  If the response comes back to a different WAS server, it will not have the same session key that the requesting WAS server had.  One could work around this by sharing the same service token and session key across all the servers, but this would be painful and expensive to do.</p>
+<p id="rfc.section.1.3.3.p.5">The most flexible and recommended solution is for WAS servers to include some state (described below) in each request token.  The WebKDC treats this state as opaque data and returns it to the WAS server along with the requested token.  It is transmitted alongside the returned token, not inside it, so that the WAS doesn't have to know the session key to read it.  To use this method, the WAS server creates an app token (which is encrypted with its private key, shared among all the sytsems in the pool), includes in it the session key, and sends this as the state in the request token.  Since the WebKDC returns this state along with its response, any WAS in the pool can then decrypt the state with its private key, recover the session key, and then use that to decrypt the rest of the response.</p>
 <p id="rfc.section.1.3.3.p.6">Another somewhat simpler way to handle this is make sure that the return URL in the request token contains the server's private hostname or IP address instead of the virtual or pool address.  This solves the problem as the request always comes back to WAS server that initiated the request.  However, this means that the real server name or IP address must be exposed to the UA and transparent failover among systems in the pool will not be supported.</p>
 <h1 id="rfc.section.2"><a href="#rfc.section.2">2.</a> <a href="#scenarios" id="scenarios">WebAuth Scenarios</a></h1>
 <p id="rfc.section.2.p.1">There are five basic scenarios in the WebAuth protocol.</p>
@@ -670,7 +680,7 @@
   <li>The WAS connects directly to the WebKDC and requests a service token and session key to use for further requests.  It includes in this request a KRB_AP_REQ for the WebKDC's service principal, using the WAS's private Kerberos key.</li>
   <li>The WebKDC authenticates the WAS server via Kerberos and returns the webkdc-service token and corresponding session key.</li>
   <li>The UA requests a WebAuth-protected resource from WAS.</li>
-  <li>No app token is found either in a cookie or in the URL, so the WAS constructs a request token, asking for an id token.  The request token also contains the return URL, requested type of token, and any additional desired options.  It may also contain an app token with the session key encrypted in the WAS's private key (for handling server pools).  The request token is encrypted with the AES session key shared between the WAS and the WebKDC.  The WAS then returns a temporary redirect to the UA, sending the UA to the WebLogin component of the WebKDC and including the request token in the redirect URL.</li>
+  <li>No app token is found either in a cookie or in the URL, so the WAS constructs a request token, asking for an id token.  The request token also contains the return URL, requested type of token, and any additional desired options.  It may also contain an app token with the session key encrypted with the WAS's private key (for handling server pools).  The request token is encrypted with the AES session key shared between the WAS and the WebKDC.  The WAS then returns a temporary redirect to the UA, sending the UA to the WebLogin component of the WebKDC and including the request token in the redirect URL.</li>
   <li>The UA follows the redirect and sends a request to the WebLogin component of the WebKDC, including the request token in the URL.  No cookies are sent to the WebKDC since the user has never previously authenticated.</li>
   <li>The WebKDC decrypts the request token, checks the creation time to make sure the request is fresh, and sends back a login form or other authentication prompt to the UA.  The request token or needed information derived from it will generally be included in a hidden form field.  (This assumes that a form prompt is needed to authenticate the user.  If the user can be authenticated directly by the WebLogin server via some method such as SPNEGO, it may skip sending back a login form and therefore also skip the next step, proceeding directly to checking the authorization of the WAS.)</li>
   <li>The user enters their username and password or other authentication credentials and instructs their UA to submit the form back to the WebKDC.</li>
@@ -744,7 +754,7 @@
 
 <p> </p>
 <h1 id="rfc.section.2.4"><a href="#rfc.section.2.4">2.4.</a> <a href="#sc4" id="sc4">No App Token, Credentials Required</a></h1>
-<p>In the fourth scenario, the user requests a WebAuth-protected resource that needs proxied credentials to act on the user's behalf.  In this case, the WAS must request a proxy token, which it will then use to request additional credentials via the XML interface.  In the below discussion, we assume the US already has a webkdc-proxy cookie and the WebKDC can use single sign-on, but this is not required.  If there is no webkdc-proxy cookie, the user will be prompted for authentication and then everything else will proceed as below.</p>
+<p>In the fourth scenario, the user requests a WebAuth-protected resource that needs proxied credentials to act on the user's behalf.  In this case, the WAS must request a proxy token, which it will then use to request additional credentials via the XML interface.  In the below discussion, we assume the UA already has a webkdc-proxy cookie and the WebKDC can use single sign-on, but this is not required.  If there is no webkdc-proxy cookie, the user will be prompted for authentication and then everything else will proceed as below.</p>
 <pre>
   ---------------------------------------------------------------
       UA                 WAS                WebKDC
@@ -791,7 +801,7 @@
 <p> </p>
 <p id="rfc.section.2.4.p.2">Normally, the requested credential tokens will be Kerberos service tickets that the WAS can then use to talk to other services that use Kerberos authentication.  Since the webkdc-proxy token is generally a Kerberos TGT credential, this works together well and allows WebAuth to treat the UA's cookie jar as essentially a Kerberos ticket cache.  However, this is not required by the protocol and credential tokens may be any form of credential supported by the WAS and WebKDC.</p>
 <p id="rfc.section.2.4.p.3">As with an id token, the WAS may choose not to put the credentials in an app token for subsequent use.  It may instead want to store them on the server tied to a session cookie or some other internal state-tracking mechanism.  However, the metadata in the credential tokens (particularly expiration time) MUST be honored.</p>
-<p id="rfc.section.2.4.p.4">The credentials returned by the WebKDC in a credential token SHOULD encode an expiration time that cannot be manipulated by the WAS so that the WAS is need not be trusted to honor credential expiration.</p>
+<p id="rfc.section.2.4.p.4">The credentials returned by the WebKDC in a credential token SHOULD encode an expiration time that cannot be manipulated by the WAS so that the WAS need not be trusted to honor credential expiration.</p>
 <h1 id="rfc.section.2.5"><a href="#rfc.section.2.5">2.5.</a> <a href="#logout" id="logout">Logging Out</a></h1>
 <p id="rfc.section.2.5.p.1">The only fully effective way to log out of WebAuth is to close the browsing session, which will cause all WebAuth cookies to be discarded since they all MUST be session cookies.  This is a weakness in the WebAuth protocol created by the use of scoped cookies to hold all authentication information.  Fixing it requires keeping additional queriable state outside of the user's cookies and the WAS and WebKDC keys.</p>
 <p id="rfc.section.2.5.p.2">Logging out of an application requires removing all session cookies associated with a given application on a given server removed.  This can be achieved with a logout link available within the application itself that leads to a page that clears all the cookies.  A WebAuth WAS implementation SHOULD provide some simple way for an application developer to indicate that going to a given URL should remove all app cookies.</p>
@@ -984,7 +994,7 @@
     &lt;/tokens&gt;
   &lt;/getTokensResponse&gt;
 </pre>
-<p id="rfc.section.4.3.1.p.6">Here, the credentials provided are a previously-requested webkdc-service token instead of a Kerberos authenticator, and the proxy token received from the user's browser is also included.  In this form of the request, the WAS also includes a request token, encrypted in the session key of the webkdc-service token, to prove that it has possession of the session key.</p>
+<p id="rfc.section.4.3.1.p.6">Here, the credentials provided are a previously-requested webkdc-service token instead of a Kerberos authenticator, and the proxy token received from the user's browser is also included.  In this form of the request, the WAS also includes a request token, encrypted with the session key of the webkdc-service token, to prove that it has possession of the session key.</p>
 <p id="rfc.section.4.3.1.p.7">If any errors occur, an &lt;errorResponse&gt; message will be returned instead.</p>
 <h1 id="rfc.section.4.3.2"><a href="#rfc.section.4.3.2">4.3.2.</a> <a href="#xmlrequesttoken" id="xmlrequesttoken">requestToken</a></h1>
 <p id="rfc.section.4.3.2.p.1">The requestToken command is used by the WebLogin component of the WebKDC to process a request token sent in a URL from a WAS.</p>
@@ -1055,8 +1065,19 @@
     &lt;multifactorRequired&gt;
       &lt;factor&gt;{factor-code}&lt;/factor&gt;
       &lt;!-- repeat for each factor code required by the WAS --&gt;
+
       &lt;!-- present if user has configured a multifactor method --&gt;
-      &lt;configuredFactor&gt;{factor-code}&lt;/configuredFactor&gt;
+      &lt;!-- name is intended for display to the user in a list --&gt;
+      &lt;!-- device is included in login token --&gt;
+      &lt;!-- prompt indicates the user must be prompted for an OTP,
+           may be omitted if set to true (the default) --&gt;
+      &lt;!-- default indicates whether this should be the default
+           mechanism, may be omitted if set to false --&gt;
+      &lt;!-- the same {factor-code} may occur multiple times --&gt;
+      &lt;configuredFactor name="{method-name}"
+          device="{device-id}"
+          prompt="false"
+          default="true"&gt;{factor-code}&lt;/configuredFactor&gt;
       &lt;!-- repeat for each possible authentication method available
            for that user that would satisfy a requirement of the WAS
            or site policy, omitting "m" --&gt;
@@ -1306,6 +1327,8 @@
   <dd style="margin-left: 4"><br/>Credential type.  Currently this is always krb5.</dd>
   <dt>ct (binary time)</dt>
   <dd style="margin-left: 4"><br/>Creation time of the token.  For tokens used to exchange messages between servers (request, error, id, proxy, credential), this value is used to ensure that the request is fresh.  For example, tokens of this type with a ct older then 5 minutes will get flagged by the server (WAS or WebKDC) as being stale.</dd>
+  <dt>did (string)</dt>
+  <dd style="margin-left: 4"><br/>A unique device ID corresponding to this authentication request, and matching the device attribute of a &lt;configuredFactor&gt; element in a &lt;requestTokenResponse&gt; reply.  Included in a login token to tell the WebKDC which authentication device the user chose.</dd>
   <dt>ec (string)</dt>
   <dd style="margin-left: 4"><br/>Error code from the WebKDC.  This will be the ASCII digit representation of one of the error codes that are returned in XML messages.</dd>
   <dt>em (string)</dt>
@@ -1371,16 +1394,20 @@
   <dd style="margin-left: 4"><br/>Only used for session authentication factors, this indicates that the user authenticated this session using a Kerberos authentication (generally via Negotiate-Auth, but possibly via other methods).</dd>
   <dt>m (multifactor)</dt>
   <dd style="margin-left: 4"><br/>Multiple independent authentication factors were used.  The exact requirements for this are site-defined, but traditionally means password plus OTP, or password plus X.509, or an X.509 authentication from a smart card requiring a PIN.</dd>
+  <dt>mp (mobile push)</dt>
+  <dd style="margin-left: 4"><br/>The user approved an out-of-band push notification to a mobile device as part of the authentication process.</dd>
   <dt>o (OTP)</dt>
   <dd style="margin-left: 4"><br/>Some one-time password method was used for authentication.  This factor code is often used in combination with one of the o# codes defined below.</dd>
   <dt>o# (OTP)</dt>
   <dd style="margin-left: 4"><br/>The one-time password method numbered # was used.  The meaning of the numbers is site-defined, but the numbers should be integers starting with 1 and higher numbers should indicate a stronger OTP method.  For example, o1 could indicate a printed list of OTP codes, o2 could indicate a code sent via SMS message, and o3 could indicate a hardware device that is synchronized with the OTP server.</dd>
   <dt>p (password)</dt>
   <dd style="margin-left: 4"><br/>Traditional password authentication.</dd>
-  <dt>rm (random multifactor</dt>
+  <dt>rm (random multifactor)</dt>
   <dd style="margin-left: 4"><br/>The user was subject to a random chance of being challenged with a requirement for a multifactor authentication method and happened not to be challenged.  If the user had been challenged, either authentication would have failed or the m authentication factor would be used instead.  The chance of the challenge is site-defined.</dd>
   <dt>u (unknown)</dt>
   <dd style="margin-left: 4"><br/>The authentication method is not known.  This may be used, for example, when the user authenticates to the WebLogin component of the WebKDC using some authentication mechanism handled external to the WebLogin server and no information about that method is available.</dd>
+  <dt>v (voice)</dt>
+  <dd style="margin-left: 4"><br/>The user indicated approval of the authentication via a callback over voice telephone as part of the authentication process.</dd>
   <dt>x (X.509)</dt>
   <dd style="margin-left: 4"><br/>Some form of X.509 authentication was used.  Whether this is via a smart card is site-defined.  This factor code is often used in combination with one of the x# codes defined below.</dd>
   <dt>x# (X.509)</dt>
@@ -1389,7 +1416,7 @@
 
 <p> </p>
 <p id="rfc.section.5.3.p.2">An authentication factor of m will always satisfy a requirement for an authentication factor of rm.</p>
-<p id="rfc.section.5.3.p.3">Implementations may automatically add the m (multifactor) factor to the factors for an authentication if factors from more than one different authentication method are present (two or more from the set of h, o, p, and x, for example).  If an implementation does this, the c, k, rm, and u factors must not be considered when deciding whether to add an m factor.</p>
+<p id="rfc.section.5.3.p.3">Implementations may automatically add the m (multifactor) factor to the factors for an authentication if factors from more than one different authentication method are present (two or more from the set of h, mp, o, p, v, and x, for example).  If an implementation does this, the c, k, rm, and u factors must not be considered when deciding whether to add an m factor.</p>
 <p id="rfc.section.5.3.p.4">Sites may define and use their own factor codes, but they risk conflict with future standardized codes unless they coordinate that use with this list.</p>
 <h1 id="rfc.section.5.4"><a href="#rfc.section.5.4">5.4.</a> <a href="#tokenspecific" id="tokenspecific">Specific Token Encoding</a></h1>
 <p id="rfc.section.5.4.p.1">The following sections describe which tokens are supported, what they're used for, and which attributes are included and what those attributes mean in that context.</p>
@@ -1403,7 +1430,7 @@
   ct={creation-time}
   et={expiration-time}
             </pre>
-<p id="rfc.section.5.4.1.p.2">All attributes are AES-encrypted in the WebKDC's private key.  The server that initially requested the token will also receive {session-key} and {expiration-time} out-of-band from the token itself.  That additional data must also be stored by the WAS for the duration of the token.</p>
+<p id="rfc.section.5.4.1.p.2">All attributes are AES-encrypted using the WebKDC's private key.  The server that initially requested the token will also receive {session-key} and {expiration-time} out-of-band from the token itself.  That additional data must also be stored by the WAS for the duration of the token.</p>
 <h1 id="rfc.section.5.4.2"><a href="#rfc.section.5.4.2">5.4.2.</a> <a href="#tokenwebkdcproxy" id="tokenwebkdcproxy">webkdc-proxy Token           Encoding</a></h1>
 <p id="rfc.section.5.4.2.p.1">A webkdc-proxy token is a proxy authentication token maintained by the WebKDC on behalf of another user, or on behalf of itself.  Normally it contains a Kerberos credential for the ticket-granting service (a Kerberos TGT plus its supporting data such as the session key).</p>
 <p>Token format:</p>
@@ -1418,7 +1445,7 @@
   [ia={factor-list}]
   [loa={level-of-assurance}]
             </pre>
-<p id="rfc.section.5.4.2.p.2">All attributes are AES-encrypted in the WebKDC's private key.</p>
+<p id="rfc.section.5.4.2.p.2">All attributes are AES-encrypted using the WebKDC's private key.</p>
 <p id="rfc.section.5.4.2.p.3">As a special case, krb5 webkdc-proxy tokens that the WebKDC obtains on behalf of itself (returned as part of a requestTokenRequest, for example) have a ps attribute value of WEBKDC:krb5:{server-principal} where {server-principal} is the Kerberos principal of the WebKDC.  remuser webkdc-proxy tokens (created by WebLogin based on trusting REMOTE_USER authentication from the web server rather than via a password authentication or forwarded Kerberos ticket) have a ps attribute value of WEBKDC:remuser.</p>
 <p id="rfc.section.5.4.2.p.4">When a webkdc-proxy-token is used in a &lt;getTokensRequest&gt; message, the WebKDC checks that the subject in the webkdc-service token accompanying the request is authorized to used the webkdc-proxy token granted to the ps subject.  When used in a &lt;requestTokensRequest&gt;, the WebKDC checks that the ps subject starts with "WEBKDC:".</p>
 <h1 id="rfc.section.5.4.3"><a href="#rfc.section.5.4.3">5.4.3.</a> <a href="#tokenwebkdcfactor" id="tokenwebkdcfactor">webkdc-factor Token           Encoding</a></h1>
@@ -1433,7 +1460,7 @@
   ct={creation-date}
   et={expiration-date}
             </pre>
-<p id="rfc.section.5.4.3.p.4">All attributes are AES-encrypted in the WebKDC's private key.</p>
+<p id="rfc.section.5.4.3.p.4">All attributes are AES-encrypted using the WebKDC's private key.</p>
 <p id="rfc.section.5.4.3.p.5">webkdc-factor tokens are only valid when presented in conjunction with at least one valid webkdc-proxy or login token for the same subject.  Its factors are added to both the initial and session factors of a successful authentication.</p>
 <p id="rfc.section.5.4.3.p.6">Inside the WebKDC, multiple webkdc-factor tokens from different sources may be merged into a single token.  If this is done, the resulting token's creation and expiration dates should be set to the oldest creation and expiration dates of all the constituent tokens.  In particular, the creation date of the resulting token should not be set to the time at which the tokens were merged.  This permits discarding all webkdc-factor tokens older than a particular date, which may be a useful operation if a particular user experienced a security compromise.</p>
 <p id="rfc.section.5.4.3.p.7">webkdc-factor tokens will contribute their factors to any successful authentication until they have expired, even if the credentials that result from that authentication will persist beyond the expiration time of the webkdc-factor token.  For example, one can use a webkdc-factor token that expires in one minute as part of an authentication that results in a webkdc-proxy token that expires in ten hours, and the webkdc-factor token still contributes its factors.  The expiration time should therefore be thought of as the time at which the webkdc-factor token stops contributing factors to new authentications, not the time at which those authentication factors fully expire.</p>
@@ -1461,7 +1488,7 @@
   ct={creation-time}
   cmd={xml-command-we-are-going-to-execute}
             </pre>
-<p id="rfc.section.5.4.4.p.2">All attributes are AES-encrypted in the webkdc-service token session key.</p>
+<p id="rfc.section.5.4.4.p.2">All attributes are AES-encrypted using the webkdc-service token session key.</p>
 <p id="rfc.section.5.4.4.p.3">The value of ct is used to prevent replay attacks.  Values older than a certain time (probably 5 minutes by default) should be rejected as a replay.</p>
 <p id="rfc.section.5.4.4.p.4">cmd indicates which XML command we are invoking (for example, getTokensRequest).  The WebKDC will compare this command against the name of the command in the XML, thereby verifying the unencrypted XML request.</p>
 <h1 id="rfc.section.5.4.5"><a href="#rfc.section.5.4.5">5.4.5.</a> <a href="#tokenerror" id="tokenerror">error Token Encoding</a></h1>
@@ -1473,7 +1500,7 @@
   ec={error-code}
   em={error-message}
             </pre>
-<p id="rfc.section.5.4.5.p.2">All attributes are AES-encrypted in the webkdc-service token session key.</p>
+<p id="rfc.section.5.4.5.p.2">All attributes are AES-encrypted using the webkdc-service token session key.</p>
 <p id="rfc.section.5.4.5.p.3">The value of ct is used to prevent replay attacks.  Values older than a certain time (probably 5 minutes by default) should be rejected as a replay.</p>
 <h1 id="rfc.section.5.4.6"><a href="#rfc.section.5.4.6">5.4.6.</a> <a href="#tokenid" id="tokenid">id Token Encoding</a></h1>
 <p id="rfc.section.5.4.6.p.1">The id token is returned by the WebKDC and is bound to an WAS.  It is used to communicate the authenticated identity of a user.</p>
@@ -1493,7 +1520,7 @@
   [san={factor-list}]
   [loa={level-of-assurance}]
             </pre>
-<p id="rfc.section.5.4.6.p.2">All attributes are AES-encrypted in the webkdc-service token session key.</p>
+<p id="rfc.section.5.4.6.p.2">All attributes are AES-encrypted using the webkdc-service token session key.</p>
 <p id="rfc.section.5.4.6.p.3">If "at" is krb5, then "sad" (subject authenticator data) is a KRB_AP_REQ for the WAS service principal (as determined from the subject of the webkdc-service token) using the user's TGT from a krb5 webkdc-proxy token.</p>
 <p id="rfc.section.5.4.6.p.4">If at is webkdc, we are trusting the webkdc and "s" contains the authenticated user's identity (generally as a Kerberos principal name in text form).</p>
 <p id="rfc.section.5.4.6.p.5">The value of ct is used to prevent replay attacks.  Values older than a certain time (probably 5 minutes by default) should be rejected as a replay, as id tokens are only used once and re-written into an app token.</p>
@@ -1513,7 +1540,7 @@
   [san={factor-list}]
   [loa={level-of-assurance}]
             </pre>
-<p id="rfc.section.5.4.7.p.2">All attributes are AES-encrypted in the webkdc-service token session key.</p>
+<p id="rfc.section.5.4.7.p.2">All attributes are AES-encrypted using the webkdc-service token session key.</p>
 <p id="rfc.section.5.4.7.p.3">In addition to the webkdc-proxy token, a proxy token provides all the same authentication information about a user as an id token with a subject auth of "webkdc".  If the WAS only needs id token information at the level provided by the "webkdc" subject auth type, it can use the proxy token for that information without requesting an id token.  If it wants an id token with a "krb5" subject auth type, it will have to request that from the WebKDC using the proxy token.</p>
 <p id="rfc.section.5.4.7.p.4">The value of ct is used to prevent replay attacks.  Values older then a certain time (probably 5 minutes by default) should be rejected as a replay, as proxy tokens are only used once and re-written into an app token.</p>
 <p id="rfc.section.5.4.7.p.5">wt is the webkdc-proxy token (in binary form).  It can be used by the WAS later to request credential tokens from the WebKDC.</p>
@@ -1530,9 +1557,9 @@
   ct={creation-date}
   et={expiration-date}
             </pre>
-<p id="rfc.section.5.4.8.p.2">All attributes are AES-encrypted in the webkdc-service token session key.</p>
+<p id="rfc.section.5.4.8.p.2">All attributes are AES-encrypted using the webkdc-service token session key.</p>
 <h1 id="rfc.section.5.4.9"><a href="#rfc.section.5.4.9">5.4.9.</a> <a href="#tokenlogin" id="tokenlogin">login Token Encoding</a></h1>
-<p id="rfc.section.5.4.9.p.1">A login token is used by the WebLogin component of the WebKDC to communicate a username and password or one-time-password code to the rest of the WebKDC when it needs to authenticate a user.</p>
+<p id="rfc.section.5.4.9.p.1">A login token is used by the WebLogin component of the WebKDC to communicate an authentication request to the WebKDC.  This always contains a username, and may contain a password, one-time password (OTP), or device identifier to use for authetnication.</p>
 <p>Token format:</p>
 <pre>
   t=login
@@ -1541,8 +1568,9 @@
   [p={password}]
   [otp={one-time-password-code}]
   [ott={one-time-password-factor}]
+  [did={device-id}]
             </pre>
-<p id="rfc.section.5.4.9.p.2">All attributes are AES-encrypted in the WebKDC's private key.  One of p or otp must be provided.  If otp is provided, ott may also be provided (but is not required).  It should be a factor code (generally one of the oN factors) indicating what type of OTP this code is for.</p>
+<p id="rfc.section.5.4.9.p.2">All attributes are AES-encrypted using the WebKDC's private key.  One of p, otp, or did must be provided.  If otp is provided, did and ott may also be provided (but are not required by the WebAuth protocol, although they may be required by local site configuration).  did should be a device ID chosen from the device attributes of &lt;configuredFactor&gt; tags in the &lt;requestTokenResponse&gt; reply.  ott should be a factor code (generally one of the oN factors) indicating what type of OTP this code is for, or a factor code indicating what type of authentication to attempt with this device.</p>
 <h1 id="rfc.section.5.4.10"><a href="#rfc.section.5.4.10">5.4.10.</a> <a href="#tokenapp" id="tokenapp">app Token Encoding</a></h1>
 <p id="rfc.section.5.4.10.p.1">An app token is controlled and maintained by a WAS.  The main use of an app token is to cache the idenity within an id token after it has been verified.</p>
 <p>Token format:</p>
@@ -1558,7 +1586,7 @@
   [san={factor-list}]
   [loa={level-of-assurance}]
             </pre>
-<p id="rfc.section.5.4.10.p.2">All attributes are AES-encrypted in the WAS's private key.</p>
+<p id="rfc.section.5.4.10.p.2">All attributes are AES-encrypted using the WAS's private key.</p>
 <p id="rfc.section.5.4.10.p.3">app tokens are normally created on first receipt of an id token.   After the id token is verified, it is converted into an app token and then stored in a cookie.</p>
 <p id="rfc.section.5.4.10.p.4">{last-use-time} is optional and should only be included if the WAS wishes to invalidate idle but unexpired app tokens.</p>
 <p id="rfc.section.5.4.10.p.5">{session-key} is only present when an app token is being used as the application state inside of a request token.  This is done when serving the same web resource with a pool of servers that all should be able to decrypt the id token from the WebKDC.</p>
@@ -1609,13 +1637,12 @@
 <h1 id="rfc.section.6"><a href="#rfc.section.6">6.</a> <a href="#cookies" id="cookies">Cookie Formats</a></h1>
 <p id="rfc.section.6.p.1">Cookies are used to hold tokens in a UA for future use.  All cookies MUST be scoped to a single server; there are no domain-wide cookies.  All cookies will be encoded in base64 before passing them to the UA.</p>
 <p id="rfc.section.6.p.2">The tokens that are put in cookies are webkdc-proxy, proxy, app, and cred tokens.  The following naming convention will be used to name cookies.</p>
-<p id="rfc.section.6.p.3">Note that proxy tokens and credential tokens are originally encrypted in the webkdc-service token session key, but are re-encrypted using the WAS private key before being stored in a cookie.</p>
+<p id="rfc.section.6.p.3">Note that proxy tokens and credential tokens are originally encrypted with the webkdc-service token session key, but are re-encrypted using the WAS private key before being stored in a cookie.</p>
 <p id="rfc.section.6.p.4">app token cookies will be named webauth_at.</p>
 <p id="rfc.section.6.p.5">webkdc-proxy token cookies will be named webauth_wpt_{type} where {type} is the type of the webkdc-proxy token (usually krb5).</p>
 <p id="rfc.section.6.p.6">webkdc-factor token cookies will be named webkdc_wft.  This means that only a single factor token cookie can be set within a particular browser.  If there are multiple sources of factors that should be stored in webkdc-factor tokens, they must be merged into a single token by the WebKDC.</p>
 <p id="rfc.section.6.p.7">proxy token cookies will be named webauth_pt_{type} where {type} is the type of the proxy token (usually krb5).</p>
 <p id="rfc.section.6.p.8">credential tokens will be named webauth_ct_{type}_{service} where {type} is the type of the credential token (usually krb5) and {service} is the krb5 service name, potentially with special characters escaped.</p>
-<h1 id="rfc.references"><a href="#rfc.references">7.</a> References</h1>
 <h1 id="rfc.appendix.A"><a href="#rfc.appendix.A">Appendix A.</a> <a href="#history" id="history">Document Revision History</a></h1>
 <p/>
 
@@ -1662,11 +1689,13 @@
   <dd style="margin-left: 4"><br/>Be explicit that token encryption is 128-bit AES in CBC mode.</dd>
   <dt>3.5.2 (2013-11-09, rra)</dt>
   <dd style="margin-left: 4"><br/>Document the IV used for token encryption and be explicit about the security requirements for nonces and key rotation.</dd>
+  <dt>3.6.0 (2014-07-10, rra)</dt>
+  <dd style="margin-left: 4"><br/>Add attributes for &lt;configuredFactor&gt; tags in &lt;requestTokenResponse&gt; to provide WebLogin with more information about possible factors.  Add the did token attribute to login tokens to communicate the ID of the device with which the user is attempting to authenticate.  Add new mp and v factor codes.  Wording and grammar clarifications, thanks to Adam Lewenberg.</dd>
 </dl>
 
 <p> </p>
 <h1 id="rfc.appendix.B"><a href="#rfc.appendix.B">Appendix B.</a> <a href="#license" id="license">License</a></h1>
-<p id="rfc.section.B.p.1">Copyright 2006, 2008, 2009, 2010, 2011, 2012, 2013 The Board of Trustees of the Leland Stanford Junior University</p>
+<p id="rfc.section.B.p.1">Copyright 2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014 The Board of Trustees of the Leland Stanford Junior University</p>
 <p id="rfc.section.B.p.2">Copying and distribution of this file, with or without modification, are permitted in any medium without royalty provided the copyright notice and this notice are preserved.  This file is offered as-is, without any warranty.</p>
 <h1 id="rfc.authors">
   <a href="#rfc.authors">Authors' Addresses</a>
@@ -1701,7 +1730,7 @@
 	</span>
 	<span class="org vcardline">Stanford University</span>
 	<span class="adr">
-	  <span>255 Panama Street, MC 4136</span>
+	  <span class="vcardline">255 Panama Street, MC 4136</span>
 
 	  <span class="vcardline">
 		<span class="locality">Stanford</span>,  

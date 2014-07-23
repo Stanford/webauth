@@ -6,7 +6,7 @@
  * in the shared library for ease of testing and custom development.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,6 +50,7 @@ struct webauth_webkdc_config {
     const char *principal;      /* WebKDC's Kerberos principal. */
     time_t proxy_lifetime;      /* Maximum webkdc-proxy token lifetime (s). */
     time_t login_time_limit;    /* Time limit for completing login process. */
+    const char *fast_armor_path;        /* Path to cache for FAST armor. */
     const WA_APR_ARRAY_HEADER_T *permitted_realms; /* Array of char * realms */
     const WA_APR_ARRAY_HEADER_T *local_realms;     /* Array of char * realms */
 };

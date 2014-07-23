@@ -40,30 +40,31 @@ pstrdup_null(apr_pool_t *pool, const char *string)
  */
 int
 webauth_webkdc_config(struct webauth_context *ctx,
-                      const struct webauth_webkdc_config *config)
+                      const struct webauth_webkdc_config *conf)
 {
     struct webauth_webkdc_config *webkdc;
 
     /* Verify that the new configuration is sane. */
-    if (config->local_realms == NULL) {
+    if (conf->local_realms == NULL) {
         wai_error_set(ctx, WA_ERR_INVALID, "local realms must be present");
         return WA_ERR_INVALID;
     }
-    if (config->permitted_realms == NULL) {
+    if (conf->permitted_realms == NULL) {
         wai_error_set(ctx, WA_ERR_INVALID, "permitted realms must be present");
         return WA_ERR_INVALID;
     }
 
     /* Copy the configuration into the context. */
     webkdc = apr_pcalloc(ctx->pool, sizeof(struct webauth_webkdc_config));
-    webkdc->keytab_path      = pstrdup_null(ctx->pool, config->keytab_path);
-    webkdc->id_acl_path      = pstrdup_null(ctx->pool, config->id_acl_path);
-    webkdc->principal        = pstrdup_null(ctx->pool, config->principal);
-    webkdc->proxy_lifetime   = config->proxy_lifetime;
-    webkdc->login_time_limit = config->login_time_limit;
-    webkdc->local_realms     = apr_array_copy(ctx->pool, config->local_realms);
+    webkdc->keytab_path      = pstrdup_null(ctx->pool, conf->keytab_path);
+    webkdc->id_acl_path      = pstrdup_null(ctx->pool, conf->id_acl_path);
+    webkdc->principal        = pstrdup_null(ctx->pool, conf->principal);
+    webkdc->proxy_lifetime   = conf->proxy_lifetime;
+    webkdc->login_time_limit = conf->login_time_limit;
+    webkdc->fast_armor_path  = pstrdup_null(ctx->pool, conf->fast_armor_path);
+    webkdc->local_realms     = apr_array_copy(ctx->pool, conf->local_realms);
     webkdc->permitted_realms
-        = apr_array_copy(ctx->pool, config->permitted_realms);
+        = apr_array_copy(ctx->pool, conf->permitted_realms);
     ctx->webkdc = webkdc;
 
     /* FIXME: Add more error checking for consistency of configuration. */

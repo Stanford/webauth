@@ -236,8 +236,8 @@ CONFIGURATION
 
     You can put these files somewhere else if you wish.  Just change
     WebAuthKeyring and WebAuthKeytab in your Apache configuration.  Only
-    the keyring directory needs to be writable by the Apache process.  The
-    keytab just needs to be readable.
+    the keyring directory and file need to be writable by the Apache
+    process.  The keytab just needs to be readable.
 
     Then, install a keytab in <apache-root>/conf/webauth/keytab (or
     elsewhere if you chose to put it somewhere else).  The recommended
@@ -399,7 +399,7 @@ CONCLUSION
 
 LICENSE
 
-    Copyright 2003, 2004, 2006, 2007, 2008, 2009, 2010, 2011
+    Copyright 2003, 2004, 2006, 2007, 2008, 2009, 2010, 2011, 2014
         The Board of Trustees of the Leland Stanford Junior University
 
     Copying and distribution of this file, with or without modification,
