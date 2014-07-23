@@ -1,3 +1,30 @@
+webauth (4.6.1-1) UNRELEASED; urgency=medium
+
+  * New upstream release.
+    - Fix legacy support for AuthType StanfordAuth.
+    - New mod_webkdc configuration directive, WebKdcFastArmorCache, that
+      tells the WebKDC to always use FAST armor when obtaining initial
+      credentials using a password.
+    - Fix parsing of the WebKdcKerberosFactors directive.
+    - New webauth_krb5_set_fast_armor_path API.
+    - Show expiring password warning in WebLogin after any POST.
+    - Translate KRB5_KDC_UNREACH into a user rejected error instead of an
+      internal failure.
+    - Translate an EINVAL error to an incorrect password error code.
+    - Verify the username field on multifactor authentication to avoid
+      warnings from later in the code.
+    - Allow newlines, CRs, and tabs in XML from the WebKDC to the WebLogin
+      server, fixing display of some user message elements.
+    - Force display of the confirmation page if authorization identity
+      switching is permitted.
+    - Diagnose empty RT and ST parameters to WebLogin.
+    - Add new factors mp (mobile push) and v (voice).
+    - Warn in the mod_webauth documentation that all members of a
+      load-balanced pool accepting credential delegation must use the same
+      Kerberos identity.
+
+ -- Russ Allbery <rra@debian.org>  Wed, 23 Jul 2014 13:12:30 -0700
+
 webauth (4.6.0-4) unstable; urgency=medium
 
   * Use an executable debian/libwebauth-perl.install file and some Perl
