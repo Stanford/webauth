@@ -1,6 +1,98 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.6.1 (2014-07-23)
+
+    Support for AuthType StanfordAuth (for backward compatibility with
+    WebAuth 2.5) was broken in WebAuth 4.6.0, causing mod_webauth to
+    reject all accesses to resources protected with that AuthType.  This
+    has been fixed in this release.
+
+    Add a new configuration directive, WebKdcFastArmorCache, for
+    mod_webkdc.  If set, this specifies the path to a Kerberos ticket
+    cache that can (and must) be used for FAST (Flexible Authentication
+    Secure Tunneling) protection of Kerberos password authentications.
+    The Kerberos KDC must also support FAST in order to safely enable this
+    option.  Based on a patch by Jakob Uhd Jepsen (One.com A/S).
+
+    Fix parsing of the WebKdcKerberosFactors configuration directive.
+
+    Add a new webauth_krb5_set_fast_armor_path interface to libwebauth
+    that allows configuring a path to a FAST armor ticket cache before
+    authenticating with a password.
+
+    Show the expiring password warning in WebLogin if the browser request
+    was a POST.  Previously, it was skipped if the user had a REMOTE_USER
+    preference or if the browser presented a single sign-on cookie.  This
+    was too conservative, not warning in cases when REMOTE_USER failed,
+    when the browser presented an expired single sign-on cookie (systems
+    that are suspended rather than shut down, for example), and when the
+    user has to do multifactor authentication.  Checking for a POST is a
+    closer match for when we can force a confirmation screen without too
+    much user disruption.
+
+    When translating Kerberos errors, treat KRB5_KDC_UNREACH (cannot
+    contact any KDC for realm) as a user rejected error instead of a
+    Kerberos error.  This avoids returning an internal error from WebLogin
+    and instead tells the user the username is invalid.  This is not
+    always correct, since the unreachable KDC could be the local KDC, but
+    it's better than the previous behavior of throwing internal errors
+    when users enter email addresses as their username.
+
+    Translate an EINVAL error from the Kerberos libraries during password
+    authentication to an incorrect password error code.  Older versions of
+    MIT Kerberos returned EINVAL for excessively long passwords.
+
+    In WebLogin, verify that the username form field was sent before
+    attempting to do multifactor operations and return an error if it
+    isn't, avoiding undefined variable warnings and other errors deeper in
+    the WebLogin code.
+
+    Allow newlines, carriage returns, and tabs in the XML sent from the
+    WebKDC to the WebLogin server rather than replacing them with periods.
+    This fixes the display of <user-message> elements that contain
+    newlines.
+
+    If a user may switch to a different authorization identity, force
+    display of the confirmation page in WebLogin even if this is normally
+    disabled.  Otherwise, there is no opportunity for the user to change
+    identities.
+
+    Diagnose empty RT or ST parameters to WebLogin and return the same
+    error as when those parameters are missing entirely.
+
+    Fix compilation when remctl support is not enabled.
+
+    Add new factors mp (mobile push) and v (voice), which count as
+    separate classes for determining multifactor.  This means the
+    combination of those factors with any other factor class will result
+    in a synthensized multifactor factor.
+
+    Warn in the mod_webauth documentation that, when using credential
+    delegation to a load-balanced pool, all members of that pool must have
+    the same Kerberos identity.
+
+    Update to rra-c-util 5.5:
+
+    * Use Lancaster Consensus environment variables to control tests.
+    * Use calloc or reallocarray for protection against integer overflows.
+    * Suppress warnings from Kerberos headers in non-system paths.
+    * Update warning flags when building with make warnings.
+    * Only pass warning suppression flags to Perl under make warnings.
+
+    Update to C TAP Harness 3.1:
+
+    * Check for integer overflow on memory allocations.
+    * Avoid all remaining uses of sprintf.
+
 WebAuth 4.6.0 (2014-03-18)
+
+    WARNING: When upgrading to this release, you will need to change the
+    ownership of the mod_webauth keyring file (named in the WebAuthKeyring
+    Apache directive) to the user and group the Apache child processes run
+    as.  (This is controlled by the User and Group Apache directives and
+    is often something like www-data.)  Previous versions would create
+    this file readable only by root, but, as of this release, it must be
+    readable and writable by the Apache child processes.
 
     mod_webauth supports a new configuration directive, WebAuthCookiePath,
     which scopes all cookies set by mod_webauth to the given path.  This

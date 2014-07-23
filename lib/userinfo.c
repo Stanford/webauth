@@ -532,7 +532,7 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
 {
     int s;
     const char *argv[9];
-    apr_xml_doc *doc;
+    apr_xml_doc *doc = NULL;
     struct webauth_user_config *c = ctx->user;
 
     /* A URL is required if we have factors. */
@@ -567,7 +567,7 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
 {
     int s;
     const char *argv[8];
-    apr_xml_doc *doc;
+    apr_xml_doc *doc = NULL;
     struct webauth_user_config *c = ctx->user;
 
     argv[0] = c->command;

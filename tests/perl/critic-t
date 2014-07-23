@@ -2,10 +2,6 @@
 #
 # Check for perlcritic errors in included Perl scripts.
 #
-# Checks all Perl scripts in the tree for problems uncovered by perlcritic.
-# This test is disabled unless RRA_MAINTAINER_TESTS is set, since coding style
-# will not interfere with functionality.
-#
 # The canonical version of this file is maintained in the rra-c-util package,
 # which can be found at <http://www.eyrie.org/~eagle/software/rra-c-util/>.
 #
@@ -39,12 +35,13 @@ use lib "$ENV{SOURCE}/tap/perl";
 
 use File::Spec;
 use Test::More;
-use Test::RRA qw(skip_unless_maintainer use_prereq);
+use Test::RRA qw(skip_unless_author use_prereq);
 use Test::RRA::Automake qw(automake_setup perl_dirs test_file_path);
 use Test::RRA::Config qw(@CRITIC_IGNORE);
 
-# Skip tests unless we're running the test suite in maintainer mode.
-skip_unless_maintainer('Coding style tests');
+# Skip tests unless we're running author tests since this test is too
+# sensitive to the exact version of Perl::Critic to be generally useful.
+skip_unless_author('Coding style tests');
 
 # Set up Automake testing.
 automake_setup();

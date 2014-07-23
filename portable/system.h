@@ -5,7 +5,8 @@
  * file is the equivalent of including all of the following headers,
  * portably:
  *
- *     #include <sys/types.h>
+ *     #include <inttypes.h>
+ *     #include <limits.h>
  *     #include <stdarg.h>
  *     #include <stdbool.h>
  *     #include <stddef.h>
@@ -14,6 +15,7 @@
  *     #include <stdint.h>
  *     #include <string.h>
  *     #include <strings.h>
+ *     #include <sys/types.h>
  *     #include <unistd.h>
  *
  * Missing functions are provided via #define or prototyped if available from
@@ -46,6 +48,7 @@
 #if HAVE_INTTYPES_H
 # include <inttypes.h>
 #endif
+#include <limits.h>
 #include <stdarg.h>
 #include <stddef.h>
 #if HAVE_STDINT_H
@@ -131,6 +134,9 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #endif
 #if !HAVE_MKSTEMP
 extern int mkstemp(char *);
+#endif
+#if !HAVE_REALLOCARRAY
+extern void *reallocarray(void *, size_t, size_t);
 #endif
 #if !HAVE_STRLCAT
 extern size_t strlcat(char *, const char *, size_t);

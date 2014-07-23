@@ -49,6 +49,7 @@ struct webauth_krb5 {
     krb5_context ctx;
     krb5_ccache cc;
     krb5_principal princ;
+    const char *fast_armor_path;
     struct webauth_krb5_change_config change;
 };
 
@@ -300,6 +301,30 @@ webauth_krb5_free(struct webauth_context *ctx UNUSED, struct webauth_krb5 *kc)
 
 
 /*
+ * Set the FAST armor cache.  Most errors will only be caught during the
+ * actual authentication, but we can fail here if built without FAST support.
+ */
+int
+webauth_krb5_set_fast_armor_path(struct webauth_context *ctx UNUSED,
+                                 struct webauth_krb5 *kc, const char *path)
+{
+    /* If path is NULL, just clear the armor path unconditionally. */
+    if (path == NULL)
+        kc->fast_armor_path = NULL;
+
+    /* Otherwise, return an error if not built with FAST support. */
+#ifndef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_CCACHE_NAME
+    return wai_error_set(ctx, WA_ERR_UNIMPLEMENTED,
+                         "not built with FAST support");
+#endif
+
+    /* Stash the path for later use. */
+    kc->fast_armor_path = apr_pstrdup(kc->pool, path);
+    return WA_ERR_NONE;
+}
+
+
+/*
  * Set up the ticket cache that will be used to store the credentials
  * associated with a webauth_krb5 context.  This is shared by all the
  * webauth_krb5_init_via_* and webauth_import_cred functions.  Uses a memory
@@ -328,11 +353,15 @@ setup_cache(struct webauth_context *ctx, struct webauth_krb5 *kc,
  * Translate a Kerberos error code from a krb5_get_init_creds* function into
  * an appropriate WebAuth code, setting the WebAuth error message at the same
  * time.  Returns the WebAuth status code that we set.
+ *
+ * Older versions of MIT Kerberos returned EINVAL if the password was
+ * excessively long.
  */
 static int
 translate_error(struct webauth_context *ctx, krb5_error_code code)
 {
     switch (code) {
+    case EINVAL:
     case KRB5KDC_ERR_PREAUTH_FAILED:
     case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
@@ -341,6 +370,7 @@ translate_error(struct webauth_context *ctx, krb5_error_code code)
     case KRB5KDC_ERR_KEY_EXP:
         ctx->status = WA_PEC_CREDS_EXPIRED;
         break;
+    case KRB5_KDC_UNREACH:
     case KRB5_REALM_CANT_RESOLVE:
     case KRB5_REALM_UNKNOWN:
     case KRB5KDC_ERR_POLICY:
@@ -446,6 +476,44 @@ webauth_krb5_init_via_keytab(struct webauth_context *ctx,
 
 
 /*
+ * Set the FAST options to use a configured armor path if one is set.  Just
+ * return an error if the FAST path was set and WebAuth was not built with
+ * FAST support (which should never happen, since this should be caught when
+ * setting the FAST armor path).
+ */
+static int
+setup_fast_ccache(struct webauth_context *ctx, struct webauth_krb5 *kc,
+                  krb5_get_init_creds_opt *opts UNUSED)
+{
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_CCACHE_NAME
+    krb5_error_code code;
+    int flags;
+    const char *path;
+#endif
+
+    /* Nothing to do if no armor path. */
+    if (kc->fast_armor_path == NULL)
+        return WA_ERR_NONE;
+
+    /* Ensure WebAuth was built with FAST support and then set it up. */
+#ifndef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_CCACHE_NAME
+    return wai_error_set(ctx, WA_ERR_UNIMPLEMENTED,
+                         "not built with FAST support");
+#else
+    flags = KRB5_FAST_REQUIRED;
+    code = krb5_get_init_creds_opt_set_fast_flags(kc->ctx, opts, flags);
+    if (code != 0)
+        return error_set(ctx, kc, code, "cannot set flags to require FAST");
+    path = kc->fast_armor_path;
+    code = krb5_get_init_creds_opt_set_fast_ccache_name(kc->ctx, opts, path);
+    if (code != 0)
+        return error_set(ctx, kc, code, "cannot initialize FAST armor");
+    return WA_ERR_NONE;
+#endif
+}
+
+
+/*
  * Obtain a credentials from a user's password, verifying it with the provided
  * keytab and server principal if given.  If no keytab is given or if a
  * specific target principal is requested via get_principal, we do not verify
@@ -495,6 +563,9 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
         krb5_get_init_creds_opt_set_proxiable(opts, 0);
         krb5_get_init_creds_opt_set_renew_life(opts, 0);
     }
+    s = setup_fast_ccache(ctx, kc, opts);
+    if (s != WA_ERR_NONE)
+        return s;
 
     /*
      * Obtain credentials and translate the error, if any, into an appropriate
@@ -1292,8 +1363,9 @@ fail:
 }
 #else /* !HAVE_REMCTL */
 static int
-remctl_generic(struct webauth_context *ctx, struct webauth_krb5 *kc UNUSED,
-               const char *password UNUSED)
+remctl_change_password(struct webauth_context *ctx,
+                       struct webauth_krb5 *kc UNUSED,
+                       const char *password UNUSED)
 {
     wai_error_set(ctx, WA_ERR_UNIMPLEMENTED, "not built with remctl support");
     return WA_ERR_UNIMPLEMENTED;
@@ -1326,6 +1398,14 @@ webauth_krb5_change_config(struct webauth_context *ctx,
                            struct webauth_krb5_change_config *config)
 {
     int s = WA_ERR_NONE;
+
+    /* If not built with remctl support, reject that method. */
+#ifndef HAVE_REMCTL
+    if (config->protocol == WA_CHANGE_REMCTL) {
+        s = WA_ERR_UNIMPLEMENTED;
+        return wai_error_set(ctx, s, "not built with remctl support");
+    }
+#endif
 
     /* Verify that the new configuration is sane. */
     if (config->protocol == WA_CHANGE_REMCTL) {

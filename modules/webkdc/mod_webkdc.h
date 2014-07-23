@@ -2,7 +2,7 @@
  * Internal definitions and prototypes for Apache WebKDC module.
  *
  * Written by Roland Schemers
- * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2013
+ * Copyright 2002, 2003, 2005, 2006, 2008, 2009, 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -56,6 +56,7 @@ extern const command_rec webkdc_cmds[];
  * variable that holds whether that directive is set in a particular scope.
  */
 struct config {
+    const char *fast_armor_path;
     const char *identity_acl_path;
     const char *keyring_path;
     const char *keytab_path;
