@@ -71,6 +71,19 @@ WebAuth 4.6.1 (unreleased)
     delegation to a load-balanced pool, all members of that pool must have
     the same Kerberos identity.
 
+    Update to rra-c-util 5.5:
+
+    * Use Lancaster Consensus environment variables to control tests.
+    * Use calloc or reallocarray for protection against integer overflows.
+    * Suppress warnings from Kerberos headers in non-system paths.
+    * Update warning flags when building with make warnings.
+    * Only pass warning suppression flags to Perl under make warnings.
+
+    Update to C TAP Harness 3.1:
+
+    * Check for integer overflow on memory allocations.
+    * Avoid all remaining uses of sprintf.
+
 WebAuth 4.6.0 (2014-03-18)
 
     WARNING: When upgrading to this release, you will need to change the

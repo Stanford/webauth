@@ -257,17 +257,6 @@ if BUILD_PERL
     BINDINGS_INSTALL += install-data-local-perl
 endif
 
-# Suppress some warnings for Perl code because the auto-generated code
-# doesn't pass them.  -Wno-strict-prototypes and -Wno-missing-prototypes are
-# required for the ExtUtils::CBuilder probe.
-if GCC
-    PERL_WARNINGS = -Wno-nested-externs -Wno-redundant-decls		    \
-	-Wno-unused-variable -Wno-strict-prototypes -Wno-missing-prototypes \
-	-Wno-old-style-definition
-else
-    PERL_WARNINGS =
-endif
-
 # CFLAGS and LDFLAGS to pass to the Perl build.
 PERL_CFLAGS = -I$(abs_top_builddir) -I$(abs_top_srcdir) \
 	-I$(abs_top_srcdir)/include $(CPPFLAGS) $(APR_CPPFLAGS)
@@ -292,7 +281,7 @@ perl/lib/WebAuth.o: $(srcdir)/perl/Build.PL $(srcdir)/perl/lib/WebAuth.pm \
 	rm -f perl/lib/WebAuth.o
 	cd perl && perl Build.PL					\
 	    --config lddlflags='$(PERL_LDFLAGS_FULL)'			\
-	    --config optimize='$(CFLAGS) $(PERL_WARNINGS)'		\
+	    --config optimize='$(CFLAGS) $(PERL_CFLAGS_EXTRA)'		\
 	    --extra-compiler-flags '$(PERL_CFLAGS)'			\
 	    --extra-linker-flags '-lwebauth $(DEPEND_LIBS) $(LIBS)'	\
 	    $(WEBAUTH_PERL_FLAGS)
@@ -339,20 +328,30 @@ distclean-local:
 #
 #     -Wconversion      http://bugs.debian.org/488884 (htons warnings)
 #
-# Last checked against gcc 4.7.2 (2013-04-22).  -D_FORTIFY_SOURCE=2 enables
+# Last checked against gcc 4.8.2 (2014-04-12).  -D_FORTIFY_SOURCE=2 enables
 # warn_unused_result attribute markings on glibc functions on Linux, which
 # catches a few more issues.
-WARNINGS = -g -O -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wendif-labels	   \
-	-Wformat=2 -Winit-self -Wswitch-enum -Wuninitialized -Wfloat-equal \
-	-Wdeclaration-after-statement -Wshadow -Wpointer-arith		   \
-	-Wbad-function-cast -Wcast-align -Wwrite-strings		   \
-	-Wjump-misses-init -Wlogical-op -Wstrict-prototypes		   \
-	-Wold-style-definition -Wmissing-prototypes -Wnormalized=nfc	   \
+WARNINGS = -g -O -fstrict-overflow -fstrict-aliasing -D_FORTIFY_SOURCE=2    \
+	-Wall -Wextra -Wendif-labels -Wformat=2 -Winit-self -Wswitch-enum   \
+	-Wstrict-overflow=5 -Wfloat-equal -Wdeclaration-after-statement	    \
+	-Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align	    \
+	-Wwrite-strings -Wjump-misses-init -Wlogical-op -Wstrict-prototypes \
+	-Wold-style-definition -Wmissing-prototypes -Wnormalized=nfc	    \
 	-Wpacked -Wredundant-decls -Wnested-externs -Winline -Wvla -Werror
 
+# Suppress some warnings for Perl code because the auto-generated code
+# doesn't pass them.  -Wno-strict-prototypes and -Wno-missing-prototypes are
+# required for the ExtUtils::CBuilder probe.
+PERL_WARNINGS = -Wno-nested-externs -Wno-redundant-decls		\
+    -Wno-unused-variable -Wno-strict-prototypes -Wno-missing-prototypes	\
+    -Wno-old-style-definition
+
 warnings:
-	$(MAKE) V=0 CFLAGS='$(WARNINGS)'
-	$(MAKE) V=0 CFLAGS='$(WARNINGS)' $(check_PROGRAMS)
+	$(MAKE) V=0 CFLAGS='$(WARNINGS)'		\
+	    KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)'	\
+	    PERL_CFLAGS_EXTRA='$(PERL_WARNINGS)'
+	$(MAKE) V=0 CFLAGS='$(WARNINGS)' \
+	    KRB5_CPPFLAGS='$(KRB5_CPPFLAGS_GCC)' $(check_PROGRAMS)
 
 # The bits below are for the test suite, not for the main package.
 check_PROGRAMS = tests/runtests tests/lib/apr-buffer-t tests/lib/errors-t  \

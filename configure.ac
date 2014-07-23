@@ -142,11 +142,8 @@ AC_TYPE_INTPTR_T
 AC_CHECK_TYPES([ssize_t], [], [],
     [#include <sys/types.h>])
 RRA_FUNC_SNPRINTF
-AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy strndup])
-
-dnl Used to determine whether to add our GCC-specific warning suppression
-dnl flags to the language binding builds.
-AM_CONDITIONAL([GCC], [test x"$GCC" = xyes])
+AC_REPLACE_FUNCS([asprintf mkstemp reallocarray setenv strlcat strlcpy])
+AC_REPLACE_FUNCS([strndup])
 
 dnl Used when linking the Perl module.  Normally link against all the
 dnl dependencies that libwebauth may need, but don't do so if
