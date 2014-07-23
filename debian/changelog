@@ -22,6 +22,7 @@ webauth (4.6.1-1) UNRELEASED; urgency=medium
     - Warn in the mod_webauth documentation that all members of a
       load-balanced pool accepting credential delegation must use the same
       Kerberos identity.
+  * Enable tests controlled with AUTOMATED_TESTING.
 
  -- Russ Allbery <rra@debian.org>  Wed, 23 Jul 2014 13:12:30 -0700
 

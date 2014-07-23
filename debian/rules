@@ -12,6 +12,9 @@ export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 # build system.
 export WEBAUTH_PERL_FLAGS := --installdirs vendor --create_packlist 0
 
+# Enable some additional tests.
+export AUTOMATED_TESTING := 1
+
 ifndef PERL
     PERL = /usr/bin/perl
 endif
