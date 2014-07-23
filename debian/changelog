@@ -23,8 +23,10 @@ webauth (4.6.1-1) unstable; urgency=medium
       load-balanced pool accepting credential delegation must use the same
       Kerberos identity.
   * Enable tests controlled with AUTOMATED_TESTING.
+  * Rename packages and change library symbols for upstream SONAME bump
+    and symbol versioning changes.
 
- -- Russ Allbery <rra@debian.org>  Wed, 23 Jul 2014 14:08:42 -0700
+ -- Russ Allbery <rra@debian.org>  Wed, 23 Jul 2014 14:28:06 -0700
 
 webauth (4.6.0-4) unstable; urgency=medium
 
