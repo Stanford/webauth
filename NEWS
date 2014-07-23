@@ -1,6 +1,6 @@
                        User-Visible WebAuth Changes
 
-WebAuth 4.6.1 (unreleased)
+WebAuth 4.6.1 (2014-07-23)
 
     Support for AuthType StanfordAuth (for backward compatibility with
     WebAuth 2.5) was broken in WebAuth 4.6.0, causing mod_webauth to
