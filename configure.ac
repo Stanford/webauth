@@ -80,6 +80,7 @@ AC_ARG_VAR([PATH_REMCTLD], [Path to remctld for the test suite])
 AC_PATH_PROG([PATH_REMCTLD], [remctld], [],
     [$PATH$PATH_SEPARATOR/usr/sbin$PATH_SEPARATOR/usr/local/sbin])
 
+dnl Probe for required and optional libraries.
 RRA_LIB_APACHE
 RRA_LIB_APACHE_SWITCH
 AC_CHECK_DECLS([ap_get_server_description, ap_hook_check_authn,
@@ -117,6 +118,7 @@ AS_IF([test x"$rra_use_remctl" = x"true"],
     [RRA_LIB_REMCTL_SWITCH
      AC_CHECK_FUNCS([remctl_set_ccache remctl_set_timeout])
      RRA_LIB_REMCTL_RESTORE])
+RRA_LIB_JANSSON_OPTIONAL
 RRA_LIB_OPENSSL
 RRA_LIB_CURL
 AS_IF([test x"$build_webauthldap" = x"true"], [RRA_LIB_LDAP])
@@ -129,6 +131,7 @@ AC_CHECK_LIB([keyutils], [keyctl_search],
      AC_DEFINE([HAVE_LIBKEYUTILS], [1],
         [Define to 1 if you have the `keyutils' library (-lkeyutils).])])
 
+dnl Probe for C library properties.
 AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([sys/bittypes.h sys/select.h syslog.h])
 AC_CHECK_DECLS([snprintf, vsnprintf])
@@ -156,6 +159,7 @@ AS_IF([test x"$rra_reduced_depends" = xtrue],
      DEPEND_LIBS="$DEPEND_LIBS $CRYPTO_LDFLAGS $CRYPTO_LIBS $KEYUTILS_LIBS"])
 AC_SUBST([DEPEND_LIBS])
 
+dnl Output the results of configure probing.
 AC_CONFIG_FILES([Makefile tests/data/conf-webkdc])
 AC_CONFIG_HEADERS([config.h config-mod.h])
 AC_CONFIG_COMMANDS([include/webauth/defines.h],
