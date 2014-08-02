@@ -175,6 +175,7 @@ struct webauth_user_config {
     const char *principal;      /* Principal from keytab for authentication. */
     time_t timeout;             /* Network timeout, or 0 for no timeout. */
     int ignore_failure;         /* Whether to continue despite remote fail. */
+    int json;                   /* Whether to use JSON for communication. */
 };
 
 /*

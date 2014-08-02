@@ -157,14 +157,15 @@ lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
 	lib/webkdc-config.c lib/webkdc-logging.c lib/webkdc-login.c	  \
 	lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
-lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
-	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
-	$(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 11:0:0 $(VERSION_LDFLAGS)	    \
-	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
-	$(CRYPTO_LDFLAGS)
+lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)		\
+	$(APRUTIL_CPPFLAGS) $(JANSSON_CPPFLAGS) $(REMCTL_CPPFLAGS)	\
+	$(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
+lib_libwebauth_la_LDFLAGS = -version-info 11:0:0 $(VERSION_LDFLAGS)	\
+	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(JANSSON_LDFLAGS)		\
+	$(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) $(CRYPTO_LDFLAGS)
 lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)		\
-	$(APRUTIL_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS) $(CRYPTO_LIBS)
+	$(APRUTIL_LIBS) $(JANSSON_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS)	\
+	$(CRYPTO_LIBS)
 
 apachedir = $(libexecdir)/apache2/modules
 apache_LTLIBRARIES =
