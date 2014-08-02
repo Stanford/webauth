@@ -1,0 +1,6 @@
+{
+    "success": false,
+    "code": 1001,
+    "message": "short error message",
+    "message_detail": "Detailed error message"
+}

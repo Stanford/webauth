@@ -1,0 +1,8 @@
+{
+    "success": true,
+    "response": {
+        "username": "additional",
+        "available_factors": ["h", "m", "p", "o"],
+        "additional_factors": ["h"]
+    }
+}

@@ -1,0 +1,214 @@
+#!/usr/bin/perl
+#
+# Fake remctl backend for WebKDC user information queries using JSON.
+#
+# Usually just returns a stock JSON file from the data/xml directory based on
+# the command given, but also embeds various logic to manipulate that file
+# based on parameters passed by the test suite.  Assumes that $SOURCE is set
+# in the environment to the root of the tests directory in the source.
+#
+# Written by Russ Allbery <eagle@eyrie.org>
+# Copyright 2011, 2012, 2013, 2014
+#     The Board of Trustees of the Leland Stanford Junior University
+#
+# See LICENSE for licensing terms.
+
+use 5.008;
+use strict;
+use warnings;
+
+use lib "$ENV{SOURCE}/tap/perl";
+
+use JSON::PP ();
+use Test::RRA::Automake qw(automake_setup test_file_path);
+
+# Don't require non-standard modules just to avoid this idiom.
+## no critic (BuiltinFunctions::ProhibitBooleanGrep)
+
+# A global JSON encoder and decoder so that we don't have to keep creating new
+# ones or passing one around.  No reason to have more than one.
+my $JSON = JSON::PP->new->utf8(1);
+
+# Return a specific JSON file, optionally adding additional data elements to
+# the resulting JSON.
+#
+# $path      - Path to the file to return
+# $extra_ref - Hash of extra data to add to the JSON file contents
+#
+# Returns: undef
+#  Throws: Text exception on any error
+sub return_file {
+    my ($file, $extra_ref) = @_;
+
+    # Load the data from the file.
+    my $path = "tests/data/json/$file";
+    open(my $fh, q{<}, $path) or die "Cannot open $path: $!\n";
+    my $data = do { local $/ = undef; <$fh> };
+    close($fh) or die "Cannot close $path: $!\n";
+
+    # Decode the JSON.
+    my $data_ref = $JSON->decode($data);
+
+    # Add any additional data.
+    if ($extra_ref) {
+        %{$data_ref} = (%{$data_ref}, %{$extra_ref});
+    }
+
+    # Send the results to standard output with a success message.
+    print {*STDOUT} $JSON->encode($data_ref)
+      or die "Cannot send results to standard output: $!\n";
+    return;
+}
+
+# Check a userinfo call and return the results.
+#
+# $data - The decoded JSON data passed to the call
+#
+# Returns: undef
+#  Throws: Text exception on any error in the call
+sub check_userinfo {
+    my ($data) = @_;
+
+    # Check the data that should always be the same.
+    if ($data->{ip} ne '127.0.0.1') {
+        die "invalid IP address: $data->{ip}\n";
+    }
+    if (   $data->{random} != JSON::PP::true
+        && $data->{random} != JSON::PP::false)
+    {
+        die "invalid random flag: $data->{random}\n";
+    }
+    if (!defined($data->{return_url})) {
+        die "missing return URL\n";
+    }
+
+    # If the user is "delay", sleep for three seconds and return an error.
+    if ($data->{username} eq 'delay') {
+        sleep(3);
+        die "unknown user $data->{username}\n";
+    }
+
+    # Return multifactor-required for user random for random multifactor.
+    if ($data->{username} eq 'random' && $data->{random}) {
+        my $extra_ref = { required_factors => ['m'] };
+        return_file('info/random.json', $extra_ref);
+        exit(0);
+    }
+
+    # Return the restricted data if the URL is a restricted URL.
+    if ($data->{return_url} eq 'https://example.com/restrict/') {
+        return_file('info/restrict.json');
+        exit(0);
+    }
+
+    # Return multifactor required for user factor if there's no device factor.
+    if ($data->{username} eq 'factor') {
+        if (grep { $_ eq 'd' } @{ $data->{factors} }) {
+            return_file('info/factor.json');
+        } else {
+            my $extra_ref = { required_factors => ['m'] };
+            return_file('info/factor.json', $extra_ref);
+        }
+        exit(0);
+    }
+
+    # If the file exists, just return the file verbatim.
+    if (-f "tests/data/json/info/$data->{username}.json") {
+        return_file("info/$data->{username}.json");
+        exit(0);
+    }
+
+    # Otherwise, see if the user matches our Kerberos configuration.  If so,
+    # send the additional.xml data with the user replaced by the Kerberos
+    # user.
+    my $config = test_file_path('config/password');
+    open(my $fh, q{<}, $config) or die "Cannot open $config: $!\n";
+    my $user = <$fh>;
+    close($fh) or die "Cannot close $config: $!\n";
+    chomp($user);
+    if ($user eq $data->{username}) {
+        my $extra_ref = { username => $user };
+        return_file('info/additional.json', $extra_ref);
+        exit(0);
+    } else {
+        die "Unknown user $data->{username}\n";
+    }
+}
+
+# Check a validate call and return the results.
+#
+# $data - The decoded JSON data passed to the call
+#
+# Returns: undef
+#  Throws: Text exception on any error in the call
+sub check_validate {
+    my ($data) = @_;
+
+    # Check the data that should always be the same.
+    if ($data->{ip} ne '127.0.0.1') {
+        die "invalid IP address: $data->{ip}\n";
+    }
+
+    # If the user is "delay", sleep for three seconds and return an error.
+    if ($data->{username} eq 'delay') {
+        sleep(3);
+        die "unknown user $data->{username}\n";
+    }
+
+    # If the passcode is incorrect, return an error.
+    if ($data->{factor}{passcode} ne '123456') {
+        my $result_ref = {
+            success        => \0,
+            code           => 1001,
+            message        => 'invalid passcode',
+            message_detail => $data->{factor}{passcode},
+        };
+        print {*STDOUT} $JSON->encode($result_ref)
+          or die "Cannot write to standard output: $!\n";
+    }
+
+    # If the file exists, return it.
+    if (-f "tests/data/json/validate/$data->{username}.json") {
+        return_file("validate/$data->{username}.json");
+        exit(0);
+    }
+
+    # Otherwise, see if the user matches our Kerberos configuration.  If so,
+    # send the additional.xml data with the user replaced by the Kerberos
+    # user.
+    my $config = test_file_path('config/password');
+    open(my $fh, q{<}, $config) or die "Cannot open $config: $!\n";
+    my $user = <$fh>;
+    close($fh) or die "Cannot close $config: $!\n";
+    chomp($user);
+    if ($user eq $data->{username}) {
+        my $extra_ref = { username => $user };
+        return_file('validate/additional.json', $extra_ref);
+        exit(0);
+    } else {
+        die "Unknown user $data->{username}\n";
+    }
+}
+
+# Initialize for Automake.
+automake_setup();
+
+# Parse command-line options.
+if (@ARGV != 2) {
+    die "incorrect number of arguments\n";
+}
+my ($call, $data) = @ARGV;
+$data = eval { $JSON->decode($data) };
+if ($@) {
+    die "invalid JSON data: $@\n";
+}
+
+# The first command-line option says whether we're doing a userinfo call or a
+# validate call.  Use that to determine which function to run.
+if ($call eq 'webkdc-userinfo') {
+    check_userinfo($data);
+} elsif ($call eq 'webkdc-validate') {
+    check_validate($data);
+} else {
+    die "invalid command: $call\n";
+}

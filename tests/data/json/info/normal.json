@@ -1,0 +1,20 @@
+{
+    "success": true,
+    "response": {
+        "available_factors": ["p", "m", "o", "o2"],
+        "logins": [
+            {
+                "hostname": "example.com",
+                "ip": "127.0.0.2",
+                "timestamp": 1335373900
+            },
+            {
+                "hostname": "www.example.com",
+                "ip": "127.0.0.3",
+                "timestamp": 1335365436
+            }
+        ],
+        "max_level_of_assurance": 3,
+        "password_expires": 1310675733
+    }
+}

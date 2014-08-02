@@ -106,8 +106,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	lib/libwebauth.pc.in lib/libwebauth.sym perl/MANIFEST		    \
 	perl/MANIFEST.SKIP tests/TESTS tests/config/README		    \
 	tests/data/cmd-password tests/data/cmd-webkdc tests/data/creds	    \
-	tests/data/generate-krb5-conf tests/data/id.acl tests/data/keyring  \
-	tests/data/make-krb5-cred tests/data/make-tokens		    \
+	tests/data/generate-krb5-conf tests/data/id.acl tests/data/json	    \
+	tests/data/keyring tests/data/make-krb5-cred tests/data/make-tokens \
 	tests/data/perl.conf tests/data/perlcriticrc tests/data/perltidyrc  \
 	tests/data/service-token tests/data/tokens tests/data/tokens.conf   \
 	tests/data/valgrind.supp tests/data/xml tests/docs/pod-spelling-t   \

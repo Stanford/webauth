@@ -1,0 +1,7 @@
+{
+    "success": true,
+    "response": {
+        "available_factors": ["p", "m", "o", "o2"],
+        "max_level_of_assurance": 2
+    }
+}
