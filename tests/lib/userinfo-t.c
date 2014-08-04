@@ -2,7 +2,7 @@
  * Test user information service retrieval.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -75,12 +75,18 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
 }
 
 
-int
-main(void)
+/*
+ * Run a set of tests against the user information service and check the
+ * results.  This is broken out into a function so that it can be called
+ * twice, once for the XML format and once for the JSON format.
+ *
+ * Takes the current userinfo configuration so that it can test timeout
+ * handling.  Other fields aren't touched.
+ */
+static void
+test_userinfo_calls(struct webauth_context *ctx,
+                    struct webauth_user_config *config)
 {
-    struct kerberos_config *krbconf;
-    struct webauth_context *ctx;
-    struct webauth_user_config config;
     struct webauth_user_info *info;
     struct webauth_user_validate *validate;
     struct webauth_login *login;
@@ -88,63 +94,6 @@ main(void)
     const char restrict_url[] = "https://example.com/restrict/";
     char *warnings = NULL;
     int s;
-
-    /* Skip this test if built without remctl support. */
-#ifndef HAVE_REMCTL
-    skip_all("built without remctl support");
-#endif
-
-    /* Load test configuration and start remctl. */
-    krbconf = kerberos_setup(TAP_KRB_NEEDS_KEYTAB);
-    remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
-    if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
-        bail("cannot initialize WebAuth context");
-
-    plan(172);
-
-    /* Empty the KRB5CCNAME environment variable and make the library cope. */
-    putenv((char *) "KRB5CCNAME=");
-
-    /*
-     * Set up the user information service configuration, testing error cases.
-     */
-    memset(&config, 0, sizeof(config));
-    s = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
-    is_int(WA_ERR_INVALID, s, "Info without configuration");
-    is_string("invalid argument to function (user information service not"
-              " configured)", webauth_error_message(ctx, s),
-              "...with correct error");
-    ok(info == NULL, "...and info is NULL");
-    s = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_UNIMPLEMENTED, s, "Config with bad protocol");
-    is_string("operation not supported (unknown protocol 0)",
-              webauth_error_message(ctx, s), "...with correct error");
-    config.protocol = WA_PROTOCOL_REMCTL;
-    s = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_INVALID, s, "Config without host");
-    is_string("invalid argument to function (user information host must be"
-              " set)",
-              webauth_error_message(ctx, s), "...with correct error");
-    config.host = "localhost";
-    config.port = 14373;
-    config.identity = krbconf->principal;
-    s = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_INVALID, s, "remctl config without keytab");
-    is_string("invalid argument to function (keytab must be configured for"
-              " remctl protocol)", webauth_error_message(ctx, s),
-              "...with correct error");
-    config.keytab = krbconf->keytab;
-    config.principal = krbconf->principal;
-    s = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_NONE, s, "Config with only host and protocol");
-    s = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
-    is_int(WA_ERR_INVALID, s, "remctl info call without command");
-    is_string("invalid argument to function (no remctl command specified)",
-              webauth_error_message(ctx, s), "...with correct error");
-    ok(info == NULL, "...and info is NULL");
-    config.command = "test";
-    s = webauth_user_config(ctx, &config);
-    is_int(WA_ERR_NONE, s, "Complete config");
 
     /* Do a query for a full user. */
     s = webauth_user_info(ctx, "full", "127.0.0.1", 0, url, NULL, &info);
@@ -337,8 +286,8 @@ main(void)
               webauth_error_message(ctx, s), "...with correct error");
 
     /* Do a query for a user that should time out. */
-    config.timeout = 1;
-    s = webauth_user_config(ctx, &config);
+    config->timeout = 1;
+    s = webauth_user_config(ctx, config);
     is_int(WA_ERR_NONE, s, "Config with timeout");
     s = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_REMOTE_FAILURE, s, "Metadata for delay fails");
@@ -355,8 +304,8 @@ main(void)
 
     /* Try the query again with ignore_failure set and capture warnings. */
     webauth_log_callback(ctx, WA_LOG_WARN, log_callback, &warnings);
-    config.ignore_failure = true;
-    s = webauth_user_config(ctx, &config);
+    config->ignore_failure = true;
+    s = webauth_user_config(ctx, config);
     is_int(WA_ERR_NONE, s, "Config with timeout and ignore failure");
     s = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for delay now succeeds");
@@ -406,9 +355,9 @@ main(void)
     is_string(NULL, warnings, "...and there are no warnings");
 
     /* Attempt a login to a restricted site.  This should return an error. */
-    config.ignore_failure = false;
-    config.timeout = 0;
-    s = webauth_user_config(ctx, &config);
+    config->ignore_failure = false;
+    config->timeout = 0;
+    s = webauth_user_config(ctx, config);
     is_int(WA_ERR_NONE, s, "Config back to normal");
     s = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for restricted URL succeeds");
@@ -426,6 +375,78 @@ main(void)
         ok(info->logins == NULL, "...logins is NULL");
     }
     is_string(NULL, warnings, "...and there are no warnings");
+}
+
+
+int
+main(void)
+{
+    struct kerberos_config *krbconf;
+    struct webauth_context *ctx;
+    struct webauth_user_config config;
+    struct webauth_user_info *info;
+    const char url[] = "https://example.com/";
+    int s;
+
+    /* Skip this test if built without remctl support. */
+#ifndef HAVE_REMCTL
+    skip_all("built without remctl support");
+#endif
+
+    /* Load test configuration and start remctl. */
+    krbconf = kerberos_setup(TAP_KRB_NEEDS_KEYTAB);
+    remctld_start(krbconf, "data/conf-webkdc", (char *) 0);
+    if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
+        bail("cannot initialize WebAuth context");
+
+    plan(172);
+
+    /* Empty the KRB5CCNAME environment variable and make the library cope. */
+    putenv((char *) "KRB5CCNAME=");
+
+    /*
+     * Set up the user information service configuration, testing error cases.
+     */
+    memset(&config, 0, sizeof(config));
+    s = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
+    is_int(WA_ERR_INVALID, s, "Info without configuration");
+    is_string("invalid argument to function (user information service not"
+              " configured)", webauth_error_message(ctx, s),
+              "...with correct error");
+    ok(info == NULL, "...and info is NULL");
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_UNIMPLEMENTED, s, "Config with bad protocol");
+    is_string("operation not supported (unknown protocol 0)",
+              webauth_error_message(ctx, s), "...with correct error");
+    config.protocol = WA_PROTOCOL_REMCTL;
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_INVALID, s, "Config without host");
+    is_string("invalid argument to function (user information host must be"
+              " set)",
+              webauth_error_message(ctx, s), "...with correct error");
+    config.host = "localhost";
+    config.port = 14373;
+    config.identity = krbconf->principal;
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_INVALID, s, "remctl config without keytab");
+    is_string("invalid argument to function (keytab must be configured for"
+              " remctl protocol)", webauth_error_message(ctx, s),
+              "...with correct error");
+    config.keytab = krbconf->keytab;
+    config.principal = krbconf->principal;
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "Config with only host and protocol");
+    s = webauth_user_info(ctx, "test", "127.0.0.1", 0, url, NULL, &info);
+    is_int(WA_ERR_INVALID, s, "remctl info call without command");
+    is_string("invalid argument to function (no remctl command specified)",
+              webauth_error_message(ctx, s), "...with correct error");
+    ok(info == NULL, "...and info is NULL");
+    config.command = "test";
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "Complete config");
+
+    /* Now, query the user information service for a bunch of cases. */
+    test_userinfo_calls(ctx, &config);
 
     /* Clean up. */
     webauth_context_free(ctx);
