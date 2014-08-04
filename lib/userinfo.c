@@ -1049,10 +1049,10 @@ remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
     /* Make the call. */
     output = wai_buffer_new(ctx->pool);
     s = remctl_generic(ctx, argv, output);
-    if (s != WA_ERR_NONE)
-        return s;
     if (c->json)
         free((char *) argv[2]);
+    if (s != WA_ERR_NONE)
+        return s;
 
     /* Parse the XML or JSON results. */
     if (c->json) {
@@ -1173,10 +1173,10 @@ remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
     }
     output = wai_buffer_new(ctx->pool);
     s = remctl_generic(ctx, argv, output);
-    if (s != WA_ERR_NONE)
-        return s;
     if (c->json)
         free((char *) argv[2]);
+    if (s != WA_ERR_NONE)
+        return s;
 
     /* Parse the XML or JSON results. */
     if (c->json) {
