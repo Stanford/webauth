@@ -640,7 +640,7 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
         else {
             wai_log_notice(ctx, "userinfo: webkdc-userinfo failed: %s [%lu]",
                            message, code);
-            info->user_message = detail;
+            info->error = detail;
             *result = info;
             return WA_ERR_NONE;
         }

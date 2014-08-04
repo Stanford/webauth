@@ -399,7 +399,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(172);
+    plan(14 + 158 * 2);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -447,6 +447,15 @@ main(void)
 
     /* Now, query the user information service for a bunch of cases. */
     test_userinfo_calls(ctx, &config);
+
+    /* Run the tests again, but use the JSON configuration. */
+#ifdef HAVE_JANSSON
+    config.command = "test-json";
+    config.json = true;
+    test_userinfo_calls(ctx, &config);
+#else
+    skip_block(158, "not built with JSON support");
+#endif
 
     /* Clean up. */
     webauth_context_free(ctx);
