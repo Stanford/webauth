@@ -5,7 +5,7 @@
  * service.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -1745,6 +1745,24 @@ main(void)
     /* Run the tests requiring a timeout and ignore failure. */
     for (i = 0; i < ARRAY_SIZE(tests_ignore_failure); i++)
         run_login_test(ctx, &tests_ignore_failure[i], ring, krbconf);
+
+    /*
+     * Re-run the basic tests with JSON.  Don't bother with the timeout and
+     * ignore error tests, since that functionality with JSON is tested by the
+     * userinfo test suite directly.
+     */
+#ifdef HAVE_JANSSON
+    user_config.timeout = 0;
+    user_config.ignore_failure = false;
+    user_config.command = "test-json";
+    user_config.json = true;
+    s = webauth_user_config(ctx, &user_config);
+    is_int(WA_ERR_NONE, s, "Setting user information protocol to JSON");
+    for (i = 0; i < ARRAY_SIZE(tests_default); i++)
+        run_login_test(ctx, &tests_default[i], ring, krbconf);
+#else
+    skip("not built with JSON support");
+#endif
 
     /* Clean up. */
     apr_terminate();
