@@ -514,7 +514,7 @@ json_parse_factors(struct webauth_context *ctx, json_t *json, const char *key,
             s = json_parse_integer(ctx, value, "expiration", &expires);
             if (s != WA_ERR_NONE)
                 return s;
-            if (expires > 0 && expires < min_expires)
+            if (expires > 0 && (expires < min_expires || min_expires == 0))
                 min_expires = expires;
         } else {
             s = WA_ERR_REMOTE_FAILURE;
@@ -578,6 +578,7 @@ json_parse_history(struct webauth_context *ctx, json_t *json, const char *key,
             s = WA_ERR_REMOTE_FAILURE;
             return wai_error_set(ctx, s, "%s element has no ip key", key);
         }
+        timestamp = 0;
         s = json_parse_integer(ctx, value, "timestamp", &timestamp);
         if (s != WA_ERR_NONE)
             return s;
@@ -635,9 +636,10 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
             s = json_parse_string(ctx, json, "message_detail", &detail);
         if (s != WA_ERR_NONE)
             return s;
-        if (detail == NULL)
+        if (detail == NULL) {
+            s = WA_ERR_REMOTE_FAILURE;
             return wai_error_set(ctx, s, "%s [%lu]", message, code);
-        else {
+        } else {
             wai_log_notice(ctx, "userinfo: webkdc-userinfo failed: %s [%lu]",
                            message, code);
             info->error = detail;
@@ -647,9 +649,11 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
     }
 
     /* Grab the result key, which contains the meat of the reply. */
-    object = json_object_get(json, "result");
-    if (object == NULL || !json_is_object(object))
-        return wai_error_set(ctx, s, "no or malformed result key in JSON");
+    object = json_object_get(json, "response");
+    if (object == NULL || !json_is_object(object)) {
+        s = WA_ERR_REMOTE_FAILURE;
+        return wai_error_set(ctx, s, "no or malformed response key in JSON");
+    }
 
     /*
      * User info succeeded.  Pull the data out of the JSON reply.
@@ -657,17 +661,21 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
      * FIXME: This really needs to be rewritten to be table-driven, or use
      * macros, or otherwise made somehow not so ugly and hard to read.
      */
+    timestamp = 0;
     s = json_parse_integer(ctx, object, "persistent_threshold", &timestamp);
-
     if (s != WA_ERR_NONE)
         return s;
     info->valid_threshold = timestamp;
+    timestamp = 0;
     s = json_parse_integer(ctx, object, "password_expires", &timestamp);
     if (s != WA_ERR_NONE)
         return s;
     info->password_expires = timestamp;
     s = json_parse_integer(ctx, object, "max_level_of_assurance",
                            &info->max_loa);
+    if (s != WA_ERR_NONE)
+        return s;
+    s = json_parse_string(ctx, object, "message", &info->user_message);
     if (s != WA_ERR_NONE)
         return s;
     s = json_parse_factors(ctx, object, "available_factors", &info->factors,
@@ -734,9 +742,10 @@ json_parse_user_validate(struct webauth_context *ctx, json_t *json,
             s = json_parse_string(ctx, json, "message_detail", &detail);
         if (s != WA_ERR_NONE)
             return s;
-        if (detail == NULL)
+        if (detail == NULL) {
+            s = WA_ERR_REMOTE_FAILURE;
             return wai_error_set(ctx, s, "%s [%lu]", message, code);
-        else {
+        } else {
             wai_log_notice(ctx, "userinfo: webkdc-validate failed: %s [%lu]",
                            message, code);
             validate->user_message = detail;
@@ -744,11 +753,14 @@ json_parse_user_validate(struct webauth_context *ctx, json_t *json,
             return WA_ERR_NONE;
         }
     }
+    validate->success = true;
 
     /* Grab the result key, which contains the meat of the reply. */
-    object = json_object_get(json, "result");
-    if (object == NULL || !json_is_object(object))
-        return wai_error_set(ctx, s, "no or malformed result key in JSON");
+    object = json_object_get(json, "response");
+    if (object == NULL || !json_is_object(object)) {
+        s = WA_ERR_REMOTE_FAILURE;
+        return wai_error_set(ctx, s, "no or malformed response key in JSON");
+    }
 
     /*
      * Validation succeeded.  Pull the data out of the JSON reply.
@@ -756,6 +768,7 @@ json_parse_user_validate(struct webauth_context *ctx, json_t *json,
      * FIXME: This really needs to be rewritten to be table-driven, or use
      * macros, or otherwise made somehow not so ugly and hard to read.
      */
+    timestamp = 0;
     s = json_parse_integer(ctx, object, "persistent_threshold", &timestamp);
     if (s != WA_ERR_NONE)
         return s;
@@ -802,8 +815,9 @@ json_parse_document(struct webauth_context *ctx, struct wai_buffer *string,
     *json = json_loads(string->data, 0, &error);
     if (*json == NULL) {
         s = wai_error_set(ctx, WA_ERR_REMOTE_FAILURE,
-                          "JSON parse error: %s at byte %lu",
-                          error.text, (unsigned long) error.position);
+                          "JSON parse error: %s at byte %lu in %s",
+                          error.text, (unsigned long) error.position,
+                          string->data);
         return s;
     }
     return WA_ERR_NONE;

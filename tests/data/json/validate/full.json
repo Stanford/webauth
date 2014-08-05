@@ -23,7 +23,7 @@
         ],
         "persistent_threshold": 1365630519,
         "level_of_assurance": 3,
-        "message": "<em>OTP3</em> down.  &lt;_&lt;;",
-        "login_state": "RESET_PIN"
-    }
+        "message": "<em>OTP3</em> down.  &lt;_&lt;;"
+    },
+    "login_state": "RESET_PIN"
 }

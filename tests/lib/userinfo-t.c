@@ -40,7 +40,8 @@ log_callback(struct webauth_context *ctx UNUSED, void *data,
 /*
  * Check a user OTP validation.  Takes the OTP code and a flag indicating
  * whether the validation will be successful or not.  Always attempts with the
- * user "full" and verifies that the standard data is returned.
+ * user "full" and verifies that the standard data is returned if validation
+ * was successful.
  */
 static void
 test_validate(struct webauth_context *ctx, const char *code, bool success)
@@ -53,20 +54,24 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
                               "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_NONE, s, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
-    if (validate == NULL)
-        ok_block(6, 0, "Validate failed");
-    else {
+    if (validate == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
+        ok_block(9, 0, "Validate failed");
+    } else {
         is_int(success, validate->success, "...validation correct");
-        is_string("o,o3", webauth_factors_string(ctx, validate->factors),
+        is_string(validate->success ? "o,o3" : NULL,
+                  webauth_factors_string(ctx, validate->factors),
                   "...result factors are correct");
-        is_int(1893484800, validate->factors_expiration,
-               "...factors expiration");
-        is_string("d,u", webauth_factors_string(ctx, validate->persistent),
+        is_int(validate->success ? 1893484800 : 0,
+               validate->factors_expiration, "...factors expiration");
+        is_string(validate->success ? "d,u" : NULL,
+                  webauth_factors_string(ctx, validate->persistent),
                   "...persistent factors are correct");
-        is_int(1893484802, validate->persistent_expiration,
-               "...persistent expiration");
-        is_int(1365630519, validate->valid_threshold, "...valid threshold");
-        is_int(3, validate->loa, "...LoA is correct");
+        is_int(validate->success ? 1893484802 : 0,
+               validate->persistent_expiration, "...persistent expiration");
+        is_int(validate->success ? 1365630519 : 0,
+               validate->valid_threshold, "...valid threshold");
+        is_int(validate->success ? 3 : 0, validate->loa, "...LoA is correct");
         is_string("<em>OTP3</em> down.  &lt;_&lt;;",
                   validate->user_message, "...user message");
         is_string("RESET_PIN",
@@ -137,9 +142,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     s = webauth_user_info(ctx, "mini", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for mini succeeded");
     ok(info != NULL, "...mini is not NULL");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(7, 0, "Metadata failed");
-    else {
+    } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -156,9 +162,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     s = webauth_user_info(ctx, "mini", NULL, 1, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for mini w/random succeeded");
     ok(info != NULL, "...mini is not NULL");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(7, 0, "Metadata failed");
-    else {
+    } else {
         is_int(1, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -174,9 +181,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     s = webauth_user_info(ctx, "factor", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for factor succeeded");
     ok(info != NULL, "...factor is not NULL");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(6, 0, "Metadata failed");
-    else {
+    } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -195,9 +203,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     s = webauth_user_info(ctx, "factor", NULL, 0, url, "d", &info);
     is_int(WA_ERR_NONE, s, "Metadata for factor with d succeeded");
     ok(info != NULL, "...factor is not NULL");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(7, 0, "Metadata failed");
-    else {
+    } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -215,9 +224,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     s = webauth_user_info(ctx, "additional", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for additional succeeded");
     ok(info != NULL, "...factor is not NULL");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(8, 0, "Metadata failed");
-    else {
+    } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -236,9 +246,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     s = webauth_user_info(ctx, "message", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for message succeeded");
     ok(info != NULL, "...factor is not NULL");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(6, 0, "Metadata failed");
-    else {
+    } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -255,9 +266,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     s = webauth_user_info(ctx, "loginstate", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for message succeeded");
     ok(info != NULL, "...factor is not NULL");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(7, 0, "Metadata failed");
-    else {
+    } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -309,9 +321,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     is_int(WA_ERR_NONE, s, "Config with timeout and ignore failure");
     s = webauth_user_info(ctx, "delay", NULL, 0, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for delay now succeeds");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(6, 0, "Metadata failed");
-    else {
+    } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -328,9 +341,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     is_int(WA_ERR_NONE, s, "Config with timeout, ignore, random");
     s = webauth_user_info(ctx, "delay", NULL, 1, url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for delay w/random succeeds");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(6, 0, "Metadata failed");
-    else {
+    } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
         is_int(0, info->password_expires, "...password expires");
@@ -361,9 +375,10 @@ test_userinfo_calls(struct webauth_context *ctx,
     is_int(WA_ERR_NONE, s, "Config back to normal");
     s = webauth_user_info(ctx, "normal", NULL, 0, restrict_url, NULL, &info);
     is_int(WA_ERR_NONE, s, "Metadata for restricted URL succeeds");
-    if (info == NULL)
+    if (info == NULL) {
+        diag("error: %s", webauth_error_message(ctx, s));
         ok_block(7, 0, "Metadata failed");
-    else {
+    } else {
         is_string("<strong>You are restricted!</strong>  &lt;_&lt;;",
                   info->error, "...error string");
         is_int(0, info->random_multifactor, "...random multifactor");
@@ -399,7 +414,7 @@ main(void)
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
 
-    plan(14 + 158 * 2);
+    plan(15 + 158 * 2);
 
     /* Empty the KRB5CCNAME environment variable and make the library cope. */
     putenv((char *) "KRB5CCNAME=");
@@ -452,9 +467,11 @@ main(void)
 #ifdef HAVE_JANSSON
     config.command = "test-json";
     config.json = true;
+    s = webauth_user_config(ctx, &config);
+    is_int(WA_ERR_NONE, s, "Configuration with JSON");
     test_userinfo_calls(ctx, &config);
 #else
-    skip_block(158, "not built with JSON support");
+    skip_block(159, "not built with JSON support");
 #endif
 
     /* Clean up. */

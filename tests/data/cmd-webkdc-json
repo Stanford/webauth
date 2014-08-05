@@ -51,7 +51,10 @@ sub return_file {
 
     # Add any additional data.
     if ($extra_ref) {
-        %{$data_ref} = (%{$data_ref}, %{$extra_ref});
+        %{ $data_ref->{response} } = (
+            %{ $data_ref->{response} },
+            %{$extra_ref}
+        );
     }
 
     # Send the results to standard output with a success message.
@@ -131,7 +134,7 @@ sub check_userinfo {
         return_file('info/additional.json', $extra_ref);
         exit(0);
     } else {
-        die "Unknown user $data->{username}\n";
+        die "unknown user $data->{username}\n";
     }
 }
 
@@ -161,10 +164,12 @@ sub check_validate {
             success        => \0,
             code           => 1001,
             message        => 'invalid passcode',
-            message_detail => $data->{factor}{passcode},
+            message_detail => '<em>OTP3</em> down.  &lt;_&lt;;',
+            login_state    => 'RESET_PIN',
         };
         print {*STDOUT} $JSON->encode($result_ref)
           or die "Cannot write to standard output: $!\n";
+        exit(0);
     }
 
     # If the file exists, return it.
@@ -186,7 +191,7 @@ sub check_validate {
         return_file('validate/additional.json', $extra_ref);
         exit(0);
     } else {
-        die "Unknown user $data->{username}\n";
+        die "unknown user $data->{username}\n";
     }
 }
 
