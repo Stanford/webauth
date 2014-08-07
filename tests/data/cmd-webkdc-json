@@ -51,10 +51,8 @@ sub return_file {
 
     # Add any additional data.
     if ($extra_ref) {
-        %{ $data_ref->{response} } = (
-            %{ $data_ref->{response} },
-            %{$extra_ref}
-        );
+        %{ $data_ref->{response} }
+          = (%{ $data_ref->{response} }, %{$extra_ref});
     }
 
     # Send the results to standard output with a success message.
