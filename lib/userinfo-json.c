@@ -27,6 +27,38 @@
 #include <webauth/factors.h>
 #include <webauth/webkdc.h>
 
+/*
+ * Parsing macros that include error checking.  Each of these macros assume
+ * that the s variable is available for a status and that the correct thing to
+ * do on any failure is to return the status while taking no further action.
+ */
+#define PARSE_FACTORS(ctx, json, key, result, exp)                      \
+    do {                                                                \
+        s = json_parse_factors((ctx), (json), (key), (result), (exp));  \
+        if (s != WA_ERR_NONE)                                           \
+            return s;                                                   \
+    } while (0)
+#define PARSE_HISTORY(ctx, json, key, result)                   \
+    do {                                                        \
+        s = json_parse_history((ctx), (json), (key), (result)); \
+        if (s != WA_ERR_NONE)                                   \
+            return s;                                           \
+    } while (0)
+#define PARSE_INTEGER(ctx, json, key, result)                   \
+    do {                                                        \
+        unsigned long tmp;                                      \
+        s = json_parse_integer((ctx), (json), (key), &tmp);     \
+        if (s != WA_ERR_NONE)                                   \
+            return s;                                           \
+        *(result) = tmp;                                        \
+    } while (0)
+#define PARSE_STRING(ctx, json, key, result)                    \
+    do {                                                        \
+        s = json_parse_string((ctx), (json), (key), (result));  \
+        if (s != WA_ERR_NONE)                                   \
+            return s;                                           \
+    } while (0)
+
 
 /*
  * Stub out the calls to return an error if not built with JSON support.
@@ -154,12 +186,8 @@ json_parse_factors(struct webauth_context *ctx, json_t *json, const char *key,
         if (json_is_string(value))
             *factor = apr_pstrdup(ctx->pool, json_string_value(value));
         else if (json_is_object(value)) {
-            s = json_parse_string(ctx, value, "factor", factor);
-            if (s != WA_ERR_NONE)
-                return s;
-            s = json_parse_integer(ctx, value, "expiration", &expires);
-            if (s != WA_ERR_NONE)
-                return s;
+            PARSE_STRING(ctx, value, "factor", factor);
+            PARSE_INTEGER(ctx, value, "expiration", &expires);
             if (expires > 0 && (expires < min_expires || min_expires == 0))
                 min_expires = expires;
         } else {
@@ -191,7 +219,6 @@ json_parse_history(struct webauth_context *ctx, json_t *json, const char *key,
                    const apr_array_header_t **result)
 {
     json_t *value, *array;
-    unsigned long timestamp;
     apr_array_header_t *logins = NULL;
     struct webauth_login *login;
     int s;
@@ -217,26 +244,23 @@ json_parse_history(struct webauth_context *ctx, json_t *json, const char *key,
             s = WA_ERR_REMOTE_FAILURE;
             return wai_error_set(ctx, s, "%s element is not object", key);
         }
+
+        /* Create a new login entry, allocating the array if needed. */
         if (logins == NULL) {
             size = sizeof(struct webauth_login);
             logins = apr_array_make(ctx->pool, 5, size);
         }
         login = apr_array_push(logins);
         memset(login, 0, sizeof(*login));
-        s = json_parse_string(ctx, value, "ip", &login->ip);
-        if (s != WA_ERR_NONE)
-            return s;
+
+        /* Parse the login information. */
+        PARSE_STRING(ctx, value, "ip", &login->ip);
         if (login->ip == NULL) {
             s = WA_ERR_REMOTE_FAILURE;
             return wai_error_set(ctx, s, "%s element has no ip key", key);
         }
-        s = json_parse_integer(ctx, value, "timestamp", &timestamp);
-        if (s != WA_ERR_NONE)
-            return s;
-        login->timestamp = timestamp;
-        s = json_parse_string(ctx, value, "hostname", &login->hostname);
-        if (s != WA_ERR_NONE)
-            return s;
+        PARSE_INTEGER(ctx, value, "timestamp", &login->timestamp);
+        PARSE_STRING(ctx, value, "hostname", &login->hostname);
     }
 
     /* Return the results. */
@@ -256,21 +280,21 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
                      struct webauth_user_info **result)
 {
     const char *message, *detail;
-    unsigned long code, timestamp;
+    unsigned long code;
     json_t *value, *object;
-    int s = WA_ERR_REMOTE_FAILURE;
+    int s;
     struct webauth_user_info *info;
 
     /* Check for the success key. */
     value = json_object_get(json, "success");
-    if (value == NULL)
+    if (value == NULL) {
+        s = WA_ERR_REMOTE_FAILURE;
         return wai_error_set(ctx, s, "no success key in JSON");
+    }
 
     /* Create the data structure for the reply and pull out login_state. */
     info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
-    s = json_parse_string(ctx, json, "login_state", &info->login_state);
-    if (s != WA_ERR_NONE)
-        return s;
+    PARSE_STRING(ctx, json, "login_state", &info->login_state);
 
     /*
      * If validation failed, return the message_detail string as the user
@@ -278,13 +302,9 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
      * the message and the code.
      */
     if (json_is_false(value)) {
-        s = json_parse_integer(ctx, json, "code", &code);
-        if (s == WA_ERR_NONE)
-            s = json_parse_string(ctx, json, "message", &message);
-        if (s == WA_ERR_NONE)
-            s = json_parse_string(ctx, json, "message_detail", &detail);
-        if (s != WA_ERR_NONE)
-            return s;
+        PARSE_INTEGER(ctx, json, "code", &code);
+        PARSE_STRING( ctx, json, "message", &message);
+        PARSE_STRING( ctx, json, "message_detail", &detail);
         if (detail == NULL) {
             s = WA_ERR_REMOTE_FAILURE;
             return wai_error_set(ctx, s, "%s [%lu]", message, code);
@@ -304,42 +324,15 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
         return wai_error_set(ctx, s, "no or malformed response key in JSON");
     }
 
-    /*
-     * User info succeeded.  Pull the data out of the JSON reply.
-     *
-     * FIXME: This really needs to be rewritten to be table-driven, or use
-     * macros, or otherwise made somehow not so ugly and hard to read.
-     */
-    s = json_parse_integer(ctx, object, "persistent_threshold", &timestamp);
-    if (s != WA_ERR_NONE)
-        return s;
-    info->valid_threshold = timestamp;
-    s = json_parse_integer(ctx, object, "password_expires", &timestamp);
-    if (s != WA_ERR_NONE)
-        return s;
-    info->password_expires = timestamp;
-    s = json_parse_integer(ctx, object, "max_level_of_assurance",
-                           &info->max_loa);
-    if (s != WA_ERR_NONE)
-        return s;
-    s = json_parse_string(ctx, object, "message", &info->user_message);
-    if (s != WA_ERR_NONE)
-        return s;
-    s = json_parse_factors(ctx, object, "available_factors", &info->factors,
-                           NULL);
-    if (s != WA_ERR_NONE)
-        return s;
-    s = json_parse_factors(ctx, object, "additional_factors",
-                           &info->additional, NULL);
-    if (s != WA_ERR_NONE)
-        return s;
-    s = json_parse_factors(ctx, object, "required_factors", &info->required,
-                           NULL);
-    if (s != WA_ERR_NONE)
-        return s;
-    s = json_parse_history(ctx, object, "logins", &info->logins);
-    if (s != WA_ERR_NONE)
-        return s;
+    /* User info succeeded.  Pull the data out of the JSON reply. */
+    PARSE_INTEGER(ctx, object, "persistent_threshold", &info->valid_threshold);
+    PARSE_INTEGER(ctx, object, "password_expires", &info->password_expires);
+    PARSE_INTEGER(ctx, object, "max_level_of_assurance", &info->max_loa);
+    PARSE_STRING( ctx, object, "message", &info->user_message);
+    PARSE_FACTORS(ctx, object, "available_factors", &info->factors, NULL);
+    PARSE_FACTORS(ctx, object, "additional_factors", &info->additional, NULL);
+    PARSE_FACTORS(ctx, object, "required_factors", &info->required, NULL);
+    PARSE_HISTORY(ctx, object, "logins", &info->logins);
 
     /* Return the results. */
     *result = info;
@@ -358,21 +351,21 @@ json_parse_user_validate(struct webauth_context *ctx, json_t *json,
                          struct webauth_user_validate **result)
 {
     const char *message, *detail;
-    unsigned long code, timestamp;
+    unsigned long code;
     json_t *value, *object;
-    int s = WA_ERR_REMOTE_FAILURE;
+    int s;
     struct webauth_user_validate *validate;
 
     /* Check for the success key. */
     value = json_object_get(json, "success");
-    if (value == NULL)
+    if (value == NULL) {
+        s = WA_ERR_REMOTE_FAILURE;
         return wai_error_set(ctx, s, "no success key in JSON");
+    }
 
     /* Create the data structure for the reply. */
     validate = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_validate));
-    s = json_parse_string(ctx, json, "login_state", &validate->login_state);
-    if (s != WA_ERR_NONE)
-        return s;
+    PARSE_STRING(ctx, json, "login_state", &validate->login_state);
 
     /*
      * If validation failed, return the message_detail string as the user
@@ -380,13 +373,9 @@ json_parse_user_validate(struct webauth_context *ctx, json_t *json,
      * the message and the code.
      */
     if (json_is_false(value)) {
-        s = json_parse_integer(ctx, json, "code", &code);
-        if (s == WA_ERR_NONE)
-            s = json_parse_string(ctx, json, "message", &message);
-        if (s == WA_ERR_NONE)
-            s = json_parse_string(ctx, json, "message_detail", &detail);
-        if (s != WA_ERR_NONE)
-            return s;
+        PARSE_INTEGER(ctx, json, "code", &code);
+        PARSE_STRING( ctx, json, "message", &message);
+        PARSE_STRING( ctx, json, "message_detail", &detail);
         if (detail == NULL) {
             s = WA_ERR_REMOTE_FAILURE;
             return wai_error_set(ctx, s, "%s [%lu]", message, code);
@@ -407,31 +396,15 @@ json_parse_user_validate(struct webauth_context *ctx, json_t *json,
         return wai_error_set(ctx, s, "no or malformed response key in JSON");
     }
 
-    /*
-     * Validation succeeded.  Pull the data out of the JSON reply.
-     *
-     * FIXME: This really needs to be rewritten to be table-driven, or use
-     * macros, or otherwise made somehow not so ugly and hard to read.
-     */
-    s = json_parse_integer(ctx, object, "persistent_threshold", &timestamp);
-    if (s != WA_ERR_NONE)
-        return s;
-    validate->valid_threshold = timestamp;
-    s = json_parse_integer(ctx, object, "level_of_assurance", &validate->loa);
-    if (s != WA_ERR_NONE)
-        return s;
-    s = json_parse_string(ctx, object, "message", &validate->user_message);
-    if (s != WA_ERR_NONE)
-        return s;
-    s = json_parse_factors(ctx, object, "factors", &validate->factors,
-                           &validate->factors_expiration);
-    if (s != WA_ERR_NONE)
-        return s;
-    s = json_parse_factors(ctx, object, "persistent_factors",
-                           &validate->persistent,
-                           &validate->persistent_expiration);
-    if (s != WA_ERR_NONE)
-        return s;
+    /* Validation succeeded.  Pull the data out of the JSON reply. */
+    PARSE_INTEGER(ctx, object, "persistent_threshold",
+                  &validate->valid_threshold);
+    PARSE_INTEGER(ctx, object, "level_of_assurance", &validate->loa);
+    PARSE_STRING( ctx, object, "message", &validate->user_message);
+    PARSE_FACTORS(ctx, object, "factors", &validate->factors,
+                  &validate->factors_expiration);
+    PARSE_FACTORS(ctx, object, "persistent_factors", &validate->persistent,
+                  &validate->persistent_expiration);
 
     /* Return the results. */
     *result = validate;
