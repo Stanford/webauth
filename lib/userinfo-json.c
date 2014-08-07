@@ -472,26 +472,55 @@ json_parse_document(struct webauth_context *ctx, struct wai_buffer *string,
 
 
 /*
- * Construct the arguments to a webkdc-userinfo command using the JSON
- * protocol.  Takes the user, ip, random flag, URL, and factor string, and
- * sets the command argument to point to a a NULL-terminated array of strings
- * suitable for passing to remctl_command.  Returns a status code.
+ * Construct a remctl command vector given the subcommand and the JSON to use
+ * as the argument.  Sets result to point to a a NULL-terminated array of
+ * strings suitable for passing to remctl_command.  Returns a status code.
+ */
+static int
+json_command(struct webauth_context *ctx, const char *subcommand,
+             json_t *json, const char ***result)
+{
+    const char **argv;
+    char *data;
+
+    /* Ensure the output variable is NULL on any error. */
+    *result = NULL;
+
+    /* Generate the JSON representation of the call data. */
+    data = json_dumps(json, 0);
+    if (data == NULL)
+        return wai_error_set(ctx, WA_ERR_NO_MEM, "cannot build JSON call");
+
+    /* Build the remctl command vector. */
+    argv = apr_pcalloc(ctx->pool, 4 * sizeof(const char *));
+    argv[0] = ctx->user->command;
+    argv[1] = subcommand;
+    argv[2] = apr_pstrdup(ctx->pool, data);
+    argv[3] = NULL;
+    *result = argv;
+
+    /* Free resources and return. */
+    free(data);
+    return WA_ERR_NONE;
+}
+
+
+/*
+ * Construct the JSON data for a webkdc-userinfo command.  protocol.  Takes
+ * the user, ip, random flag, URL, and factor string, and stores the result in
+ * the result argument.  Caller is responsible for calling decref on the JSON
+ * structure when finished with it.  Returns a status code.
  */
 static int
 json_command_userinfo(struct webauth_context *ctx, const char *user,
                       const char *ip, int random_mf, const char *url,
-                      const char *factors_string, const char ***command)
+                      const char *factors_string, json_t **result)
 {
-    const char **argv;
     json_t *json = NULL, *factors_json = NULL;
     json_t *factor;
     struct webauth_factors *factors;
     apr_array_header_t *factors_array;
-    char *data;
     int i;
-
-    /* Ensure the output variable is NULL on any error. */
-    *command = NULL;
 
     /* Build the root JSON object. */
     json = json_object();
@@ -523,22 +552,8 @@ json_command_userinfo(struct webauth_context *ctx, const char *user,
     if (json_object_set_new(json, "factors", factors_json) < 0)
         goto fail;
 
-    /* Generate the JSON representation of the call data. */
-    data = json_dumps(json, 0);
-    if (data == NULL)
-        goto fail;
-
-    /* Build the remctl command vector. */
-    argv = apr_pcalloc(ctx->pool, 4 * sizeof(const char *));
-    argv[0] = ctx->user->command;
-    argv[1] = "webkdc-userinfo";
-    argv[2] = apr_pstrdup(ctx->pool, data);
-    argv[3] = NULL;
-    *command = argv;
-
-    /* Free resources and return. */
-    free(data);
-    json_decref(json);
+    /* Return the result. */
+    *result = json;
     return WA_ERR_NONE;
 
 fail:
@@ -546,6 +561,7 @@ fail:
         json_decref(factors_json);
     if (json != NULL)
         json_decref(json);
+    *result = NULL;
     return wai_error_set(ctx, WA_ERR_NO_MEM, "cannot build JSON call");
 }
 
@@ -565,9 +581,13 @@ wai_user_info_json(struct webauth_context *ctx, const char *user,
     json_t *json = NULL;
 
     /* Build the command. */
-    s = json_command_userinfo(ctx, user, ip, random_mf, url, factors, &argv);
+    s = json_command_userinfo(ctx, user, ip, random_mf, url, factors, &json);
     if (s != WA_ERR_NONE)
         return s;
+    s = json_command(ctx, "webkdc-userinfo", json, &argv);
+    if (s != WA_ERR_NONE)
+        return s;
+    json_decref(json);
 
     /* Make the call. */
     output = wai_buffer_new(ctx->pool);
@@ -587,25 +607,17 @@ wai_user_info_json(struct webauth_context *ctx, const char *user,
 
 /*
  * Construct the arguments to a webkdc-validate command using the JSON
- * protocol.  Takes the user, ip, code, type, and state information and sets
- * the command argument to point to a a NULL-terminated array of strings
- * suitable for passing to remctl_command.  Returns a status code.
- *
- * FIXME: The JSON code here is horrible and needs some better structure.  It
- * will also leak memory if there is some failure adding the temporary objects
- * since those objects aren't decref'd.
+ * protocol.  Takes the user, ip, code, type, and state information, and
+ * stores the result in the result argument.  Caller is responsible for
+ * calling decref on the JSON structure when finished with it.  Returns a
+ * status code.
  */
 static int
 json_command_validate(struct webauth_context *ctx, const char *user,
                       const char *ip, const char *code, const char *type,
-                      const char *state, const char ***command)
+                      const char *state, json_t **result)
 {
-    const char **argv;
     json_t *json = NULL, *factor = NULL;
-    char *data;
-
-    /* Ensure the output variable is NULL on any error. */
-    *command = NULL;
 
     /* Build the root JSON object. */
     json = json_object();
@@ -630,22 +642,8 @@ json_command_validate(struct webauth_context *ctx, const char *user,
     if (json_object_set_new(json, "factor", factor) < 0)
         goto fail;
 
-    /* Generate the JSON representation of the call data. */
-    data = json_dumps(json, 0);
-    if (data == NULL)
-        goto fail;
-
-    /* Build the remctl command vector. */
-    argv = apr_pcalloc(ctx->pool, 4 * sizeof(const char *));
-    argv[0] = ctx->user->command;
-    argv[1] = "webkdc-validate";
-    argv[2] = apr_pstrdup(ctx->pool, data);
-    argv[3] = NULL;
-    *command = argv;
-
-    /* Free resources and return. */
-    free(data);
-    json_decref(json);
+    /* Return the result. */
+    *result = json;
     return WA_ERR_NONE;
 
 fail:
@@ -653,6 +651,7 @@ fail:
         json_decref(factor);
     if (json != NULL)
         json_decref(json);
+    *result = NULL;
     return wai_error_set(ctx, WA_ERR_NO_MEM, "cannot build JSON call");
 }
 
@@ -673,9 +672,15 @@ wai_user_validate_json(struct webauth_context *ctx, const char *user,
     json_t *json = NULL;
 
     /* Build the command. */
-    s = json_command_validate(ctx, user, ip, code, type, state, &argv);
+    s = json_command_validate(ctx, user, ip, code, type, state, &json);
     if (s != WA_ERR_NONE)
         return s;
+    s = json_command(ctx, "webkdc-validate", json, &argv);
+    if (s != WA_ERR_NONE)
+        return s;
+    json_decref(json);
+
+    /* Make the call. */
     output = wai_buffer_new(ctx->pool);
     s = wai_user_remctl(ctx, argv, output);
     if (s != WA_ERR_NONE)
