@@ -73,9 +73,6 @@ sub check_userinfo {
     my ($data) = @_;
 
     # Check the data that should always be the same.
-    if ($data->{ip} ne '127.0.0.1') {
-        die "invalid IP address: $data->{ip}\n";
-    }
     if (   $data->{random} != JSON::PP::true
         && $data->{random} != JSON::PP::false)
     {
@@ -146,11 +143,6 @@ sub check_userinfo {
 #  Throws: Text exception on any error in the call
 sub check_validate {
     my ($data) = @_;
-
-    # Check the data that should always be the same.
-    if ($data->{ip} ne '127.0.0.1') {
-        die "invalid IP address: $data->{ip}\n";
-    }
 
     # If the user is "delay", sleep for three seconds and return an error.
     if ($data->{username} eq 'delay') {

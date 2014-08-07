@@ -148,13 +148,14 @@ webauthinclude_HEADERS = include/webauth/basic.h include/webauth/factors.h \
 	include/webauth/tokens.h include/webauth/util.h			   \
 	include/webauth/was.h include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
-	lib/attr-encode.c lib/context.c lib/errors.c lib/factors.c	  \
-	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	  \
-	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c \
-	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	  \
-	lib/token-merge.c lib/userinfo.c lib/util.c lib/was-cache.c	  \
-	lib/webkdc-config.c lib/webkdc-logging.c lib/webkdc-login.c	  \
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		    \
+	lib/attr-encode.c lib/context.c lib/errors.c lib/factors.c	    \
+	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	    \
+	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c   \
+	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	    \
+	lib/token-merge.c lib/userinfo.c lib/userinfo-json.c		    \
+	lib/userinfo-remctl.c lib/userinfo-xml.c lib/util.c lib/was-cache.c \
+	lib/webkdc-config.c lib/webkdc-logging.c lib/webkdc-login.c	    \
 	lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
 lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)		\
