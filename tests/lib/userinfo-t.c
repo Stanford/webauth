@@ -144,7 +144,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL) {
         diag("error: %s", webauth_error_message(ctx, s));
-        ok_block(7, 0, "Metadata failed");
+        ok_block(10, 0, "Metadata failed");
     } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
@@ -164,7 +164,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     ok(info != NULL, "...mini is not NULL");
     if (info == NULL) {
         diag("error: %s", webauth_error_message(ctx, s));
-        ok_block(7, 0, "Metadata failed");
+        ok_block(9, 0, "Metadata failed");
     } else {
         is_int(1, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
@@ -183,7 +183,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL) {
         diag("error: %s", webauth_error_message(ctx, s));
-        ok_block(6, 0, "Metadata failed");
+        ok_block(10, 0, "Metadata failed");
     } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
@@ -205,7 +205,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL) {
         diag("error: %s", webauth_error_message(ctx, s));
-        ok_block(7, 0, "Metadata failed");
+        ok_block(10, 0, "Metadata failed");
     } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(1, info->max_loa, "...max LoA");
@@ -226,7 +226,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL) {
         diag("error: %s", webauth_error_message(ctx, s));
-        ok_block(8, 0, "Metadata failed");
+        ok_block(10, 0, "Metadata failed");
     } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
@@ -248,7 +248,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     ok(info != NULL, "...factor is not NULL");
     if (info == NULL) {
         diag("error: %s", webauth_error_message(ctx, s));
-        ok_block(6, 0, "Metadata failed");
+        ok_block(7, 0, "Metadata failed");
     } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
@@ -323,7 +323,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     is_int(WA_ERR_NONE, s, "Metadata for delay now succeeds");
     if (info == NULL) {
         diag("error: %s", webauth_error_message(ctx, s));
-        ok_block(6, 0, "Metadata failed");
+        ok_block(7, 0, "Metadata failed");
     } else {
         is_int(0, info->random_multifactor, "...random multifactor");
         is_int(0, info->max_loa, "...max LoA");
