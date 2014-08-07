@@ -59,6 +59,41 @@
             return s;                                           \
     } while (0)
 
+/*
+ * Macros to add data to a JSON data structure.  Used to generate the JSON
+ * structure for making user information service calls.  Each macro assumes
+ * that there is a fail label that should be called on any error.
+ */
+#define ADD_BOOLEAN(json, key, value)                           \
+    do {                                                        \
+        json_t *tmp;                                            \
+        tmp = json_boolean(value);                              \
+        if (json_object_set_new((json), (key), tmp) < 0)        \
+            goto fail;                                          \
+    } while (0);
+#define ADD_INTEGER(json, key, value)                           \
+    do {                                                        \
+        json_t *tmp;                                            \
+        tmp = json_integer(value);                              \
+        if (tmp == NULL)                                        \
+            goto fail;                                          \
+        if (json_object_set_new((json), (key), tmp) < 0) {      \
+            json_decref(tmp);                                   \
+            goto fail;                                          \
+        }                                                       \
+    } while (0);
+#define ADD_STRING(json, key, value)                            \
+    do {                                                        \
+        json_t *tmp;                                            \
+        tmp = json_string(value);                               \
+        if (tmp == NULL)                                        \
+            goto fail;                                          \
+        if (json_object_set_new((json), (key), tmp) < 0) {      \
+            json_decref(tmp);                                   \
+            goto fail;                                          \
+        }                                                       \
+    } while (0);
+
 
 /*
  * Stub out the calls to return an error if not built with JSON support.
@@ -441,10 +476,6 @@ json_parse_document(struct webauth_context *ctx, struct wai_buffer *string,
  * protocol.  Takes the user, ip, random flag, URL, and factor string, and
  * sets the command argument to point to a a NULL-terminated array of strings
  * suitable for passing to remctl_command.  Returns a status code.
- *
- * FIXME: The JSON code here is horrible and needs some better structure.  It
- * will also leak memory if there is some failure adding the temporary objects
- * since those objects aren't decref'd.
  */
 static int
 json_command_userinfo(struct webauth_context *ctx, const char *user,
@@ -452,72 +483,67 @@ json_command_userinfo(struct webauth_context *ctx, const char *user,
                       const char *factors_string, const char ***command)
 {
     const char **argv;
-    const struct webauth_user_config *config = ctx->user;
-    json_t *json = NULL;
-    json_t *value, *member;
-    char *arg;
+    json_t *json = NULL, *factors_json = NULL;
+    json_t *factor;
     struct webauth_factors *factors;
     apr_array_header_t *factors_array;
-    const char *factor;
+    char *data;
     int i;
 
+    /* Ensure the output variable is NULL on any error. */
     *command = NULL;
-    argv = apr_pcalloc(ctx->pool, 4 * sizeof(const char *));
-    argv[0] = config->command;
-    argv[1] = "webkdc-userinfo";
+
+    /* Build the root JSON object. */
     json = json_object();
     if (json == NULL)
         goto fail;
-    value = json_string(user);
-    if (value == NULL)
-        goto fail;
-    if (json_object_set_new(json, "username", value) < 0)
-        goto fail;
-    if (ip != NULL) {
-        value = json_string(ip);
-        if (value == NULL)
-            goto fail;
-        if (json_object_set_new(json, "ip", value) < 0)
-            goto fail;
-    }
-    value = json_integer(time(NULL));
-    if (value == NULL)
-        goto fail;
-    if (json_object_set_new(json, "timestamp", value) < 0)
-        goto fail;
-    if (json_object_set_new(json, "random", json_boolean(random_mf)) < 0)
-        goto fail;
-    if (url != NULL) {
-        value = json_string(url);
-        if (value == NULL)
-            goto fail;
-        if (json_object_set_new(json, "return_url", value) < 0)
-            goto fail;
-    }
-    value = json_array();
+
+    /* Add the simple values from our call. */
+    ADD_STRING(json, "username", user);
+    if (ip != NULL)
+        ADD_STRING(json, "ip", ip);
+    ADD_INTEGER(json, "timestamp", time(NULL));
+    ADD_BOOLEAN(json, "random", random_mf);
+    if (url != NULL)
+        ADD_STRING(json, "return_url", url);
+
+    /* Add the array of factors. */
     factors = webauth_factors_parse(ctx, factors_string);
     factors_array = webauth_factors_array(ctx, factors);
+    factors_json = json_array();
     for (i = 0; i < factors_array->nelts; i++) {
-        factor = APR_ARRAY_IDX(factors_array, i, const char *);
-        member = json_string(factor);
-        if (member == NULL)
+        factor = json_string(APR_ARRAY_IDX(factors_array, i, const char *));
+        if (factor == NULL)
             goto fail;
-        if (json_array_append_new(value, member) < 0)
+        if (json_array_append_new(factors_json, factor) < 0) {
+            json_decref(factor);
             goto fail;
+        }
     }
-    if (json_object_set_new(json, "factors", value) < 0)
+    if (json_object_set_new(json, "factors", factors_json) < 0)
         goto fail;
-    arg = json_dumps(json, 0);
-    if (arg == NULL)
+
+    /* Generate the JSON representation of the call data. */
+    data = json_dumps(json, 0);
+    if (data == NULL)
         goto fail;
-    argv[2] = apr_pstrdup(ctx->pool, arg);
-    free(arg);
+
+    /* Build the remctl command vector. */
+    argv = apr_pcalloc(ctx->pool, 4 * sizeof(const char *));
+    argv[0] = ctx->user->command;
+    argv[1] = "webkdc-userinfo";
+    argv[2] = apr_pstrdup(ctx->pool, data);
     argv[3] = NULL;
-    json_decref(json);
     *command = argv;
+
+    /* Free resources and return. */
+    free(data);
+    json_decref(json);
     return WA_ERR_NONE;
 
 fail:
+    if (factors_json != NULL)
+        json_decref(factors_json);
     if (json != NULL)
         json_decref(json);
     return wai_error_set(ctx, WA_ERR_NO_MEM, "cannot build JSON call");
@@ -575,67 +601,56 @@ json_command_validate(struct webauth_context *ctx, const char *user,
                       const char *state, const char ***command)
 {
     const char **argv;
-    json_t *json = NULL;
-    json_t *factor, *value;
-    char *arg;
-    const struct webauth_user_config *config = ctx->user;
+    json_t *json = NULL, *factor = NULL;
+    char *data;
 
+    /* Ensure the output variable is NULL on any error. */
     *command = NULL;
-    argv = apr_pcalloc(ctx->pool, 4 * sizeof(const char *));
-    argv[0] = config->command;
-    argv[1] = "webkdc-validate";
+
+    /* Build the root JSON object. */
     json = json_object();
     if (json == NULL)
         goto fail;
-    value = json_string(user);
-    if (value == NULL)
-        goto fail;
-    if (json_object_set_new(json, "username", value) < 0)
-        goto fail;
-    if (ip != NULL) {
-        value = json_string(ip);
-        if (value == NULL)
-            goto fail;
-        if (json_object_set_new(json, "ip", value) < 0)
-            goto fail;
-    }
-    if (state != NULL) {
-        value = json_string(state);
-        if (value == NULL)
-            goto fail;
-        if (json_object_set_new(json, "login_state", value) < 0)
-            goto fail;
-    }
+
+    /* Add the simple values from our call. */
+    ADD_STRING(json, "username", user);
+    if (ip != NULL)
+        ADD_STRING(json, "ip", ip);
+    if (state != NULL)
+        ADD_STRING(json, "login_state", state);
+
+    /* Add the factor information. */
     factor = json_object();
     if (factor == NULL)
         goto fail;
-    if (type != NULL) {
-        value = json_string(type);
-        if (value == NULL)
-            goto fail;
-        if (json_object_set_new(factor, "capability", value) < 0)
-            goto fail;
-    }
-    if (code != NULL) {
-        value = json_string(code);
-        if (value == NULL)
-            goto fail;
-        if (json_object_set_new(factor, "passcode", value) < 0)
-            goto fail;
-    }
+    if (type != NULL)
+        ADD_STRING(factor, "capability", type);
+    if (code != NULL)
+        ADD_STRING(factor, "passcode", code);
     if (json_object_set_new(json, "factor", factor) < 0)
         goto fail;
-    arg = json_dumps(json, 0);
-    if (arg == NULL)
+
+    /* Generate the JSON representation of the call data. */
+    data = json_dumps(json, 0);
+    if (data == NULL)
         goto fail;
-    argv[2] = apr_pstrdup(ctx->pool, arg);
-    free(arg);
+
+    /* Build the remctl command vector. */
+    argv = apr_pcalloc(ctx->pool, 4 * sizeof(const char *));
+    argv[0] = ctx->user->command;
+    argv[1] = "webkdc-validate";
+    argv[2] = apr_pstrdup(ctx->pool, data);
     argv[3] = NULL;
-    json_decref(json);
     *command = argv;
+
+    /* Free resources and return. */
+    free(data);
+    json_decref(json);
     return WA_ERR_NONE;
 
 fail:
+    if (factor  != NULL)
+        json_decref(factor);
     if (json != NULL)
         json_decref(json);
     return wai_error_set(ctx, WA_ERR_NO_MEM, "cannot build JSON call");
