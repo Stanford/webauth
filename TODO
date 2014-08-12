@@ -32,7 +32,9 @@ Protocol:
  * WEBAUTH-89: Rather than using our own Kerberos ticket serialization
    format, store tickets in the form that would be used when forwarding
    tickets, thus letting the Kerberos library do the encoding and decoding
-   for us.
+   for us.  MIT Kerberos has krb5_mk_ncred and krb5_rd_cred calls that
+   could be used for this, but Heimdal doesn't appear to have anything
+   equivalent.
 
  * WEBAUTH-127: Instead of using the same key for both the HMAC and the
    encryption key, use a channel key and derive both the HMAC and
