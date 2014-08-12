@@ -129,8 +129,8 @@ Making a Release
 
    2. Check whether the shared library revision needs to be increased.
       This is set in Makefile.am in the LDFLAGS setting for libwebauth.la.
-      Follow the instructions in the "Updating library version
-      information" section of the Libtool manual.
+      Follow the instructions in the "Updating version info" section of
+      the Libtool manual.
 
       If backward-incompatible changes were made to the library ABI, also
       change the symbol versioning in lib/libwebauth.map by changing the
