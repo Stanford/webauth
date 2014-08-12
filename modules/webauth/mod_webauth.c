@@ -51,6 +51,26 @@ ensure_keyring_loaded(MWA_REQ_CTXT *rc)
 }
 
 
+/*
+ * Check whether the AuthType of the current request is set to one of the
+ * AuthType values that we handle.  Returns true if so and false if not.
+ */
+static bool
+is_supported_authtype(request_rec *r, MWA_REQ_CTXT *rc)
+{
+    const char *auth_type = ap_auth_type(r);
+
+    if (auth_type == NULL)
+        return false;
+    if (strcmp(auth_type, "WebAuth") == 0)
+        return true;
+    if (rc->sconf->auth_type != NULL)
+        if (strcmp(auth_type, rc->sconf->auth_type) == 0)
+            return true;
+    return false;
+}
+
+
 static void
 dont_cache(MWA_REQ_CTXT *rc)
 {
@@ -2013,13 +2033,14 @@ static int
 mod_webauth_check_access(request_rec *r)
 {
     MWA_REQ_CTXT *rc;
-    const char *at = ap_auth_type(r);
     const char *subject = NULL, *authz;
     int status;
 
+    /* Get the module configuration. */
     rc = ap_get_module_config(r->request_config, &webauth_module);
 
-    if (!at || strcmp(at, "WebAuth") != 0)
+    /* Decline if the request is for an AuthType we don't handle. */
+    if (!is_supported_authtype(r, rc))
         return DECLINED;
 
     status = webauth_context_init_apr(&rc->ctx, rc->r->pool);
@@ -2096,6 +2117,7 @@ check_user_id_hook(request_rec *r)
     int status;
 #endif
 
+    /* Get the module configuration. */
     rc = ap_get_module_config(r->request_config, &webauth_module);
 
     if (rc->sconf->debug)
@@ -2104,12 +2126,9 @@ check_user_id_hook(request_rec *r)
                      rc->r->unparsed_uri != NULL ?
                      rc->r->unparsed_uri : "null-uri");
 
-    if ((at == NULL) ||
-        ((strcmp(at, "WebAuth") != 0) &&
-         (rc->sconf->auth_type == NULL ||
-          strcmp(at, rc->sconf->auth_type) != 0))) {
+    /* Decline if the request is for an AuthType we don't handle. */
+    if (!is_supported_authtype(r, rc))
         return DECLINED;
-    }
 
     /* If we can't load the keyring, return a fatal error. */
     if (!ensure_keyring_loaded(rc))

@@ -2257,6 +2257,7 @@ handler_hook(request_rec *r)
 
     /* Set up the WebKDC configuration. */
     rc.sconf = ap_get_module_config(r->server->module_config, &webkdc_module);
+    config.fast_armor_path  = rc.sconf->fast_armor_path;
     config.id_acl_path      = rc.sconf->identity_acl_path;
     config.keytab_path      = rc.sconf->keytab_path;
     config.principal        = rc.sconf->keytab_principal;

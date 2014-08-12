@@ -68,7 +68,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0600';
+    $VERSION = '4.0601';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -739,16 +739,17 @@ sub print_confirm_page {
     $return_url .= "?WEBAUTHR=" . $resp->response_token . ";";
     $return_url .= ";WEBAUTHS=" . $resp->app_state . ";" if $resp->app_state;
 
-    # Find out if the user is within the window to have a password
-    # warning.  Skip if using remote_user or the user already has a
-    # single-sign-on cookie.
+    # Find out if the user is within the window to have a password warning.
+    # Present this warning only if the request was a POST, indicating that the
+    # user provided some authentication credentials.  This avoids warning
+    # (and, more importantly, inserting a confirmation screen) if the user
+    # otherwise could have just been redirected to the destination without any
+    # WebLogin interaction, such as via REMOTE_USER or a single sign-on
+    # cookie.
     my $expire_warning = 0;
-    if (!$q->cookie ($self->param ('remuser_cookie'))
-        && !$self->param ('wpt_cookie')
-        && $WebKDC::Config::EXPIRING_PW_URL) {
-
+    if ($q->request_method eq 'POST' && $WebKDC::Config::EXPIRING_PW_URL) {
         my $expiring = $resp->password_expiration;
-        if (defined $expiring
+        if (defined ($expiring)
             && (($expiring - time) < $WebKDC::Config::EXPIRING_PW_WARNING)) {
 
             # Set template variable for expiring password.
@@ -805,6 +806,7 @@ sub print_confirm_page {
     $bypass = 0 if $factor_warning;
     $bypass = 0 if $history;
     $bypass = 0 if $resp->authz_subject;
+    $bypass = 0 if $resp->permitted_authz;
     $bypass = 0 if $user_message;
     if ($bypass and $bypass eq 'id') {
         $bypass = ($token_type eq 'id') ? 1 : 0;
@@ -1442,9 +1444,6 @@ sub error_if_no_cookies {
 # If the user sent a password, force POST as a method.  Otherwise, if we
 # continue, the password may show up in referrer strings sent by the
 # browser to the remote site.
-#
-# err_bad_method was added as a form parameter with WebAuth 3.6.2.  Try to
-# adjust for old templates.
 sub error_password_no_post {
     my ($self) = @_;
     my $q = $self->query;
@@ -1456,20 +1455,21 @@ sub error_password_no_post {
     return $self->print_error_page;
 }
 
-# Check to see if we have a defined request token.  If not, display the error
-# page and tell the caller to skip to the next request.  Returns undef on
-# success and the page text on failure.
+# Check to see if we have request and webkdc-service tokens.  If not, display
+# the error page and tell the caller to skip to the next request.  Returns
+# undef on success and the page text on failure.
 sub error_no_request_token {
     my ($self) = @_;
     my $q = $self->query;
 
-    if (defined ($q->param ('RT')) && defined ($q->param ('ST'))) {
-        return undef;
+    if ($q->param ('RT') && $q->param ('ST')) {
+        return;
+    } else {
+        $self->template_params ({err_no_request_token => 1});
+        print STDERR "no request or service token\n"
+            if $self->param ('logging');
+        return $self->print_error_page;
     }
-
-    $self->template_params ({err_no_request_token => 1});
-    print STDERR "no request or service token\n" if $self->param ('logging');
-    return $self->print_error_page;
 }
 
 # Test for requirements of a password request:
@@ -2159,6 +2159,12 @@ sub multifactor : Runmode {
     my ($self) = @_;
     my $q = $self->query;
 
+    # The username should always be set here.
+    if (!defined ($q->param ('username'))) {
+        $self->template_params ({err_confirm => 1});
+        return $self->print_error_page;
+    }
+
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.
     my %cart = CGI::Cookie->fetch;
@@ -2217,6 +2223,12 @@ sub multifactor : Runmode {
 sub multifactor_sendauth : Runmode {
     my ($self) = @_;
     my $q = $self->query;
+
+    # The username should always be set here.
+    if (!defined ($q->param ('username'))) {
+        $self->template_params ({err_confirm => 1});
+        return $self->print_error_page;
+    }
 
     # Set up all WebKDC parameters, including tokens, proxy tokens, and
     # REMOTE_USER parameters.

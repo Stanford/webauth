@@ -282,6 +282,13 @@ WEBAUTH_USER=schemers
         </td>
       </tr>
       <tr>
+        <td><code>mp</code></td><td>mobile push</td>
+        <td>
+          User approved an out-of-band push notification to a mobile
+          device
+        </td>
+      </tr>
+      <tr>
         <td><code>o</code></td><td>OTP</td>
         <td>Session or initial authentication via one-time password</td>
       </tr>
@@ -307,6 +314,12 @@ WEBAUTH_USER=schemers
       <tr>
         <td><code>u</code></td><td>unknown</td>
         <td>Session or initial authentication via an unknown method</td>
+      </tr>
+      <tr>
+        <td><code>v</code></td><td>voice</td>
+        <td>
+          User approved authentication via voice telephone call
+        </td>
       </tr>
       <tr>
         <td><code>x</code></td><td>X.509</td>
@@ -698,7 +711,21 @@ WEBAUTH_USER is set to:
     </example>
 
     <note>
-      <title>Warning</title>
+      <title>Warning for Load-Balanced Pools</title>
+      <p>
+        If you are using delegated credentials with a pool of servers
+        behind a load balancer (see <a href="#loadbalance">the section on
+        load balancing</a>), each system in the pool must use the same
+        Kerberos identity when requesting credentials.  Otherwise, the
+        delegated credentials will be locked to the one principal that
+        requested them and the other hosts will not be able to use them,
+        which will cause problems if a given client moves from one pool
+        member to another.
+      </p>
+    </note>
+
+    <note>
+      <title>Warning for Active Directory</title>
       <p>
         If you are using Active Directory as your KDC, be aware that
         Active Directory Kerberos tickets can be relatively large because
@@ -755,7 +782,12 @@ WebAuthDebug on
       multiple WebAuth servers for load balancing and redundancy.  In
       order to achieve this, the WebAuth keyring has to be shared between
       the WebAuth servers.  The Kerberos keytab file does not have to be
-      shared; each system can use a separate keytab file.
+      shared; each system can use a separate keytab file.  (There is one
+      exception to this last rule: credential delegation.  If you are
+      using credential delegation with a load-balanced pool, all servers
+      in the pool must share the same Kerberos keytab file as well as the
+      keyring.  See <a href="#credentials">the warning under requesting
+      credentials</a> for more information.)
     </p>
 
     <note>
@@ -1127,6 +1159,7 @@ WebAuthCredCacheDir conf/webauth/credcache
 
       <example>
         <title>Example</title>
+<pre>
 # In the following example, no other URLs in this virtual host should be
 # protected by WebAuth to avoid creating potentially conflicting cookies
 # with a path scope of /.
@@ -1140,6 +1173,7 @@ WebAuthCredCacheDir conf/webauth/credcache
   Require user admin1 admin2
   WebAuthCookiePath /manage
 &lt;/Location&gt;
+</pre>
       </example>
     </usage>
   </directivesynopsis>

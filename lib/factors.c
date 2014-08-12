@@ -6,7 +6,7 @@
  * one is a subset of another.  Those utility functions are collected here.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2013
+ * Copyright 2011, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -44,8 +44,10 @@ maybe_synthesize_multifactor(struct webauth_factors *factors)
     int types, i;
     const char *factor;
     bool human    = false;
+    bool mobile   = false;
     bool otp      = false;
     bool password = false;
+    bool voice    = false;
     bool x509     = false;
 
     /* If this set of factors already includes multifactor, do nothing. */
@@ -55,15 +57,14 @@ maybe_synthesize_multifactor(struct webauth_factors *factors)
     /* Scan the factors and count how many classes we have. */
     for (i = 0; i < factors->factors->nelts; i++) {
         factor = APR_ARRAY_IDX(factors->factors, i, const char *);
-        switch (factor[0]) {
-            case 'h': human    = true; break;
-            case 'o': otp      = true; break;
-            case 'p': password = true; break;
-            case 'x': x509     = true; break;
-            default:                   break;
-        }
+        if      (strcmp(factor, WA_FA_HUMAN)       == 0) human    = true;
+        else if (strcmp(factor, WA_FA_MOBILE_PUSH) == 0) mobile   = true;
+        else if (strcmp(factor, WA_FA_PASSWORD)    == 0) password = true;
+        else if (strcmp(factor, WA_FA_VOICE)       == 0) voice    = true;
+        else if (factor[0] == 'o')                       otp      = true;
+        else if (factor[0] == 'x')                       x509     = true;
     }
-    types = (int) human + password + otp + x509;
+    types = (int) human + mobile + password + otp + voice + x509;
 
     /* If we have factors from more than one class, synthesize multifactor. */
     if (types >= 2) {

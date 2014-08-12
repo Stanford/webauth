@@ -8,7 +8,7 @@ dnl
 dnl See LICENSE for licensing terms.
 
 AC_PREREQ([2.64])
-AC_INIT([WebAuth], [4.6.0], [webauth-team@lists.stanford.edu])
+AC_INIT([WebAuth], [4.6.1], [webauth-team@lists.stanford.edu])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_LIBOBJ_DIR([portable])
 AC_CONFIG_MACRO_DIR([m4])
@@ -97,6 +97,7 @@ AC_CHECK_FUNCS([krb5_cc_get_full_name \
     krb5_free_string \
     krb5_get_init_creds_opt_alloc \
     krb5_get_init_creds_opt_set_default_flags \
+    krb5_get_init_creds_opt_set_fast_ccache_name \
     krb5_principal_get_realm \
     krb5_principal_set_realm \
     krb5_unparse_name_flags \
@@ -141,11 +142,8 @@ AC_TYPE_INTPTR_T
 AC_CHECK_TYPES([ssize_t], [], [],
     [#include <sys/types.h>])
 RRA_FUNC_SNPRINTF
-AC_REPLACE_FUNCS([asprintf mkstemp setenv strlcat strlcpy strndup])
-
-dnl Used to determine whether to add our GCC-specific warning suppression
-dnl flags to the language binding builds.
-AM_CONDITIONAL([GCC], [test x"$GCC" = xyes])
+AC_REPLACE_FUNCS([asprintf mkstemp reallocarray setenv strlcat strlcpy])
+AC_REPLACE_FUNCS([strndup])
 
 dnl Used when linking the Perl module.  Normally link against all the
 dnl dependencies that libwebauth may need, but don't do so if

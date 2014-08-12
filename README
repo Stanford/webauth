@@ -1,4 +1,4 @@
-                          WebAuth release 4.6.0
+                          WebAuth release 4.6.1
                   (site-wide web authentication system)
 
                   Originally written by Roland Schemers
@@ -186,11 +186,12 @@ REQUIREMENTS
       Perl 5.10 or later
       xml2rfc
 
-  Some parts of the test suite are suppressed by default because those
-  tests are normally only useful for the maintainer.  This includes tests
-  of POD spelling and Perl coding style.  To enable those tests, set the
-  environment variable RRA_MAINTAINER_TESTS to a true value.  For these
-  tests, the additional Perl modules:
+  To enable tests that don't detect functionality problems but are used to
+  sanity-check the release, set the environment variable RELEASE_TESTING
+  to a true value.  To enable tests that may be sensitive to the local
+  environment or that produce a lot of false positives without uncovering
+  many problems, set the environment variable AUTHOR_TESTING to a true
+  value.  For these tests, the additional Perl modules:
 
       Test::Perl::Critic
       Test::Spelling
