@@ -5,7 +5,7 @@
  * knowledge of WebAuth functions and data structures.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2013
+ * Copyright 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -26,7 +26,7 @@ struct webauth_keyring;
 
 /* Empty tokens, used in building test data. */
 #define EMPTY_TOKEN_ID       { NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, 0 }
-#define EMPTY_TOKEN_LOGIN    { NULL, NULL, NULL, NULL, 0 }
+#define EMPTY_TOKEN_LOGIN    { NULL, NULL, NULL, NULL, NULL, 0 }
 #define EMPTY_TOKEN_PROXY    { NULL, NULL, NULL, NULL, NULL, 0, 0, 0 }
 #define EMPTY_TOKEN_WKFACTOR { NULL, NULL, 0, 0 }
 #define EMPTY_TOKEN_WKPROXY  { NULL, NULL, NULL, NULL, 0, NULL, 0, 0, 0, NULL }
@@ -100,6 +100,7 @@ struct wat_token_login {
     const char *password;
     const char *otp;
     const char *otp_type;
+    const char *device_id;
     time_t creation;
 };
 

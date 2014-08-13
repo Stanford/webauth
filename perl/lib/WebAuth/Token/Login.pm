@@ -1,7 +1,7 @@
 # Perl representation of a WebAuth login token.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,6 +43,7 @@ sub username    { my $t = shift; $t->_attr ('username',    @_) }
 sub password    { my $t = shift; $t->_attr ('password',    @_) }
 sub otp         { my $t = shift; $t->_attr ('otp',         @_) }
 sub otp_type    { my $t = shift; $t->_attr ('otp_type',    @_) }
+sub device_id   { my $t = shift; $t->_attr ('device_id',   @_) }
 sub creation    { my $t = shift; $t->_attr ('creation',    @_) }
 
 1;
@@ -110,19 +111,26 @@ principal name.
 
 =item password ([PASSWORD])
 
-Get or set the password for this user.  Either this or the otp() attribute
-will be set.
+Get or set the password for this user.  Either this, the otp() attribute,
+or the device_id() attribute will be set.
 
 =item otp ([OTP])
 
-Get or set the one-time password code for this user.  Either this or the
-password() attribute will be set.
+Get or set the one-time password code for this user.  Either this, the
+password() attribute, or the device_id() attribute will be set.
 
 =item otp_type ([TYPE])
 
 Get or set the one-time password type.  This should be a WebAuth factor
 code corresponding to the type of one-time password that this login token
 represents.  It may be left unset if the caller doesn't know.
+
+=item device_id ([ID])
+
+Get or set the device ID.  This must be set if the password() and otp()
+attributes are not set.  If this is set and otp() is not, it indicates
+an attempt to authenticate using that device in some out-of-band way that
+does not require a code.
 
 =item creation ([TIMESTAMP])
 

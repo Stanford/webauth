@@ -165,11 +165,12 @@ struct token_mapping token_mapping_id[] = {
 
 /* Login tokens. */
 struct token_mapping token_mapping_login[] = {
-    M(webauth_token_login, username, STRING),
-    M(webauth_token_login, password, STRING),
-    M(webauth_token_login, otp,      STRING),
-    M(webauth_token_login, otp_type, STRING),
-    M(webauth_token_login, creation, TIME),
+    M(webauth_token_login, username,  STRING),
+    M(webauth_token_login, password,  STRING),
+    M(webauth_token_login, otp,       STRING),
+    M(webauth_token_login, otp_type,  STRING),
+    M(webauth_token_login, device_id, STRING),
+    M(webauth_token_login, creation,  TIME),
     { NULL, 0, 0 }
 };
 

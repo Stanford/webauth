@@ -718,7 +718,7 @@ static const struct wat_login_test tests_default[] = {
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
-                { "full", NULL, "654321", NULL, 0 },
+                { "full", NULL, "654321", NULL, "DEVICEID", 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -758,7 +758,7 @@ static const struct wat_login_test tests_default[] = {
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
-                { "full", NULL, "123456", NULL, 0 },
+                { "full", NULL, "123456", NULL, "DEVICEID", 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -811,7 +811,7 @@ static const struct wat_login_test tests_default[] = {
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
-                { "full", NULL, "123456", NULL, 0 },
+                { "full", NULL, "123456", NULL, "DEVICEID", 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -872,7 +872,7 @@ static const struct wat_login_test tests_default[] = {
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
-                { "full", NULL, "123456", NULL, 0 },
+                { "full", NULL, "123456", NULL, "DEVICEID", 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -935,7 +935,7 @@ static const struct wat_login_test tests_default[] = {
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
-                { "full", NULL, "123456", NULL, 0 },
+                { "full", NULL, "123456", NULL, "DEVICEID", 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -985,7 +985,7 @@ static const struct wat_login_test tests_default[] = {
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
-                { "full", NULL, "123456", NULL, 0 },
+                { "full", NULL, "123456", NULL, "DEVICEID", 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -1045,7 +1045,7 @@ static const struct wat_login_test tests_default[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -1183,7 +1183,7 @@ static const struct wat_login_test tests_default[] = {
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },

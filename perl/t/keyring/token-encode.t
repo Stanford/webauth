@@ -10,7 +10,7 @@
 # pre-constructed tokens, so this will hopefully be sufficient.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -21,7 +21,7 @@ use warnings;
 use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw(create_keyring);
 
-use Test::More tests => 269;
+use Test::More tests => 278;
 
 use MIME::Base64 qw(decode_base64);
 use WebAuth 3.07 qw(WA_KEY_AES WA_AES_128);
