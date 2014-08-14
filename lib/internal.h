@@ -252,10 +252,15 @@ struct wai_webkdc_login_state {
     const char *user_message;
     const struct webauth_factors *factors_wanted;
     const struct webauth_factors *factors_configured;
+    const char *default_device;
+    const char *default_factor;
     time_t password_expires;
 
-    /* Array of weblogin_login structs from userinfo service. */
+    /* Array of webauth_login structs from userinfo service. */
     const apr_array_header_t *login_info;
+
+    /* Array of webauth_device structs from userinfo service. */
+    const apr_array_header_t *device_info;
 
     /* Permitted authorization identities from the identity ACL. */
     const apr_array_header_t *permitted_authz;

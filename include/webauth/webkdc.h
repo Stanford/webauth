@@ -123,6 +123,8 @@ struct webauth_webkdc_login_response {
     const char *login_state;
     const struct webauth_factors *factors_wanted;
     const struct webauth_factors *factors_configured;
+    const char *default_device; /* Default second factor device. */
+    const char *default_factor; /* Default second factor. */
     const WA_APR_ARRAY_HEADER_T *proxies;         /* webkdc_proxy_data. */
     const WA_APR_ARRAY_HEADER_T *factor_tokens;   /* webkdc_factor_data. */
     const char *return_url;
@@ -137,6 +139,7 @@ struct webauth_webkdc_login_response {
     const WA_APR_ARRAY_HEADER_T *logins;        /* Array of webauth_login. */
     time_t password_expires;            /* Time of password expiration or 0. */
     const WA_APR_ARRAY_HEADER_T *permitted_authz;  /* Allowable authz ids. */
+    const WA_APR_ARRAY_HEADER_T *devices; /* Array of struct webauth_device. */
 };    
 
 /*

@@ -1669,6 +1669,43 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
         ap_rvputs(rc->r, "<multifactorRequired>", NULL);
         print_xml_array(rc, "factor", wanted);
         print_xml_array(rc, "configuredFactor", configured);
+        if (response->default_device != NULL
+            || response->default_factor != NULL) {
+            ap_rvputs(rc->r, "<defaultFactor>", NULL);
+            if (response->default_device != NULL)
+                ap_rprintf(rc->r, "<id>%s</id>",
+                           apr_xml_quote_string(rc->r->pool,
+                                                response->default_device,
+                                                false));
+            if (response->default_factor != NULL)
+                ap_rprintf(rc->r, "<id>%s</id>", response->default_factor);
+            ap_rvputs(rc->r, "</defaultFactor>", NULL);
+        }
+        if (response->devices != NULL) {
+            apr_array_header_t *factors;
+            const apr_array_header_t *devices = response->devices;
+            struct webauth_device *device;
+
+            ap_rvputs(rc->r, "<devices>", NULL);
+            for (i = 0; i < response->logins->nelts; i++) {
+                device = &APR_ARRAY_IDX(devices, i, struct webauth_device);
+                ap_rvputs(rc->r, "<device>", NULL);
+                if (device->name != NULL)
+                    ap_rprintf(rc->r, "<name>%s</name>",
+                               apr_xml_quote_string(rc->r->pool, device->name,
+                                                    false));
+                if (device->id != NULL)
+                    ap_rprintf(rc->r, "<id>%s</id>",
+                               apr_xml_quote_string(rc->r->pool, device->id,
+                                                    false));
+                if (device->factors != NULL) {
+                    factors = webauth_factors_array(rc->ctx, device->factors);
+                    print_xml_array(rc, "factor", factors);
+                }
+                ap_rvputs(rc->r, "</device>", NULL);
+            }
+            ap_rvputs(rc->r, "</devices>", NULL);
+        }
         ap_rvputs(rc->r, "</multifactorRequired>", NULL);
     }
 
