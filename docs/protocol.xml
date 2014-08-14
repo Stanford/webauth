@@ -11,16 +11,11 @@
     <author initials='R.' surname='Allbery' fullname='Russ Allbery'>
       <organization>Stanford University</organization>
       <address>
-        <postal>
-          <street>255 Panama Street, MC 4136</street>
-          <city>Stanford</city> <region>CA</region>
-          <code>94305-4136</code> <country>US</country>
-        </postal>
         <email>eagle@eyrie.org</email>
         <uri>http://www.eyrie.org/~eagle/</uri>
       </address>
     </author>
-    <date month='July' year='2014' />
+    <date month='August' year='2014' />
 
     <abstract>
       <t>Defines the WebAuth protocol for authenticating users to web
@@ -1251,20 +1246,29 @@
       <!-- repeat for each factor code required by the WAS -->
 
       <!-- present if user has configured a multifactor method -->
-      <!-- name is intended for display to the user in a list -->
-      <!-- device is included in login token -->
-      <!-- prompt indicates the user must be prompted for an OTP,
-           may be omitted if set to true (the default) -->
-      <!-- default indicates whether this should be the default
-           mechanism, may be omitted if set to false -->
-      <!-- the same {factor-code} may occur multiple times -->
-      <configuredFactor name="{method-name}"
-          device="{device-id}"
-          prompt="false"
-          default="true">{factor-code}</configuredFactor>
+      <configuredFactor>{factor-code}</configuredFactor>
       <!-- repeat for each possible authentication method available
            for that user that would satisfy a requirement of the WAS
            or site policy, omitting "m" -->
+
+      <!-- present if there is a default second factor -->
+      <defaultFactor>
+        <id>{device-id}</id>
+        <factor>{factor-code}</factor>
+      </defaultFactor>
+
+      <!-- lists configured ways of providing a second factor -->
+      <!-- name is intended for display to the user in a list -->
+      <!-- id is included in login token as device_id -->
+      <!-- there may be multiple factors per device -->
+      <devices>
+        <device>
+          <name>{device-name}</name>
+          <id>{device-id}</id>
+          <factor>{factor-code}</factor>
+          <factor>{factor-code}</factor>
+        </device>
+      </devices>
     </multifactorRequired>
 
     <!-- any updated/new proxy tokens created -->
@@ -2709,6 +2713,13 @@
           the user is attempting to authenticate.  Add new mp and v factor
           codes.  Wording and grammar clarifications, thanks to Adam
           Lewenberg.</t>
+
+          <t hangText='3.6.1 (2014-08-13, rra)'>
+          <vspace blankLines='0'/>Add new elements &lt;defaultFactor> and
+          &lt;devices> in &lt;requestTokenResponse> to provide WebLogin
+          with more information about possible factors and authentication
+          methods.  Remove the attributes for &lt;configuredFactor> tags,
+          since that approach was less flexible.</t>
         </list>
       </t>
     </section>
