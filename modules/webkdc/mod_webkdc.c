@@ -2317,6 +2317,7 @@ handler_hook(request_rec *r)
         user->identity       = rc.sconf->userinfo_principal;
         user->timeout        = rc.sconf->userinfo_timeout;
         user->ignore_failure = rc.sconf->userinfo_ignore_fail;
+        user->json           = rc.sconf->userinfo_json;
         user->keytab         = rc.sconf->keytab_path;
         user->principal      = rc.sconf->keytab_principal;
         status = webauth_user_config(rc.ctx, user);

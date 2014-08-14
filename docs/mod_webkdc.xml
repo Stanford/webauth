@@ -1345,6 +1345,39 @@ WebKdcUserInfoIgnoreFail on
 
 
   <directivesynopsis>
+    <name>WebKdcUserJSON</name>
+    <description>
+      Whether to use the JSON protocol when talking to the user
+      information service
+    </description>
+    <syntax>WebKdcUserInfoJSON on|off</syntax>
+    <default>WebKdcUserInfoJSON off</default>
+    <contextlist>
+      <context>server config</context>
+      <context>virtual host</context>
+    </contextlist>
+
+    <usage>
+      <p>
+        If this directive is turned on, mod_webkdc will use a JSON
+        protocol for talking to the user information service instead of
+        the older XML-based protocol.  Both the parameters to the call and
+        the reply will be in JSON.
+      </p>
+      <p>
+        This directive is only useful in combination with
+        <a href="#webkdcuserinfourl"><directive>WebKdcUserInfoURL</directive></a>.
+      </p>
+
+      <example>
+        <title>Example</title>
+WebKdcUserInfoJSON on
+      </example>
+    </usage>
+  </directivesynopsis>
+
+
+  <directivesynopsis>
     <name>WebKdcUserInfoPrincipal</name>
     <description>
       Remote principal for user information and multifactor queries
