@@ -206,7 +206,7 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
 int
 webauth_user_validate(struct webauth_context *ctx, const char *user,
                       const char *ip, const char *code, const char *type,
-                      const char *state,
+                      const char *device, const char *state,
                       struct webauth_user_validate **result)
 {
     int s;
@@ -221,7 +221,8 @@ webauth_user_validate(struct webauth_context *ctx, const char *user,
 
     /* Call the appropriate implementation for JSON or XML. */
     if (ctx->user->json)
-        s = wai_user_validate_json(ctx, user, ip, code, type, state, result);
+        s = wai_user_validate_json(ctx, user, ip, code, type, device, state,
+                                   result);
     else
         s = wai_user_validate_xml(ctx, user, ip, code, type, state, result);
     return s;

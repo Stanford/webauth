@@ -148,6 +148,11 @@ sub check_validate {
         die "unknown user $data->{username}\n";
     }
 
+    # Validate the device ID.
+    if ($data->{factor}{device} ne 'DEVICEID') {
+        die "incorrect device ID\n";
+    }
+
     # If the passcode is incorrect, return an error.
     if ($data->{factor}{passcode} ne '123456') {
         my $result_ref = {

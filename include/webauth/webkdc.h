@@ -189,19 +189,34 @@ struct webauth_login {
     time_t timestamp;
 };
 
+/* Stores a single device the user can use as an additional authentication
+ * factor.  Returned in an APR array in the webauth_userinfo struct.
+ */
+struct webauth_device {
+    const char *name;           /* Human-meaningful device name. */
+    const char *id;             /* System device ID. */
+    const struct webauth_factors *factors;
+};
+
 /*
  * The webauth_user_info struct and its supporting data structures stores data
  * about a user, returned from the site-local user information middleware.
+ *
+ * default_device, default_factor, and devices are only available when the
+ * JSON protocol is used.
  */
 struct webauth_user_info {
     const struct webauth_factors *factors;
     const struct webauth_factors *additional;
     const struct webauth_factors *required;
+    const char *default_device;         /* Default second factor device. */
+    const char *default_factor;         /* Default second factor. */
     time_t valid_threshold;             /* Cutoff for persistent validity. */
     int random_multifactor;             /* If random multifactor was done. */
     unsigned long max_loa;              /* Maximum level of assurance. */
     time_t password_expires;            /* Password expiration time or 0. */
     const WA_APR_ARRAY_HEADER_T *logins;  /* Array of struct webauth_login. */
+    const WA_APR_ARRAY_HEADER_T *devices; /* Array of struct webauth_device. */
     const char *error;                  /* Error returned from userinfo. */
     const char *user_message;           /* Message to pass along to a user. */
     const char *login_state;            /* Opaque state object for WebLogin. */
@@ -240,15 +255,15 @@ int webauth_user_config(struct webauth_context *,
 
 /*
  * Obtain user information for a given user.  The IP address of the user (as a
- * string) is also provided.  If NULL, it defaults to 127.0.0.1.  The
- * timestamp of the query is assumed to be the current time.  The random_mf
- * flag indicates whether a site requested random multifactor and asks the
- * user information service to calculate whether multifactor is forced based
- * on that random multifactor chance.  The return URL should be provided,
- * which may be used to make decisions in the user information service.
- * Finally, the factors is a comma-separated list of authentication factors
- * that the user has already established in some way, which may be NULL if no
- * factors have yet been established.
+ * string) is also provided.  If NULL, it defaults to 127.0.0.1 for the XML
+ * protocol, where IP is required.  The timestamp of the query is assumed to
+ * be the current time.  The random_mf flag indicates whether a site requested
+ * random multifactor and asks the user information service to calculate
+ * whether multifactor is forced based on that random multifactor chance.  The
+ * return URL should be provided, which may be used to make decisions in the
+ * user information service.  Finally, the factors is a comma-separated list
+ * of authentication factors that the user has already established in some
+ * way, which may be NULL if no factors have yet been established.
  *
  * webauth_user_config generally must be called before this function.
  * Depending on the method used, authentication credentials may also need to
@@ -264,9 +279,15 @@ int webauth_user_info(struct webauth_context *, const char *user,
     __attribute__((__nonnull__(1, 2, 5)));
 
 /*
- * Validate an authentication code for a given user (generally an OTP code).
- * The IP address (as a string) is also provided.  If NULL, it defaults to
+ * Validate an authentication code for a given user (generally an OTP code),
+ * or attempt a second factor authentication.  The IP address (as a string) is
+ * also provided.  Either the device and type or the code must be provided.
+ * If NULL and the XML protocol is used (which requires an IP), it defaults to
  * 127.0.0.1.
+ *
+ * The device information is not passed to the user information service in the
+ * XML protocol, so, to make full use of that information, the JSON protocol
+ * must be used.
  *
  * webauth_user_config must be called before this function.  Depending on the
  * method used, authentication credentials may also need to be set up before
@@ -279,7 +300,7 @@ int webauth_user_info(struct webauth_context *, const char *user,
  */
 int webauth_user_validate(struct webauth_context *, const char *user,
                           const char *ip, const char *code, const char *type,
-                          const char *state,
+                          const char *device, const char *state,
                           struct webauth_user_validate **)
     __attribute__((__nonnull__(1, 2, 4, 7)));
 

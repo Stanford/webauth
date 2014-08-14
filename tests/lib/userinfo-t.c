@@ -50,8 +50,9 @@ test_validate(struct webauth_context *ctx, const char *code, bool success)
     int s;
 
     s = webauth_user_validate(ctx, "full", "127.0.0.1", code, "o1",
-                              "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
-                              "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
+                              "DEVICEID", "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW"
+                              "9uSUQKDVdBUk5fTE9DQVRJT04AAAAFc3RhdGU=",
+                              &validate);
     is_int(WA_ERR_NONE, s, "Validate for full succeeded");
     ok(validate != NULL, "...full is not NULL");
     if (validate == NULL) {
@@ -290,7 +291,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     test_validate(ctx, "123456", true);
 
     /* Attempt a login for a user who doesn't have multifactor configured. */
-    s = webauth_user_validate(ctx, "mini", NULL, "123456", "o1",
+    s = webauth_user_validate(ctx, "mini", NULL, "123456", "o1", "DEVICEID",
                               "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                               "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for invalid user fails");
@@ -307,7 +308,7 @@ test_userinfo_calls(struct webauth_context *ctx,
               webauth_error_message(ctx, s), "...with correct error");
 
     /* Attempt a login for a user that should time out. */
-    s = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
+    s = webauth_user_validate(ctx, "delay", NULL, "123456", "o1", "DEVICEID",
                               "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                               "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for delay fails");
@@ -360,7 +361,7 @@ test_userinfo_calls(struct webauth_context *ctx,
     /* Attempt a login again, which should still fail. */
     free(warnings);
     warnings = NULL;
-    s = webauth_user_validate(ctx, "delay", NULL, "123456", "o1",
+    s = webauth_user_validate(ctx, "delay", NULL, "123456", "o1", NULL,
                               "BQcDAAAAAgoHYUJjRGVGZwAAAAlzZXNzaW9uSUQKDV"
                               "dBUk5fTE9DQVRJT04AAAAFc3RhdGU=", &validate);
     is_int(WA_ERR_REMOTE_FAILURE, s, "Validate for delay fails");

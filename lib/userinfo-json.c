@@ -32,6 +32,12 @@
  * that the s variable is available for a status and that the correct thing to
  * do on any failure is to return the status while taking no further action.
  */
+#define PARSE_DEVICES(ctx, json, key, result)                   \
+    do {                                                        \
+        s = json_parse_devices((ctx), (json), (key), (result)); \
+        if (s != WA_ERR_NONE)                                   \
+            return s;                                           \
+    } while (0)
 #define PARSE_FACTORS(ctx, json, key, result, exp)                      \
     do {                                                                \
         s = json_parse_factors((ctx), (json), (key), (result), (exp));  \
@@ -113,7 +119,8 @@ wai_user_info_json(struct webauth_context *ctx, const char *user UNUSED,
 int
 wai_user_validate_json(struct webauth_context *ctx, const char *user UNUSED,
                        const char *ip UNUSED, const char *code UNUSED,
-                       const char *type UNUSED, const char *state UNUSED,
+                       const char *type UNUSED, const char *device UNUSED,
+                       const char *state UNUSED,
                        struct webauth_user_validate **validate UNUSED)
 {
     return wai_error_set(ctx, WA_ERR_UNIMPLEMENTED,
@@ -263,7 +270,7 @@ json_parse_history(struct webauth_context *ctx, json_t *json, const char *key,
     if (result != NULL)
         *result = NULL;
 
-    /* Get the array of factors. */
+    /* Get the array of logins. */
     array = json_object_get(json, key);
     if (array == NULL || json_is_null(array))
         return WA_ERR_NONE;
@@ -305,6 +312,61 @@ json_parse_history(struct webauth_context *ctx, json_t *json, const char *key,
 
 
 /*
+ * Parse the devices section of a userinfo JSON document.  Stores the results
+ * in the provided array.  Returns a status code.
+ */
+static int
+json_parse_devices(struct webauth_context *ctx, json_t *json, const char *key,
+                   const apr_array_header_t **result)
+{
+    json_t *value, *array;
+    apr_array_header_t *devices = NULL;
+    struct webauth_device *device;
+    int s;
+    size_t size, i;
+
+    /* Ensure the output variables are initialized in case of error. */
+    if (result != NULL)
+        *result = NULL;
+
+    /* Get the array of devices. */
+    array = json_object_get(json, key);
+    if (array == NULL || json_is_null(array))
+        return WA_ERR_NONE;
+    if (!json_is_array(array)) {
+        s = WA_ERR_REMOTE_FAILURE;
+        return wai_error_set(ctx, s, "value of %s is not an array", key);
+    }
+
+    /* Walk the array looking for objects. */
+    for (i = 0; i < json_array_size(array); i++) {
+        value = json_array_get(array, i);
+        if (!json_is_object(value)) {
+            s = WA_ERR_REMOTE_FAILURE;
+            return wai_error_set(ctx, s, "%s element is not object", key);
+        }
+
+        /* Create a new device entry, allocating the array if needed. */
+        if (devices == NULL) {
+            size = sizeof(struct webauth_device);
+            devices = apr_array_make(ctx->pool, 5, size);
+        }
+        device = apr_array_push(devices);
+        memset(device, 0, sizeof(*device));
+
+        /* Parse the login information. */
+        PARSE_STRING(ctx, value, "name", &device->name);
+        PARSE_STRING(ctx, value, "id", &device->id);
+        PARSE_FACTORS(ctx, value, "factors", &device->factors, NULL);
+    }
+
+    /* Return the results. */
+    *result = devices;
+    return WA_ERR_NONE;
+}
+
+
+/*
  * Given JSON returned by the webkdc-userinfo call, finish parsing it into a
  * newly-allocated webauth_user_info struct.  This function and all of the
  * functions it calls intentionally ignores unknown JSON attributes.  Returns
@@ -316,7 +378,7 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
 {
     const char *message, *detail;
     unsigned long code;
-    json_t *value, *object;
+    json_t *value, *object, *def;
     int s;
     struct webauth_user_info *info;
 
@@ -368,6 +430,18 @@ json_parse_user_info(struct webauth_context *ctx, json_t *json,
     PARSE_FACTORS(ctx, object, "additional_factors", &info->additional, NULL);
     PARSE_FACTORS(ctx, object, "required_factors", &info->required, NULL);
     PARSE_HISTORY(ctx, object, "logins", &info->logins);
+    PARSE_DEVICES(ctx, object, "devices", &info->devices);
+
+    /* If there is default device information, extract that. */
+    def = json_object_get(object, "default");
+    if (def != NULL) {
+        if (!json_is_object(def)) {
+            s = WA_ERR_REMOTE_FAILURE;
+            return wai_error_set(ctx, s, "malformed default device in JSON");
+        }
+        PARSE_STRING(ctx, def, "id", &info->default_device);
+        PARSE_STRING(ctx, def, "capability", &info->default_factor);
+    }
 
     /* Return the results. */
     *result = info;
@@ -615,7 +689,7 @@ wai_user_info_json(struct webauth_context *ctx, const char *user,
 static int
 json_command_validate(struct webauth_context *ctx, const char *user,
                       const char *ip, const char *code, const char *type,
-                      const char *state, json_t **result)
+                      const char *device, const char *state, json_t **result)
 {
     json_t *json = NULL, *factor = NULL;
 
@@ -639,6 +713,8 @@ json_command_validate(struct webauth_context *ctx, const char *user,
         ADD_STRING(factor, "capability", type);
     if (code != NULL)
         ADD_STRING(factor, "passcode", code);
+    if (device != NULL)
+        ADD_STRING(factor, "device", device);
     if (json_object_set_new(json, "factor", factor) < 0)
         goto fail;
 
@@ -663,7 +739,7 @@ fail:
 int
 wai_user_validate_json(struct webauth_context *ctx, const char *user,
                        const char *ip, const char *code, const char *type,
-                       const char *state,
+                       const char *device, const char *state,
                        struct webauth_user_validate **validate)
 {
     int s;
@@ -672,7 +748,7 @@ wai_user_validate_json(struct webauth_context *ctx, const char *user,
     json_t *json = NULL;
 
     /* Build the command. */
-    s = json_command_validate(ctx, user, ip, code, type, state, &json);
+    s = json_command_validate(ctx, user, ip, code, type, device, state, &json);
     if (s != WA_ERR_NONE)
         return s;
     s = json_command(ctx, "webkdc-validate", json, &argv);

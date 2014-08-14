@@ -328,7 +328,8 @@ do_login_otp(struct webauth_context *ctx,
         return wai_error_set(ctx, WA_PEC_LOGIN_FAILED, "OTP not configured");
     s = webauth_user_validate(ctx, login->username, state->remote_ip,
                               login->otp, login->otp_type,
-                              state->login_state_in, &validate);
+                              login->device_id, state->login_state_in,
+                              &validate);
     if (s != WA_ERR_NONE)
         return s;
 

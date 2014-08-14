@@ -521,8 +521,9 @@ int wai_user_info_json(struct webauth_context *, const char *user,
     __attribute__((__nonnull__(1, 2, 5)));
 int wai_user_validate_json(struct webauth_context *, const char *user,
                            const char *ip, const char *code, const char *type,
-                           const char *state, struct webauth_user_validate **)
-    __attribute__((__nonnull__(1, 2, 4, 7)));
+                           const char *device, const char *state,
+                           struct webauth_user_validate **)
+    __attribute__((__nonnull__(1, 2, 4, 8)));
 
 /*
  * The implementations of the user information service calls using the XML
