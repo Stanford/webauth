@@ -1,5 +1,12 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.7.0 (unreleased)
+
+    Recognize KRB5_BAD_ENCTYPE, KRB5_GET_IN_TKT_LOOP, KRB5_PREAUTH_FAILED,
+    and KRB5KRB_AP_ERR_MODIFIED as additional synonyms for a failed login
+    error code.  Various combinations of recent MIT and Heimdal with
+    different KDCs return these error codes if the password is incorrect.
+
 WebAuth 4.6.1 (2014-07-23)
 
     Support for AuthType StanfordAuth (for backward compatibility with
