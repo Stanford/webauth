@@ -54,6 +54,7 @@ sub _attr {
 
 # Simple accessor methods.
 sub authz_subject  { my $r = shift; $r->_attr ('authz_subject',  @_) }
+sub device_id      { my $r = shift; $r->_attr ('device_id',      @_) }
 sub local_ip_addr  { my $r = shift; $r->_attr ('local_ip_addr',  @_) }
 sub local_ip_port  { my $r = shift; $r->_attr ('local_ip_port',  @_) }
 sub otp            { my $r = shift; $r->_attr ('otp',            @_) }
@@ -155,6 +156,14 @@ that the user wishes to assert for authorization purposes to the remote
 site.  It must be vetted by the WebKDC and will be included in the id or
 proxy token if asserting that authorization identity is permitted.
 
+=item device_id ([ID])
+
+Retrieve or set the ID of the device used for second factor
+authentication.  This attribute is required if neither otp() nor pass()
+are set.  It is used primarily to indicate a device with which the user is
+performing an out-of-band second factor authentication that doesn't
+involve a password or an OTP code.
+
 =item local_ip_addr ([ADDR])
 
 =item local_ip_port ([PORT])
@@ -171,15 +180,17 @@ the local interface and port to which that client connected.
 
 =item otp ([CODE])
 
-Retrieve or set the one-time password sent by the user.  Either this or
-pass should be set, but not both.
+Retrieve or set the one-time password sent by the user.  This, pass(),
+or device_id() should be set, but otp() and pass() cannot both be set.
 
 =item otp_type ([CODE])
 
-Retrieve or set the one-time password type sent by the user.  This should
-be a WebAuth factor code corresponding to the type of one-time password
-that this login token represents.  It may be left unset if the caller
-doesn't know.
+Retrieve or set the one-time password type sent by the user.  Despite the
+name, this can also be used with device_id() to specify the factor type
+used for out-of-band device authentication, even if it doesn't involve
+OTP.  This should be a WebAuth factor code corresponding to the type of
+one-time password that this login token represents.  It may be left unset
+if the caller doesn't know.
 
 =item login_state ([STATE])
 

@@ -1,7 +1,7 @@
 # An object encapsulating a response from a WebKDC.
 #
 # Written by Roland Schemers
-# Copyright 2002, 2003, 2009, 2012, 2013
+# Copyright 2002, 2003, 2009, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -54,6 +54,8 @@ sub _attr {
 
 # Simple accessor methods.
 sub app_state            { my $r = shift; $r->_attr ('app_state',         @_) }
+sub default_device       { my $r = shift; $r->_attr ('default_device',    @_) }
+sub default_factor       { my $r = shift; $r->_attr ('default_factor',    @_) }
 sub login_canceled_token { my $r = shift; $r->_attr ('lc_token',          @_) }
 sub return_url           { my $r = shift; $r->_attr ('return_url',        @_) }
 sub subject              { my $r = shift; $r->_attr ('subject',           @_) }
@@ -104,9 +106,14 @@ sub cookies {
     return $self->{cookies};
 }
 
-# Login history and needed and configured factors are stored in arrays.  Note
-# that there is no way of clearing the array once a value has been set, only
-# adding new values.
+# Login history, needed and configured factors, and devices are stored in
+# arrays.  Note that there is no way of clearing the array once a value has
+# been set, only adding new values.
+sub devices {
+    my ($self, @values) = @_;
+    push (@{ $self->{devices} }, @values) if @values;
+    return $self->{devices};
+}
 sub factor_configured {
     my ($self, @values) = @_;
     push (@{ $self->{'factor_configured'} }, @values) if @values;
@@ -183,6 +190,36 @@ separate from the authentication identity that is vetted by the WebKDC and
 asserted for authorization purposes to the remote site.  It is included in
 the id or proxy token, but is also included directly in the response for
 display reasons in the WebLogin code.
+
+=item default_device ([ID])
+
+Returns or sets the default device to use for obtaining a second factor.
+This may be set when the user's authentication was rejected because
+multifactor authentication was required, and is used by WebLogin as part
+of the prompting for the second factor authentication.
+
+=item default_factor ([FACTOR])
+
+Returns or sets the default authentication factor to use when a second
+authentication factor besides password is required.  This may be set when
+the user's authentication was rejected because multifactor authentication
+was required, and is used by WebLogin as part of the prompting for the
+second factor authentication.
+
+=item devices ([RECORD, ...])
+
+Returns the list of devices for second authentication factors that the
+user has available, or adds a new one.  If any parameters are given, they
+are device records that will be added to the list.  Note that there is no
+way to remove an entry from the list once it has been added.
+
+Each RECORD should be an anonymous hash with a C<name> key indicating the
+human-readable name of the device, a C<id> key indicating the opaque
+identifier for the device, and a C<factors> key, whose value is a
+reference to an array of factor codes that device supports.  The
+default_device() attribute should match the C<id> key of one of the device
+records, and the default_factor() attribute should match one of the factors
+listed for that device.
 
 =item factor_configured ([FACTOR, ...])
 

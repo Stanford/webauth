@@ -1039,6 +1039,11 @@ sub print_multifactor_page {
         }
     }
 
+    # Add default device and token and the device list if available.
+    $params->{default_device} = $self->{response}->default_device;
+    $params->{default_factor} = $self->{response}->default_factor;
+    $params->{devices} = $self->{response}->devices;
+
     # Create the login_state object for use in templates
     if ($self->{response}->login_state) {
         my $login_state = $self->{response}->login_state;
@@ -1616,6 +1621,8 @@ sub setup_kdc_request {
         if $q->param ('password');
     $self->{request}->otp ($q->param ('otp'))
         if $q->param ('otp');
+    $self->{request}->device_id ($q->param ('device_id'))
+        if $q->param ('device_id');
     $self->{request}->otp_type ($q->param ('factor_type'))
         if $q->param ('factor_type');
     $self->{request}->authz_subject ($q->param ('authz_subject'))

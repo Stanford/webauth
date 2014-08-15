@@ -3,13 +3,13 @@
 # Basic tests for WebKDC::WebResponse.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2012
+# Copyright 2012, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
 
 use strict;
-use Test::More tests => 53;
+use Test::More tests => 63;
 
 BEGIN {
     use_ok ('WebKDC::WebResponse');
@@ -18,9 +18,10 @@ BEGIN {
 # Test all the basic accessors to make sure they're sane.  This will need
 # modification later if we ever do any sort of type checking on the values.
 my $resp = WebKDC::WebResponse->new;
-for my $method (qw(app_state authz_subject login_canceled_token
-                   requester_subject response_token response_token_type
-                   return_url subject password_expiration user_message)) {
+for my $method (qw(app_state authz_subject default_device default_factor
+                   login_canceled_token requester_subject response_token
+                   response_token_type return_url subject password_expiration
+                   user_message)) {
     is ($resp->$method, undef, "$method starts undef");
     is ($resp->$method ('foo'), 'foo', '... and can be set to foo');
     is ($resp->$method, 'foo', '... and is now set to foo');
@@ -36,9 +37,9 @@ my %test_cookie = (krb5 => { value      => 'foo',
 is_deeply ($resp->cookies, \%test_cookie,
            'cookies returns the correct hash');
 
-# Test the factor and login settings, which return arrays and which only
-# append values, never remove them.
-for my $method (qw(factor_configured factor_needed login_history)) {
+# Test the devices, factor, and login settings, which return arrays and which
+# only append values, never remove them.
+for my $method (qw(devices factor_configured factor_needed login_history)) {
     is ($resp->$method, undef, "$method starts undef");
     is_deeply ($resp->$method ('foo'), [ 'foo' ], '... and can take a value');
     is_deeply ($resp->$method ('bar', 'baz'), [ 'foo', 'bar', 'baz' ],

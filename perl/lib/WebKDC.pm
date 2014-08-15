@@ -202,7 +202,7 @@ sub proxy_token_request {
 sub request_token_request {
     my ($wreq, $wresp) = @_;
     my ($user, $pass, $otp) = ($wreq->user, $wreq->pass, $wreq->otp);
-    my $otp_type = $wreq->otp_type;
+    my ($otp_type, $device_id) = ($wreq->otp_type, $wreq->device_id);
     my $request_token = $wreq->request_token;
     my $service_token = $wreq->service_token;
     my $factor_token = $wreq->factor_token;
@@ -229,6 +229,9 @@ sub request_token_request {
             $login_token->otp_type ($otp_type);
         } else {
             $login_token->password ($pass);
+        }
+        if (defined $device_id) {
+            $login_token->device_id ($device_id);
         }
         my $login_token_str = $login_token->encode (get_keyring ($wa));
         $webkdc_doc->start ('loginToken', undef, $login_token_str)->end;
@@ -373,11 +376,37 @@ sub request_token_request {
         my $multifactor = $root->find_child ('multifactorRequired');
         if (defined $multifactor) {
             for my $mf_setting (@{$multifactor->children}) {
-                my $factor = $mf_setting->content;
                 if ($mf_setting->name eq 'factor') {
+                    my $factor = $mf_setting->content;
                     $wresp->factor_needed ($factor);
                 } elsif ($mf_setting->name eq 'configuredFactor') {
+                    my $factor = $mf_setting->content;
                     $wresp->factor_configured ($factor);
+                } elsif ($mf_setting->name eq 'defaultFactor') {
+                    for my $df_setting (@{$mf_setting->children}) {
+                        my $value = $df_setting->content;
+                        if ($df_setting->name eq 'id') {
+                            $wresp->default_device ($value);
+                        } elsif ($df_setting->name eq 'factor') {
+                            $wresp->default_factor ($value);
+                        }
+                    }
+                } elsif ($mf_setting->name eq 'devices') {
+                    for my $dev (@{$mf_setting->children}) {
+                        next unless $dev->name eq 'device';
+                        my $device = {};
+                        for my $setting (@{$dev->children}) {
+                            if ($setting->name eq 'name') {
+                                $device->{name} = $setting->content;
+                            } elsif ($setting->name eq 'id') {
+                                $device->{id} = $setting->content;
+                            } elsif ($setting->name eq 'factor') {
+                                $device->{factors} ||= [];
+                                push (@{$device->{factors}}, $setting->content);
+                            }
+                        }
+                        $wresp->devices ($device);
+                    }
                 }
             }
         }
