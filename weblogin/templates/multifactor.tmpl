@@ -13,6 +13,9 @@ authentication that has come back signaling that multifactor authentication
 is also required.  Variables used:
 
 factor_type             : type of multifactor being used (o1, o2, etc)
+default_device          : the default device ID
+default_factor          : the default second factor
+devices                 : array of devices (name, id, and factors as keys)
 username                : the authenticated identity of the user
 login_cancel            : a cancel URL was specified
 cancel_url              : the specified cancel URL
@@ -131,6 +134,21 @@ works of this work.
                   </tr>
                 </table>
               </form>
+
+              <p>Default device: [% default_device FILTER html %]<br />
+                 Default factor: [% default_factor FILTER html %]</p>
+
+              [% IF devices.size %]
+              <ul>
+                [% FOREACH device in devices %]
+                <li>[% device.name FILTER html %]
+                    ([% device.id FILTER html %]) supporting
+                    [% FOREACH factor in device.factors %]
+                      [% factor FILTER html %]
+                    [% END %]</li>
+                [% END %]
+              </ul>
+              [% END %]
             </div>
             <div class="loginlinks">
               <a href="/help.html">help</a>
