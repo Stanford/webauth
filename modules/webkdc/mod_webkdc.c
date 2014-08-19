@@ -1687,7 +1687,7 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
             struct webauth_device *device;
 
             ap_rvputs(rc->r, "<devices>", NULL);
-            for (i = 0; i < response->logins->nelts; i++) {
+            for (i = 0; i < response->devices->nelts; i++) {
                 device = &APR_ARRAY_IDX(devices, i, struct webauth_device);
                 ap_rvputs(rc->r, "<device>", NULL);
                 if (device->name != NULL)
