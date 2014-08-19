@@ -1678,7 +1678,8 @@ handle_requestTokenRequest(MWK_REQ_CTXT *rc, apr_xml_elem *e,
                                                 response->default_device,
                                                 false));
             if (response->default_factor != NULL)
-                ap_rprintf(rc->r, "<id>%s</id>", response->default_factor);
+                ap_rprintf(rc->r, "<factor>%s</factor>",
+                           response->default_factor);
             ap_rvputs(rc->r, "</defaultFactor>", NULL);
         }
         if (response->devices != NULL) {
