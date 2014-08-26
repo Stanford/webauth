@@ -41,6 +41,7 @@ use strict;
 use warnings;
 
 use CGI::Cookie ();
+use FreezeThaw qw(freeze thaw);
 use MIME::Base64 qw(encode_base64 decode_base64);
 use POSIX qw(strftime);
 use Template ();
@@ -1008,16 +1009,17 @@ sub print_pwchange_confirm_page {
 # or on an unsuccessful attempt to use multifactor.
 sub print_multifactor_page {
     my ($self, $RT, $ST) = @_;
-    my $q = $self->query;
-    my $pagename = $self->get_pagename ('multifactor');
-    my $params = $self->template_params;
 
-    $params->{script_name} = $self->param ('script_name');
-    $params->{username} = $q->param ('username');
+    my $q                     = $self->query;
+    my $pagename              = $self->get_pagename ('multifactor');
+
+    my $params                = $self->template_params;
+    $params->{script_name}    = $self->param ('script_name');
+    $params->{username}       = $q->param ('username');
     $params->{remember_login} = $self->remember_login;
-    $params->{user_message} = $self->{response}->user_message;
-    $params->{RT} = $RT;
-    $params->{ST} = $ST;
+    $params->{user_message}   = $self->{response}->user_message;
+    $params->{RT}             = $RT;
+    $params->{ST}             = $ST;
 
     # Default the factor type to anything saved from the previous page.
     $params->{factor_type} = $q->param ('factor_type');
@@ -1039,10 +1041,17 @@ sub print_multifactor_page {
         }
     }
 
-    # Add default device and token and the device list if available.
-    $params->{default_device} = $self->{response}->default_device;
-    $params->{default_factor} = $self->{response}->default_factor;
-    $params->{devices} = $self->{response}->devices;
+    # Add the devices, or restore from an earlier send.  Since the devices
+    # are a complicated datastructure, we save a cached bit there.
+    $params->{default_device} = $self->{response}->default_device
+        || $q->param('default_device');
+    $params->{default_factor} = $self->{response}->default_factor
+        || $q->param('default_factor');
+    if ($q->param('devices_cache')) {
+        ($params->{devices}) = thaw($q->param('devices_cache'));
+    } else {
+        $params->{devices} = $self->{response}->devices;
+    }
 
     # Create the login_state object for use in templates
     if ($self->{response}->login_state) {
@@ -2177,7 +2186,8 @@ sub multifactor : Runmode {
     my %cart = CGI::Cookie->fetch;
     my $status = $self->setup_kdc_request (%cart);
 
-    if ($q->param ('otp')) {
+    # Either we have a non-OTP factor type, or the OTP is set.
+    if (defined $q->param('otp') && $q->param('otp') ne '') {
         my $req = $self->{request};
         my $resp = $self->{response};
         $req->user ($q->param ('username'));
@@ -2205,6 +2215,15 @@ sub multifactor : Runmode {
             print STDERR "multifactor rejected: $error ($status): $message\n"
                 if $self->param ('logging');
             $self->register_auth_fail ($req->user);
+
+        # We will get this if there is a webkdc timeout for an out-of-band
+        # authentication.  Matching on this isn't optimal because it could be
+        # other things, but for right now build from here.  Do not log an
+        # auth fail for this.
+        } elsif ($status == WK_ERR_UNRECOVERABLE_ERROR) {
+            print STDERR "multifactor timeout: $error ($status)\n"
+                if $self->param ('logging');
+
         } else {
             # Hopefully this is close enough that we can just use the default
             # error handling code.
