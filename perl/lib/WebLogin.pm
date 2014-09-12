@@ -1042,7 +1042,8 @@ sub print_multifactor_page {
     }
 
     # Add the devices, or restore from an earlier send.  Since the devices
-    # are a complicated datastructure, we save a cached bit there.
+    # are a complicated datastructure, we save a string version for future
+    # iterations of this page.
     $params->{default_device} = $self->{response}->default_device
         || $q->param('default_device');
     $params->{default_factor} = $self->{response}->default_factor
@@ -1050,7 +1051,9 @@ sub print_multifactor_page {
     if ($q->param('devices_cache')) {
         ($params->{devices}) = thaw($q->param('devices_cache'));
     } else {
-        $params->{devices} = $self->{response}->devices;
+        my $devices              = $self->{response}->devices;
+        $params->{devices}       = $devices;
+        $params->{devices_cache} = freeze($devices);
     }
 
     # Create the login_state object for use in templates
