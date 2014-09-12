@@ -2286,12 +2286,13 @@ sub multifactor_sendauth : Runmode {
 
         # Send the remctl command, switching tgts out beforehand.
         my $username = $q->param ('username');
+        my $device   = $q->param ('device_id');
         my @cmd = split (' ', $WebKDC::Config::MULTIFACTOR_COMMAND);
         local $ENV{KRB5CCNAME} = $WebKDC::Config::MULTIFACTOR_TGT;
         my $result = Net::Remctl::remctl ($WebKDC::Config::MULTIFACTOR_SERVER,
                                           $WebKDC::Config::MULTIFACTOR_PORT,
                                           $WebKDC::Config::MULTIFACTOR_PRINC,
-                                          @cmd, $username);
+                                          @cmd, $username, $device);
 
         if ($result->error) {
             print STDERR "multifactor_sendauth failed to run program: " .
