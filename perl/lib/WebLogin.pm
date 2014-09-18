@@ -1050,6 +1050,7 @@ sub print_multifactor_page {
         || $q->param('default_factor');
     if ($q->param('devices_cache')) {
         ($params->{devices}) = thaw($q->param('devices_cache'));
+        $params->{devices_cache} = $q->param('devices_cache');
     } else {
         my $devices              = $self->{response}->devices;
         $params->{devices}       = $devices;
