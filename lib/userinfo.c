@@ -175,6 +175,10 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
     else
         s = wai_user_info_xml(ctx, user, ip, random_mf, url, factors, info);
 
+    /* Map a timeout to a general failure for userinfo. */
+    if (s == WA_ERR_REMOTE_TIMEOUT)
+        s = WA_ERR_REMOTE_FAILURE;
+
     /*
      * If the call succeeded and random_multifactor was set, say that the
      * random multifactor check passed.  If the call failed but we were told
@@ -225,5 +229,10 @@ webauth_user_validate(struct webauth_context *ctx, const char *user,
                                    result);
     else
         s = wai_user_validate_xml(ctx, user, ip, code, type, state, result);
+
+    /* Map a timeout to a protocol error for validation. */
+    if (s == WA_ERR_REMOTE_TIMEOUT)
+        s = WA_PEC_LOGIN_TIMEOUT;
+
     return s;
 }

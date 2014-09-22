@@ -103,6 +103,7 @@ enum webauth_status {
     WA_PEC_AUTH_REJECTED               = 24, /* Auth to this site rejected */
     WA_PEC_AUTH_REPLAY                 = 25, /* Auth was a replay */
     WA_PEC_AUTH_LOCKOUT                = 26, /* Too many failed attempts */
+    WA_PEC_LOGIN_TIMEOUT               = 27, /* Timeout during login */
 
     /* Internal status codes. */
     WA_ERR_INTERNAL = 1000,  /* Internal error */
@@ -124,6 +125,7 @@ enum webauth_status {
     WA_ERR_NO_ROOM,          /* Supplied buffer too small */
     WA_ERR_RAND_FAILURE,     /* Unable to get random data */
     WA_ERR_REMOTE_FAILURE,   /* A remote service call failed */
+    WA_ERR_REMOTE_TIMEOUT,   /* A remote service call timed out */
     WA_ERR_TOKEN_EXPIRED,    /* Token has expired */
     WA_ERR_TOKEN_REJECTED,   /* Token used in invalid context */
     WA_ERR_TOKEN_STALE,      /* Token is stale */

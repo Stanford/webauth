@@ -2219,14 +2219,10 @@ sub multifactor : Runmode {
             print STDERR "multifactor rejected: $error ($status): $message\n"
                 if $self->param ('logging');
             $self->register_auth_fail ($req->user);
-
-        # We will get this if there is a webkdc timeout for an out-of-band
-        # authentication.  Matching on this isn't optimal because it could be
-        # other things, but for right now build from here.  Do not log an
-        # auth fail for this.
-        } elsif ($status == WK_ERR_UNRECOVERABLE_ERROR) {
+        } elsif ($status == WK_ERR_LOGIN_TIMEOUT) {
             print STDERR "multifactor timeout: $error ($status)\n"
                 if $self->param ('logging');
+            $self->template_params ({err_multifactor_timeout => 1});
 
         } else {
             # Hopefully this is close enough that we can just use the default

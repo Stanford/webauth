@@ -114,12 +114,18 @@ wai_user_remctl(struct webauth_context *ctx, const char **command,
 
     /* Set up and execute the command. */
     if (!remctl_open(r, c->host, c->port, c->identity)) {
-        s = WA_ERR_REMOTE_FAILURE;
+        if (strstr(remctl_error(r), "timed out") != NULL)
+            s = WA_ERR_REMOTE_TIMEOUT;
+        else
+            s = WA_ERR_REMOTE_FAILURE;
         wai_error_set(ctx, s, "%s", remctl_error(r));
         goto fail;
     }
     if (!remctl_command(r, command)) {
-        s = WA_ERR_REMOTE_FAILURE;
+        if (strstr(remctl_error(r), "timed out") != NULL)
+            s = WA_ERR_REMOTE_TIMEOUT;
+        else
+            s = WA_ERR_REMOTE_FAILURE;
         wai_error_set(ctx, s, "%s", remctl_error(r));
         goto fail;
     }
@@ -133,7 +139,10 @@ wai_user_remctl(struct webauth_context *ctx, const char **command,
     do {
         out = remctl_output(r);
         if (out == NULL) {
-            s = WA_ERR_REMOTE_FAILURE;
+            if (strstr(remctl_error(r), "timed out") != NULL)
+                s = WA_ERR_REMOTE_TIMEOUT;
+            else
+                s = WA_ERR_REMOTE_FAILURE;
             wai_error_set(ctx, s, "%s", remctl_error(r));
             goto fail;
         }
@@ -143,7 +152,10 @@ wai_user_remctl(struct webauth_context *ctx, const char **command,
             wai_buffer_append(buffer, out->data, out->length);
             break;
         case REMCTL_OUT_ERROR:
-            s = WA_ERR_REMOTE_FAILURE;
+            if (strstr(remctl_error(r), "timed out") != NULL)
+                s = WA_ERR_REMOTE_TIMEOUT;
+            else
+                s = WA_ERR_REMOTE_FAILURE;
             wai_buffer_set(errors, out->data, out->length);
             wai_error_set(ctx, s, "%s", errors->data);
             goto fail;
@@ -155,7 +167,10 @@ wai_user_remctl(struct webauth_context *ctx, const char **command,
                                               out->status);
                 if (wai_buffer_find_string(errors, "\n", 0, &offset))
                     errors->data[offset] = '\0';
-                s = WA_ERR_REMOTE_FAILURE;
+                if (strstr(remctl_error(r), "timed out") != NULL)
+                    s = WA_ERR_REMOTE_TIMEOUT;
+                else
+                    s = WA_ERR_REMOTE_FAILURE;
                 wai_error_set(ctx, s, "%s", errors->data);
                 goto fail;
             }
