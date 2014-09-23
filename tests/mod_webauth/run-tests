@@ -10,7 +10,7 @@
 # Modules and declarations
 #############################################################################
 
-use 5.010;
+use 5.006;
 use autodie;
 use strict;
 use warnings;
