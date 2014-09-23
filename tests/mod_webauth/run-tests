@@ -129,10 +129,11 @@ sub user_passwd {
 sub setup_users {
 
     # Create or change password for each test user.
+    my ($userid, $result);
     for my $type (keys %TEST_USERS) {
-        my $userid = $TEST_USERS{$type}{username};
+        $userid = $TEST_USERS{$type}{username};
         my $pass;
-        my $result = remctl($USERINFO, 0, '', 'kadmin', 'examine', $userid);
+        $result = remctl($USERINFO, 0, '', 'kadmin', 'examine', $userid);
         if ($result->stdout =~ m{error: No such entry in the database}) {
             $pass = user_create($userid);
         } else {
@@ -143,17 +144,18 @@ sub setup_users {
 
     # Set up an authenticator for the high-profile user.
     $userid = $TEST_USERS{high_multifactor}{username};
-    %args = (username  => $userid,
-             requestor => 'a',
-             name      => 'WebKDC test authenticator');
-    $json_request = $json_obj->encode(\%args);
+    my %args = (username  => $userid,
+                requestor => 'a',
+                name      => 'WebKDC test authenticator');
+    my $json_obj = JSON->new;
+    my $json_request = $json_obj->encode(\%args);
     $result = remctl($USERINFO, 0, '', 'two-step', 'token', 'create',
                      'authenticator', $json_request);
     if ($result->status != 0) {
         die "could not set multifactor for $userid: ", $result->stderr,
             "\n";
     }
-    $output = $json_obj->decode($result->stdout);
+    my $output = $json_obj->decode($result->stdout);
     if ($output->{response}{google_key}) {
         $TEST_USERS{high_multifactor}{key} = $output->{response}{google_key};
         $TEST_USERS{high_multifactor}{token_id}
