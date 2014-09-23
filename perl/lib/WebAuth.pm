@@ -72,6 +72,7 @@ BEGIN {
         WA_PEC_AUTH_REJECTED
         WA_PEC_AUTH_REPLAY
         WA_PEC_AUTH_LOCKOUT
+        WA_PEC_LOGIN_TIMEOUT
 
         WA_ERR_APR
         WA_ERR_BAD_HMAC
@@ -358,6 +359,7 @@ errors and error tokens:
     WA_PEC_AUTH_REJECTED
     WA_PEC_AUTH_REPLAY
     WA_PEC_AUTH_LOCKOUT
+    WA_PEC_LOGIN_TIMEOUT
 
 Status codes used only for API calls:
 
