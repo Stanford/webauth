@@ -1066,6 +1066,7 @@ sub print_multifactor_page {
 
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
     $params->{error} = 1 if $params->{'err_multifactor_invalid'};
+    $params->{error} = 1 if $params->{'err_multifactor_timeout'};
 
     my %args = (cookies => $self->{response}->cookies);
     $self->print_headers (\%args);
