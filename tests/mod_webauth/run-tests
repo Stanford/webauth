@@ -25,6 +25,9 @@ use Net::Remctl;
 use Test::More;
 use WWW::Mechanize;
 
+use WebLogin::Tests qw(setup_users teardown_users logout login_success
+    nologin);
+
 use Data::Dumper;
 
 # Our option descriptions, for both defining options and their usage.
@@ -35,246 +38,23 @@ our @OPTIONS = (
 );
 
 my $URL_ROOT = 'https://weblogin-test.stanford.edu/tests/';
-my $USERINFO = 'lsdb-test.stanford.edu';
 
 my %TEST_USERS = (
+                  low_multifactor  => {
+                      username    => 'wa0low',
+                      password    => '',
+                      type        => 'HOTP',
+                      key         => '',
+                      otps        => undef,
+                  },
                   high_multifactor => {
                       username    => 'wa0high',
                       password    => '',
                       type        => 'TOTP',
                       key         => '',
                       otps        => undef,
-                      token_id    => '',
                   },
                  );
-
-#############################################################################
-# Multifactor routines
-#############################################################################
-
-# Find the current OTP for a TOTP oath type.
-sub get_totp {
-    my ($user_key) = @_;
-
-    # Go through the window to search for the given OTP.
-    my $secret = $TEST_USERS{$user_key}{key};
-    my $oath   = Authen::OATH->new(digits   => 6,
-                                   timestep => 30,
-                                  );
-
-    my $otp = $oath->totp($secret, time);
-    return $otp;
-}
-
-#############################################################################
-# Setup and teardown
-#############################################################################
-
-# Attempt to create a user with a known password, randomly generated.
-sub user_create {
-    my ($userid) = @_;
-    my $count = 0;
-    my $set   = 0;
-
-    # Generate a random password and attempt to set it, trying again if it
-    # fails.
-    my $pass;
-    do {
-        warn "Attempting to create $userid\n";
-        $pass = chars(20, 25);
-        my $result = remctl($USERINFO, 0, '', 'kadmin', 'create', $userid,
-                            $pass, 'enabled');
-
-        $set = 1 if $result->status == 0;
-        $count++;
-    } until ($set || $count > 99);
-
-    # Die if we exceeded password change attempt number.
-    unless ($set) {
-        die "could not create $userid in 100 attempts\n";
-    }
-
-    return $pass;
-}
-
-# Attempt to set an existing user with a known password, randomly generated.
-sub user_passwd {
-    my ($userid) = @_;
-    my $count = 0;
-    my $set   = 0;
-
-    # Generate a random password and attempt to set it, trying again if it
-    # fails.
-    my $pass;
-    do {
-        warn "Attempting to set password for $userid\n";
-        $pass = chars(20, 25);
-        my $result = remctl($USERINFO, 0, '', 'kadmin', 'reset_passwd',
-                            $userid, $pass);
-
-        $set = 1 if $result->status == 0;
-        $count++;
-    } until ($set || $count > 99);
-
-    # Die if we exceeded password change attempt number.
-    unless ($set) {
-        die "could not set password for $userid in 100 attempts\n";
-    }
-
-    return $pass;
-}
-
-# Go through all of our users and set them up with known passwords and
-# multifactor configuration.
-sub setup_users {
-
-    # Create or change password for each test user.
-    my ($userid, $result);
-    for my $type (keys %TEST_USERS) {
-        $userid = $TEST_USERS{$type}{username};
-        my $pass;
-        $result = remctl($USERINFO, 0, '', 'kadmin', 'examine', $userid);
-        if ($result->stdout =~ m{error: No such entry in the database}) {
-            $pass = user_create($userid);
-        } else {
-            $pass = user_passwd($userid);
-        }
-        $TEST_USERS{$type}{password} = $pass;
-    }
-
-    # Set up an authenticator for the high-profile user.
-    $userid = $TEST_USERS{high_multifactor}{username};
-    my %args = (username  => $userid,
-                requestor => 'a',
-                name      => 'WebKDC test authenticator');
-    my $json_obj = JSON->new;
-    my $json_request = $json_obj->encode(\%args);
-    $result = remctl($USERINFO, 0, '', 'two-step', 'token', 'create',
-                     'authenticator', $json_request);
-    if ($result->status != 0) {
-        die "could not set multifactor for $userid: ", $result->stderr,
-            "\n";
-    }
-    my $output = $json_obj->decode($result->stdout);
-    if ($output->{response}{google_key}) {
-        $TEST_USERS{high_multifactor}{key} = $output->{response}{google_key};
-        $TEST_USERS{high_multifactor}{token_id}
-            = $output->{response}{token}{token_id};
-    } else {
-        die "did not get a multifactor token for $userid\n";
-    }
-}
-
-# Remove Kerberos and multifactor information for each user.
-sub teardown_users {
-
-    for my $type (keys %TEST_USERS) {
-        my $userid = $TEST_USERS{$type}{username};
-
-        # Delete the multifactor configuration.
-        my %args = (username  => $userid,
-                    requestor => 'a',
-                   );
-
-        my $json_obj = JSON->new;
-        my $json_request = $json_obj->encode(\%args);
-        my $result = remctl($USERINFO, 0, '', 'two-step', 'purge',
-                            $json_request);
-        if ($result->status != 0) {
-            die "could not delete multifactor for $userid: ",
-                $result->stderr, "\n";
-        }
-
-        # Delete the Kerberos principal.
-        $result = remctl($USERINFO, 0, '', 'kadmin', 'delete', $userid);
-        if ($result->status != 0) {
-            warn "could not remove kerberos for $userid\n";
-        }
-    }
-}
-
-#############################################################################
-# Login/logout
-#############################################################################
-
-# Function to log out of the site by hitting the logout URL and deleting all
-# cookies, to reset things between tests.
-sub logout {
-    my ($mech) = @_;
-    return WWW::Mechanize->new;
-}
-
-# Function to log in via WebAuth, to pull the repetitive code into one place.
-sub login {
-    my ($mech, $url, $type) = @_;
-
-    my $username = $TEST_USERS{$type}{username};
-    my $password = $TEST_USERS{$type}{password};
-
-    # Get the response from hitting the requested page.  This should be a
-    # login form, but if we don't manage to bury cookies it might be the
-    # end form.  If that's true, warn so that this can be looked at, but
-    # return the mechanism to continue testing.
-    $mech->get($url);
-    my $login_form = $mech->form_name('login');
-    ok(defined $login_form, "Login form for $url is found");
-
-    # Log into the WebAuth site.  Skip this if we were apparently already
-    # logged in.
-    if (defined $login_form) {
-        my %args = (form_name => 'login',
-                    fields    => {
-                        username => $username,
-                        password => $password,
-                    },
-                    button    => 'Submit',
-                   );
-        $mech->submit_form(%args);
-    }
-
-    # TODO: Recognize and handle the multifactor form next.
-    # Go through the multifactor login page.
-    #my $otp = get_totp('high_multifactor');
-    #my %args = (form_name => 'login',
-    #            fields    => { otp => $otp },
-    #            button    => 'Submit',
-    #           );
-    #$mech->submit_form(%args);
-
-
-    # Check to see if we have the standard content that should be on every
-    # post-login page.
-    like($mech->content,
-         qr{You \s+ are \s+ accessing \s+ a \s+ webauth-protected
-         \s+ page \s+ as \s+ the \s+ user: \s+ $username\b}xms,
-         '... and login succeeded');
-
-    return $mech;
-}
-
-# Function to hit a page and just get the response, without trying to log in
-sub nologin {
-    my ($mech, $url, $type) = @_;
-
-    my $username = $TEST_USERS{$type}{username};
-
-    # Get the response from hitting the requested page.  This should be a
-    # login form, but if we don't manage to bury cookies it might be the
-    # end form.  If that's true, warn so that this can be looked at, but
-    # return the mechanism to continue testing.
-    $mech->get($url);
-    my $login_form = $mech->form_name('login');
-    ok(!defined $login_form, "Login form for $url is not required");
-
-    # Check to see if we have the standard content that should be on every
-    # post-login page.
-    like($mech->content,
-         qr{You \s+ are \s+ accessing \s+ a \s+ webauth-protected
-         \s+ page \s+ as \s+ the \s+ user: \s+ $username\b}xms,
-         '... and login succeeded');
-
-    return $mech;
-}
 
 #############################################################################
 # Main routine
@@ -297,7 +77,7 @@ if ($options->manual) {
     exit 0;
 }
 
-setup_users();
+setup_users(%TEST_USERS);
 
 my $mech = WWW::Mechanize->new;
 
@@ -306,35 +86,35 @@ my $mech = WWW::Mechanize->new;
 my $username = $TEST_USERS{high_multifactor}{username};
 my $password = $TEST_USERS{high_multifactor}{password};
 
-my ($url, $finalurl, $match);
+my ($url, $finalurl, $match, $mf);
 
 # Test page one only needs to see if we logged in.
 if (!$options->onlytest || $options->onlytest == 1) {
     $url  = $URL_ROOT . 'auth/test1';
-    $mech = login($mech, $url, 'high_multifactor');
-    $mech = logout($mech);
+    $mf   = login_success($mech, $url, 'high_multifactor');
+    $mech = logout();
 }
 
 # Test page two we also want to make sure redirected to a final URL.
 if (!$options->onlytest || $options->onlytest == 2) {
     $url         = $URL_ROOT . 'auth/test2';
     $finalurl = $URL_ROOT . 'auth/test2return';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     is($mech->uri, $finalurl, '... and goes to the right end URL');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # Page three tries to prefix variables with TEST_ to test WebAuthVarPrefix.
 if (!$options->onlytest || $options->onlytest == 3) {
     $url  = $URL_ROOT . 'auth/test3';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf    = login_success($mech, $url, 'high_multifactor');
     $match = qr{<td>TEST_WEBAUTH_USER</td>\s+
         <td>\s+
         <strong>1</strong>\s+
         </td>\s+
         <td>$username</td>}xms;
     like($mech->content, $match, '... and sets the TEST prefix correctly');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # Test cancelling rather than logging in, with a WebAuthLoginCanceledURL set.
@@ -347,7 +127,7 @@ if (!$options->onlytest || $options->onlytest == 4) {
     $mech->follow_link(text => 'Cancel');
     is($mech->uri, $finalurl,
        '... and canceling the login goes to the correct page');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # Page five tries to do another return to a different URL, this time without
@@ -355,9 +135,9 @@ if (!$options->onlytest || $options->onlytest == 4) {
 if (!$options->onlytest || $options->onlytest == 5) {
     $url      = $URL_ROOT . 'auth/test5';
     $finalurl = $URL_ROOT . 'auth/test5return';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     like($mech->uri, qr{^\Q$finalurl\E\b}, '... and goes to the right end URL');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # Page six checks on having query parameters preserved after an initial
@@ -365,9 +145,9 @@ if (!$options->onlytest || $options->onlytest == 5) {
 if (!$options->onlytest || $options->onlytest == 6) {
     $url      = $URL_ROOT . 'auth/test6';
     $finalurl = $URL_ROOT . 'auth/test6return?x=1&y=2';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     like($mech->uri, qr{^\Q$finalurl\E\b}, '... and goes to the right end URL');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # Test a 5s app token lifetime.  This test does not have WebAuthForceLogin
@@ -375,36 +155,38 @@ if (!$options->onlytest || $options->onlytest == 6) {
 # result page.  In a browser you'd want to look to see if you can see the
 # page flashing through the webkdc URL, but here you can't do that so much.
 # The next test is actually more useful.
+# TODO: Error since the second login fails the login screen being shown.
 if (!$options->onlytest || $options->onlytest == 7) {
     $url  = $URL_ROOT . 'auth/test7';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     sleep 6;
-    $mech = nologin($mech, $url, 'high_multifactor');
-    $mech = logout($mech);
+    $mf   = nologin($mech, $url, 'high_multifactor');
+    $mech = logout();
 }
 
 # Test a 5s app token lifetime with WebAuthForceLogin set.  This will force
-# you to log in again after 5s.
+# you to log in again after 5s.  Use low_multifactor as high_multifactor is
+# TOTP and needs to wait 30s to work.
 if (!$options->onlytest || $options->onlytest == 8) {
     $url  = $URL_ROOT . 'auth/test8';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'low_multifactor');
     sleep 6;
-    $mech = login($mech, $url, 'high_multifactor');
-    $mech = logout($mech);
+    $mf   = login_success($mech, $url, 'low_multifactor');
+    $mech = logout();
 }
 
 # Page nine tests that WEBAUTH_TOKEN_LASTUSED is being updated.  To make it
 # work we need to sleep for ten seconds, then hit tha page again.
 if (!$options->onlytest || $options->onlytest == 9) {
     $url  = $URL_ROOT . 'auth/test9';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     my @links = $mech->links;
     sleep 10;
     $mech->follow_link(url_regex => qr{^/tests/auth/test9\?prev=\d+});
     my ($time1, $time2)
         = ($mech->content =~ m{<p>The current value of WEBAUTH_TOKEN_LASTUSED is .+? \((\d+)\).<br>The previous value of WEBAUTH_TOKEN_LASTUSED was .+? \((\d+)\).</p>});
     ok($time1 > $time2, '... and the last used token was updated');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # This will force login if your session is older than 20s.  Log in, reload
@@ -412,33 +194,33 @@ if (!$options->onlytest || $options->onlytest == 9) {
 # login again to show that you do need to re-login this time.
 if (!$options->onlytest || $options->onlytest == 10) {
     $url  = $URL_ROOT . 'auth/test10';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     sleep 5;
-    $mech = nologin($mech, $url, 'high_multifactor');
+    $mf   = nologin($mech, $url, 'high_multifactor');
     sleep 21;
-    $mech = login($mech, $url, 'high_multifactor');
-    $mech = logout($mech);
+    $mf   = login_success($mech, $url, 'high_multifactor');
+    $mech = logout();
 }
 
 # After an initial redirect, a script shouldn't see any query parameters.
 if (!$options->onlytest || $options->onlytest == 11) {
     $url      = $URL_ROOT . 'auth/test11';
     $finalurl = $URL_ROOT . 'auth/test11return';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     $match = qr{<td>QUERY_STRING</td>\s+
                 <td>\s+
                     <strong>1</strong>\s+
                 </td>\s+
                 <td>set \s to \s nothing</td>}xms;
     like($mech->content, $match, '... and the query string is empty');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # Handling of POST with an expired cookie.  The token lifetime is 1s, so hit
 # the URL once, then sleep and hit it again.
 if (!$options->onlytest || $options->onlytest == 12) {
     $url  = $URL_ROOT . 'auth/test12';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     sleep 2;
     my %args = (form_number => 1,
                 button      => 'Submit');
@@ -446,7 +228,7 @@ if (!$options->onlytest || $options->onlytest == 12) {
     like($mech->content,
          qr{If are you seeing this, then you returned from a POST without authentication to this page and everything is ok!},
          '... and testing POST with an expired cookie works');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # Test lazy sessions, first by going to the URL and getting no prompting,
@@ -461,8 +243,8 @@ if (!$options->onlytest || $options->onlytest == 13) {
          \s+ page \s+ as \s+ the \s+ user: \s+ </p>}xms,
          '... and you do not get a username');
     $url  = $URL_ROOT . 'auth/test13login';
-    $mech = login($mech, $url, 'high_multifactor');
-    $mech = logout($mech);
+    $mf   = login_success($mech, $url, 'high_multifactor');
+    $mech = logout();
 }
 
 # Test cookie path restrictions.  This sets a limited cookie path, logs in,
@@ -470,28 +252,28 @@ if (!$options->onlytest || $options->onlytest == 13) {
 # the cookie is properly limited to the given path.
 if (!$options->onlytest || $options->onlytest == 14) {
     $url  = $URL_ROOT . 'path/test14';
-    $mech = login($mech, $url, 'high_multifactor');
+    $mf   = login_success($mech, $url, 'high_multifactor');
     $mech->follow_link(url_regex => qr{^/tests/auth/test14unauth});
     like($mech->content,
          qr{Test passed.  You are not authenticated when accessing a different URL.},
          '... and the cookie path limited credential leakage');
-    $mech = logout($mech);
+    $mech = logout();
 }
 
 # Make sure that StanfordAuth still works by setting it and then seeing if we
 # see things as we do with WebAuth set.
 if (!$options->onlytest || $options->onlytest == 15) {
     $url  = $URL_ROOT . 'auth/test15';
-    $mech = login($mech, $url, 'high_multifactor');
-    $mech = logout($mech);
+    $mf   = login_success($mech, $url, 'high_multifactor');
+    $mech = logout();
 }
 
 # TODO: PHP not currently running on the WebKDCs, so this can't be tested
 #       there.
 # Test that login data is seen normally by PHP.
 #$url  = $URL_ROOT . 'php/test1.php';
-#$mech = login($mech, $url, 'high_multifactor');
-#$mech = logout($mech);
+#$mech = login_success($mech, $url, 'high_multifactor');
+#$mech = logout();
 
 teardown_users();
 done_testing();
@@ -506,15 +288,24 @@ __END__
 
 =head1 NAME
 
-name - description
+run-tests - Run mod_webkdc test pages via WWW::Mechanize
 
 =head1 SYNOPSIS
 
-B<name> [B<-h>] [B<--manual>]
+B<run-tests> [B<-h>] [B<--manual>]
 
 =head1 DESCRIPTION
 
-Description here.
+Run the mod_webkdc multifactor tests.  These require a weblogin server
+to already be set up and working, and will try to set up new users with
+multifactor configurations in order to do the testing.
+
+These tests rely on Stanford-specific infrastructure for setting up
+users and multifactor, and do assume the Stanford templates.  The
+WebLogin::Test module would need to be modified for other places.
+
+All tests are currently working save the PHP test, due to us not usually
+configuring PHP on the box the tests are run against.
 
 =head1 OPTIONS
 
@@ -527,6 +318,10 @@ Prints a short command summary for the script.
 =item B<--manual>, B<--man>
 
 Prints the perldoc information (this document) for the script.
+
+=item B<--onlytest>=<num>
+
+Only run a specific numbered test rather than running all at once.
 
 =back
 
