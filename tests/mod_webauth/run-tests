@@ -15,6 +15,8 @@ use autodie;
 use strict;
 use warnings;
 
+use lib 'tests/mod_webauth/lib';
+
 use Authen::OATH;
 use Crypt::GeneratePassword qw(chars);
 use Getopt::Long::Descriptive;
