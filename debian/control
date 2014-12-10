@@ -11,7 +11,10 @@ Build-Depends: debhelper (>= 9), apache2-dev (>> 2.4.4-3~), dh-apache2,
  libremctl-dev (>= 3.1), libssl-dev, libtemplate-perl,
  libtest-minimumversion-perl, libtest-pod-perl, libtest-strict-perl,
  libtime-duration-perl, libtimedate-perl, liburi-perl, libwww-perl,
- libxml-parser-perl, perl
+ libxml-parser-perl, libjansson-dev (>= 2.6), pkg-config, 
+ libfreezethaw-perl, libauthen-oath-perl, libcrypt-generatepassword-perl, 
+ libgetopt-long-descriptive-perl, libjson-perl, libmime-base32-perl, 
+ libnet-remctl-perl, libwww-mechanize-perl, perl
 Standards-Version: 3.9.5
 Homepage: http://webauth.stanford.edu/
 Vcs-Git: git://git.eyrie.org/kerberos/webauth.git -b debian
