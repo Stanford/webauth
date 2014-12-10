@@ -401,14 +401,18 @@ check_login(struct webauth_context *ctx,
             enum encode_mode mode UNUSED)
 {
     CHECK_STR(login, username);
-    if (login->password == NULL && login->otp == NULL) {
-        wai_error_set(ctx, WA_ERR_CORRUPT, "either password or otp required");
-        return WA_ERR_CORRUPT;
-    }
+    if (login->password == NULL)
+        if (login->otp == NULL && login->device_id == NULL) {
+            wai_error_set(ctx, WA_ERR_CORRUPT,
+                          "password, otp, or device_id required");
+            return WA_ERR_CORRUPT;
+        }
     if (login->password != NULL && login->otp != NULL)
         return wai_error_set(ctx, WA_ERR_CORRUPT, "both password and otp set");
-    if (login->password != NULL)
+    if (login->password != NULL) {
         CHECK_NULL(login, otp_type, "password");
+        CHECK_NULL(login, device_id, "password");
+    }
     return WA_ERR_NONE;
 }
 

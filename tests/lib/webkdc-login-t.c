@@ -6,7 +6,7 @@
  * tests even if no Kerberos configuration is provided.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -91,7 +91,7 @@ static const struct wat_login_test tests_login[] = {
         {
             { "krb5:webauth/example.com@EXAMPLE.COM", 0, 0 },
             {
-                { "example\\", "testpassword", NULL, NULL, 0 },
+                { "example\\", "testpassword", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },

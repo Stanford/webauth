@@ -24,6 +24,8 @@
 struct webauth_keyring;
 struct webauth_token;
 struct webauth_token_request;
+struct webauth_user_info;
+struct webauth_user_validate;
 struct webauth_webkdc_login_request;
 struct webauth_webkdc_login_response;
 
@@ -250,10 +252,15 @@ struct wai_webkdc_login_state {
     const char *user_message;
     const struct webauth_factors *factors_wanted;
     const struct webauth_factors *factors_configured;
+    const char *default_device;
+    const char *default_factor;
     time_t password_expires;
 
-    /* Array of weblogin_login structs from userinfo service. */
+    /* Array of webauth_login structs from userinfo service. */
     const apr_array_header_t *login_info;
+
+    /* Array of webauth_device structs from userinfo service. */
+    const apr_array_header_t *device_info;
 
     /* Permitted authorization identities from the identity ACL. */
     const apr_array_header_t *permitted_authz;
@@ -500,6 +507,41 @@ int wai_token_merge_webkdc_proxy_factor(struct webauth_context *,
                                         struct webauth_token *wkfactor,
                                         struct webauth_token **)
     __attribute__((__nonnull__(1, 2, 4)));
+
+/*
+ * Make a remctl call to the user information service and return the results
+ * in the provided buffer.
+ */
+int wai_user_remctl(struct webauth_context *, const char **command,
+                    struct wai_buffer *)
+    __attribute__((__nonnull__));
+
+/*
+ * The implementations of the user information service calls using the JSON
+ * data representation.
+ */
+int wai_user_info_json(struct webauth_context *, const char *user,
+                       const char *ip, int random_mf, const char *url,
+                       const char *factors, struct webauth_user_info **)
+    __attribute__((__nonnull__(1, 2, 5)));
+int wai_user_validate_json(struct webauth_context *, const char *user,
+                           const char *ip, const char *code, const char *type,
+                           const char *device, const char *state,
+                           struct webauth_user_validate **)
+    __attribute__((__nonnull__(1, 2, 4, 8)));
+
+/*
+ * The implementations of the user information service calls using the XML
+ * data representation.
+ */
+int wai_user_info_xml(struct webauth_context *, const char *user,
+                      const char *ip, int random_mf, const char *url,
+                      const char *factors, struct webauth_user_info **)
+    __attribute__((__nonnull__(1, 2, 5)));
+int wai_user_validate_xml(struct webauth_context *, const char *user,
+                          const char *ip, const char *code, const char *type,
+                          const char *state, struct webauth_user_validate **)
+    __attribute__((__nonnull__(1, 2, 4, 7)));
 
 /*
  * Log the results of a <requestTokenRequest>.  The int argument is the

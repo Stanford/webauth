@@ -328,7 +328,8 @@ do_login_otp(struct webauth_context *ctx,
         return wai_error_set(ctx, WA_PEC_LOGIN_FAILED, "OTP not configured");
     s = webauth_user_validate(ctx, login->username, state->remote_ip,
                               login->otp, login->otp_type,
-                              state->login_state_in, &validate);
+                              login->device_id, state->login_state_in,
+                              &validate);
     if (s != WA_ERR_NONE)
         return s;
 
@@ -960,6 +961,9 @@ add_user_info(struct webauth_context *ctx,
     /* Add results from the user information service to our state. */
     if (state->did_login)
         state->login_info = (*info)->logins;
+    state->default_device   = (*info)->default_device;
+    state->default_factor   = (*info)->default_factor;
+    state->device_info      = (*info)->devices;
     state->user_message     = (*info)->user_message;
     state->login_state_out  = (*info)->login_state;
     state->password_expires = (*info)->password_expires;
@@ -1619,8 +1623,11 @@ encode_response(struct webauth_context *ctx,
     response->user_message       = state->user_message;
     response->factors_wanted     = state->factors_wanted;
     response->factors_configured = state->factors_configured;
+    response->default_device     = state->default_device;
+    response->default_factor     = state->default_factor;
     response->authz_subject      = state->authz_subject_out;
     response->logins             = state->login_info;
+    response->devices            = state->device_info;
     response->password_expires   = state->password_expires;
     response->permitted_authz    = state->permitted_authz;
 

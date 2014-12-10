@@ -1,0 +1,29 @@
+{
+    "success": true,
+    "response": {
+        "factors": [
+            {
+                "expiration": 1893484800,
+                "factor": "o"
+            },
+            {
+                "expiration": 1893484800,
+                "factor": "o3"
+            }
+        ],
+        "persistent_factors": [
+            {
+                "expiration": 1893484802,
+                "factor": "d"
+            },
+            {
+                "expiration": 1893484802,
+                "factor": "u"
+            }
+        ],
+        "persistent_threshold": 1365630519,
+        "level_of_assurance": 3,
+        "message": "<em>OTP3</em> down.  &lt;_&lt;;"
+    },
+    "login_state": "RESET_PIN"
+}

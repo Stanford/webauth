@@ -67,6 +67,7 @@ error_string(struct webauth_context *ctx, int s)
     case WA_PEC_AUTH_REPLAY:
         return "authentication appears to be a replay";
     case WA_PEC_AUTH_LOCKOUT:          return "too many failed attempts";
+    case WA_PEC_LOGIN_TIMEOUT:         return "timeout during login";
 
     /* Internal errors. */
     case WA_ERR_INTERNAL:          return "internal error";
@@ -88,6 +89,7 @@ error_string(struct webauth_context *ctx, int s)
     case WA_ERR_NO_ROOM:           return "supplied buffer too small";
     case WA_ERR_RAND_FAILURE:      return "unable to get random data";
     case WA_ERR_REMOTE_FAILURE:    return "remote call failed";
+    case WA_ERR_REMOTE_TIMEOUT:    return "remote call timed out";
     case WA_ERR_TOKEN_EXPIRED:     return "token has expired";
     case WA_ERR_TOKEN_REJECTED:    return "token used in invalid context";
     case WA_ERR_TOKEN_STALE:       return "token is stale";

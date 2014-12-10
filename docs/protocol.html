@@ -12,28 +12,6 @@
 	  a {
 	  text-decoration: none;
 	  }
-      /* info code from SantaKlauss at http://www.madaboutstyle.com/tooltip2.html */
-      a.info {
-          /* This is the key. */
-          position: relative;
-          z-index: 24;
-          text-decoration: none;
-      }
-      a.info:hover {
-          z-index: 25;
-          color: #FFF; background-color: #900;
-      }
-      a.info span { display: none; }
-      a.info:hover span.info {
-          /* The span will display just on :hover state. */
-          display: block;
-          position: absolute;
-          font-size: smaller;
-          top: 2em; left: -5em; width: 15em;
-          padding: 2px; border: 1px solid #333;
-          color: #900; background-color: #EEE;
-          text-align: left;
-      }
 	  a.smpl {
 	  color: black;
 	  }
@@ -424,17 +402,18 @@
 <link href="#rfc.section.5.4.10" rel="Chapter" title="5.4.10 app Token Encoding"/>
 <link href="#rfc.section.5.5" rel="Chapter" title="5.5 Kerberos Credential Encoding"/>
 <link href="#rfc.section.6" rel="Chapter" title="6 Cookie Formats"/>
+<link href="#rfc.references" rel="Chapter" title="7 References"/>
 <link href="#rfc.appendix.A" rel="Chapter" title="A Document Revision History"/>
 <link href="#rfc.appendix.B" rel="Chapter" title="B License"/>
 <link href="#rfc.authors" rel="Chapter"/>
 
 
-  <meta name="generator" content="xml2rfc version 2.4.8 - http://tools.ietf.org/tools/xml2rfc" />
+  <meta name="generator" content="xml2rfc version 2.4.3 - http://tools.ietf.org/tools/xml2rfc" />
   <link rel="schema.dct" href="http://purl.org/dc/terms/" />
 
   <meta name="dct.creator" content="Schemers, R. and R. Allbery" />
   <meta name="dct.identifier" content="urn:ietf:id:draft-allbery-webauth-00" />
-  <meta name="dct.issued" scheme="ISO8601" content="2014-7-23" />
+  <meta name="dct.issued" scheme="ISO8601" content="2014-8" />
   <meta name="dct.abstract" content="Defines the WebAuth protocol for authenticating users to web applications using only the basic capabilities of a web browser.  Authentication is handled by a central login server using a protocol local to the given site.  Authentication information is then passed to application servers via encrypted tokens in a URL and maintained by the browser as cookies." />
   <meta name="description" content="Defines the WebAuth protocol for authenticating users to web applications using only the basic capabilities of a web browser.  Authentication is handled by a central login server using a protocol local to the given site.  Authentication information is then passed to application servers via encrypted tokens in a URL and maintained by the browser as cookies." />
 
@@ -446,20 +425,20 @@
     <tbody>
     
     	<tr>
-  <td class="left"></td>
+  <td class="left">Network Working Group</td>
   <td class="right">R. Schemers</td>
 </tr>
 <tr>
-  <td class="left"></td>
+  <td class="left">Internet-Draft</td>
   <td class="right">R. Allbery</td>
 </tr>
 <tr>
-  <td class="left"></td>
+  <td class="left">Intended status: Informational</td>
   <td class="right">Stanford University</td>
 </tr>
 <tr>
-  <td class="left"></td>
-  <td class="right">July 23, 2014</td>
+  <td class="left">Expires: February 2, 2015</td>
+  <td class="right">August 2014</td>
 </tr>
 
     	
@@ -473,6 +452,18 @@
   <a href="#rfc.abstract">Abstract</a>
 </h1>
 <p>Defines the WebAuth protocol for authenticating users to web applications using only the basic capabilities of a web browser.  Authentication is handled by a central login server using a protocol local to the given site.  Authentication information is then passed to application servers via encrypted tokens in a URL and maintained by the browser as cookies.</p>
+<h1 id="rfc.status">
+  <a href="#rfc.status">Status of This Memo</a>
+</h1>
+<p>This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.</p>
+<p>Internet-Drafts are working documents of the Internet Engineering Task Force (IETF).  Note that other groups may also distribute working documents as Internet-Drafts.  The list of current Internet-Drafts is at http://datatracker.ietf.org/drafts/current/.</p>
+<p>Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time.  It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."</p>
+<p>This Internet-Draft will expire on February 2, 2015.</p>
+<h1 id="rfc.copyrightnotice">
+  <a href="#rfc.copyrightnotice">Copyright Notice</a>
+</h1>
+<p>Copyright (c) 2014 IETF Trust and the persons identified as the document authors.  All rights reserved.</p>
+<p>This document is subject to BCP 78 and the IETF Trust's Legal Provisions Relating to IETF Documents (http://trustee.ietf.org/license-info) in effect on the date of publication of this document.  Please review these documents carefully, as they describe your rights and restrictions with respect to this document.  Code Components extracted from this document must include Simplified BSD License text as described in Section 4.e of the Trust Legal Provisions and are provided without warranty as described in the Simplified BSD License.</p>
 
   
   <hr class="noprint" />
@@ -529,6 +520,7 @@
 <li>5.4.10.   <a href="#rfc.section.5.4.10">app Token Encoding</a></li>
 <li>5.5.   <a href="#rfc.section.5.5">Kerberos Credential Encoding</a></li>
 <li>6.   <a href="#rfc.section.6">Cookie Formats</a></li>
+<li>7.   <a href="#rfc.references">References</a></li>
 <li>Appendix A.   <a href="#rfc.appendix.A">Document Revision History</a></li>
 <li>Appendix B.   <a href="#rfc.appendix.B">License</a></li>
 <li><a href="#rfc.authors">Authors' Addresses</a></li>
@@ -918,6 +910,8 @@
   <dd style="margin-left: 4">This authentication appears to be a replay.</dd>
   <dt>26</dt>
   <dd style="margin-left: 4">This authentication was rejected due to too many failed authentication attempts for this user.  The authentication should be retried later.</dd>
+  <dt>27</dt>
+  <dd style="margin-left: 4">This authentication failed due to a remctl timeout.  The authentication should be tried again.</dd>
 </dl>
 
 <p> </p>
@@ -1067,20 +1061,29 @@
       &lt;!-- repeat for each factor code required by the WAS --&gt;
 
       &lt;!-- present if user has configured a multifactor method --&gt;
-      &lt;!-- name is intended for display to the user in a list --&gt;
-      &lt;!-- device is included in login token --&gt;
-      &lt;!-- prompt indicates the user must be prompted for an OTP,
-           may be omitted if set to true (the default) --&gt;
-      &lt;!-- default indicates whether this should be the default
-           mechanism, may be omitted if set to false --&gt;
-      &lt;!-- the same {factor-code} may occur multiple times --&gt;
-      &lt;configuredFactor name="{method-name}"
-          device="{device-id}"
-          prompt="false"
-          default="true"&gt;{factor-code}&lt;/configuredFactor&gt;
+      &lt;configuredFactor&gt;{factor-code}&lt;/configuredFactor&gt;
       &lt;!-- repeat for each possible authentication method available
            for that user that would satisfy a requirement of the WAS
            or site policy, omitting "m" --&gt;
+
+      &lt;!-- present if there is a default second factor --&gt;
+      &lt;defaultFactor&gt;
+        &lt;id&gt;{device-id}&lt;/id&gt;
+        &lt;factor&gt;{factor-code}&lt;/factor&gt;
+      &lt;/defaultFactor&gt;
+
+      &lt;!-- lists configured ways of providing a second factor --&gt;
+      &lt;!-- name is intended for display to the user in a list --&gt;
+      &lt;!-- id is included in login token as device_id --&gt;
+      &lt;!-- there may be multiple factors per device --&gt;
+      &lt;devices&gt;
+        &lt;device&gt;
+          &lt;name&gt;{device-name}&lt;/name&gt;
+          &lt;id&gt;{device-id}&lt;/id&gt;
+          &lt;factor&gt;{factor-code}&lt;/factor&gt;
+          &lt;factor&gt;{factor-code}&lt;/factor&gt;
+        &lt;/device&gt;
+      &lt;/devices&gt;
     &lt;/multifactorRequired&gt;
 
     &lt;!-- any updated/new proxy tokens created --&gt;
@@ -1643,6 +1646,7 @@
 <p id="rfc.section.6.p.6">webkdc-factor token cookies will be named webkdc_wft.  This means that only a single factor token cookie can be set within a particular browser.  If there are multiple sources of factors that should be stored in webkdc-factor tokens, they must be merged into a single token by the WebKDC.</p>
 <p id="rfc.section.6.p.7">proxy token cookies will be named webauth_pt_{type} where {type} is the type of the proxy token (usually krb5).</p>
 <p id="rfc.section.6.p.8">credential tokens will be named webauth_ct_{type}_{service} where {type} is the type of the credential token (usually krb5) and {service} is the krb5 service name, potentially with special characters escaped.</p>
+<h1 id="rfc.references"><a href="#rfc.references">7.</a> References</h1>
 <h1 id="rfc.appendix.A"><a href="#rfc.appendix.A">Appendix A.</a> <a href="#history" id="history">Document Revision History</a></h1>
 <p/>
 
@@ -1691,6 +1695,10 @@
   <dd style="margin-left: 4"><br/>Document the IV used for token encryption and be explicit about the security requirements for nonces and key rotation.</dd>
   <dt>3.6.0 (2014-07-10, rra)</dt>
   <dd style="margin-left: 4"><br/>Add attributes for &lt;configuredFactor&gt; tags in &lt;requestTokenResponse&gt; to provide WebLogin with more information about possible factors.  Add the did token attribute to login tokens to communicate the ID of the device with which the user is attempting to authenticate.  Add new mp and v factor codes.  Wording and grammar clarifications, thanks to Adam Lewenberg.</dd>
+  <dt>3.6.1 (2014-08-13, rra)</dt>
+  <dd style="margin-left: 4"><br/>Add new elements &lt;defaultFactor&gt; and &lt;devices&gt; in &lt;requestTokenResponse&gt; to provide WebLogin with more information about possible factors and authentication methods.  Remove the attributes for &lt;configuredFactor&gt; tags, since that approach was less flexible.</dd>
+  <dt>3.7.0 (2014-09-18, jonrober)</dt>
+  <dd style="margin-left: 4"><br/>Add error code 27, representing a remctl timeout during multifactor login.</dd>
 </dl>
 
 <p> </p>
@@ -1730,14 +1738,13 @@
 	</span>
 	<span class="org vcardline">Stanford University</span>
 	<span class="adr">
-	  <span class="vcardline">255 Panama Street, MC 4136</span>
-
+	  
 	  <span class="vcardline">
-		<span class="locality">Stanford</span>,  
-		<span class="region">CA</span> 
-		<span class="code">94305-4136</span>
+		<span class="locality"></span> 
+		<span class="region"></span>
+		<span class="code"></span>
 	  </span>
-	  <span class="country-name vcardline">US</span>
+	  <span class="country-name vcardline"></span>
 	</span>
 	<span class="vcardline">EMail: <a href="mailto:eagle@eyrie.org">eagle@eyrie.org</a></span>
 

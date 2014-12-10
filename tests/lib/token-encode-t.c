@@ -258,6 +258,7 @@ check_login_token(struct webauth_context *ctx,
     is_string(login->password, login2->password, "...password");
     is_string(login->otp, login2->otp, "...otp");
     is_string(login->otp_type, login2->otp_type, "...otp type");
+    is_string(login->device_id, login2->device_id, "...device ID");
     if (login->creation > 0)
         is_int(login->creation, login2->creation, "...creation");
     else
@@ -516,7 +517,7 @@ main(void)
     char *expected;
     const char *result;
 
-    plan(482);
+    plan(498);
 
     if (webauth_context_init(&ctx, NULL) != WA_ERR_NONE)
         bail("cannot initialize WebAuth context");
@@ -688,6 +689,7 @@ main(void)
     login.password = "password";
     login.otp = NULL;
     login.otp_type = NULL;
+    login.device_id = NULL;
     login.creation = now;
     check_login_token(ctx, &login, ring, "password");
     login.password = NULL;
@@ -696,6 +698,8 @@ main(void)
     check_login_token(ctx, &login, ring, "otp");
     login.otp_type = "o1";
     check_login_token(ctx, &login, ring, "otp with type");
+    login.device_id = "some-device-id";
+    check_login_token(ctx, &login, ring, "otp with type and device ID");
 
     /* Test for error cases for missing or inconsistent data. */
     login.username = NULL;
@@ -704,8 +708,9 @@ main(void)
     login.username = "testuser";
     login.otp = NULL;
     login.otp_type = NULL;
+    login.device_id = NULL;
     check_login_error(ctx, &login, ring, "without password or otp",
-                      "either password or otp required", "login");
+                      "password, otp, or device_id required", "login");
     login.password = "password";
     login.otp = "123456";
     check_login_error(ctx, &login, ring, "both password and otp",
@@ -714,6 +719,10 @@ main(void)
     login.otp_type = "o3";
     check_login_error(ctx, &login, ring, "otp type without otp",
                       "otp_type not valid with password", "login");
+    login.otp_type = NULL;
+    login.device_id = "some-device-id";
+    check_login_error(ctx, &login, ring, "device ID with password",
+                      "device_id not valid with password", "login");
 
     /* Flesh out a proxy token, and then encode and decode it. */
     proxy.subject = "testuser";

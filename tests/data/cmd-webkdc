@@ -7,7 +7,7 @@
 # environment to the root of the tests directory in the source.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2011, 2012, 2013
+# Copyright 2011, 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -87,8 +87,7 @@ if [ -f "data/xml/$dir/$2.xml" ] ; then
         fi
     elif [ "$1" = "webkdc-validate" ] ; then
         if [ "$4" != "123456" ] ; then
-            cat "data/xml/$dir/$2.xml" | sed 's/<success>yes/<success>no/'
-            exit $?
+            exec cat "data/xml/$dir/fail.xml"
         else
             exec cat "data/xml/$dir/$2.xml"
         fi

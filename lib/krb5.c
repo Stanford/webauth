@@ -362,9 +362,13 @@ translate_error(struct webauth_context *ctx, krb5_error_code code)
 {
     switch (code) {
     case EINVAL:
+    case KRB5_BAD_ENCTYPE:
+    case KRB5_GET_IN_TKT_LOOP:
+    case KRB5_PREAUTH_FAILED:
     case KRB5KDC_ERR_PREAUTH_FAILED:
     case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
     case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+    case KRB5KRB_AP_ERR_MODIFIED:
         ctx->status = WA_PEC_LOGIN_FAILED;
         break;
     case KRB5KDC_ERR_KEY_EXP:

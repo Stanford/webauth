@@ -1,0 +1,6 @@
+{
+    "success": false,
+    "code": 1001,
+    "message": "user restricted",
+    "message_detail": "<strong>You are restricted!</strong>  &lt;_&lt;;"
+}

@@ -60,10 +60,11 @@ DIRN(ProxyTokenLifetime,  "lifetime of webkdc-proxy tokens")
 DIRN(ServiceTokenLifetime,"lifetime of webkdc-service tokens")
 DIRN(TokenAcl,            "path to the token ACL file")
 DIRD(TokenMaxTTL,         "max lifetime of recent tokens", int, 60 * 5)
-DIRN(UserInfoURL,         "URL to user information service")
+DIRN(UserInfoIgnoreFail,  "ignore failure to get user information")
+DIRN(UserInfoJSON,        "whether to use JSON protocol for user information")
 DIRN(UserInfoPrincipal,   "authentication identity of the information service")
 DIRD(UserInfoTimeout,     "timeout for user information queries", int, 30)
-DIRN(UserInfoIgnoreFail,  "ignore failure to get user information")
+DIRN(UserInfoURL,         "URL to user information service")
 
 enum {
     E_Debug,
@@ -81,10 +82,11 @@ enum {
     E_ServiceTokenLifetime,
     E_TokenAcl,
     E_TokenMaxTTL,
-    E_UserInfoURL,
+    E_UserInfoIgnoreFail,
+    E_UserInfoJSON,
     E_UserInfoPrincipal,
     E_UserInfoTimeout,
-    E_UserInfoIgnoreFail
+    E_UserInfoURL
 };
 
 /*
@@ -174,6 +176,7 @@ webkdc_config_merge(apr_pool_t *pool, void *basev, void *overv)
     MERGE_PTR(userinfo_config);
     MERGE_PTR(userinfo_principal);
     MERGE_SET(userinfo_timeout);
+    MERGE_SET(userinfo_json);
     MERGE_SET(userinfo_ignore_fail);
     MERGE_SET(debug);
     MERGE_SET(keyring_auto_update);
@@ -451,6 +454,10 @@ cfg_flag(cmd_parms *cmd, void *mconfig UNUSED, int flag)
         sconf->userinfo_ignore_fail = flag;
         sconf->userinfo_ignore_fail_set = true;
         break;
+    case E_UserInfoJSON:
+        sconf->userinfo_json = flag;
+        sconf->userinfo_json_set = true;
+        break;
     case E_Debug:
         sconf->debug = flag;
         sconf->debug_set = 1;
@@ -491,9 +498,10 @@ const command_rec webkdc_cmds[] = {
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   ServiceTokenLifetime),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   TokenAcl),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   TokenMaxTTL),
-    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoURL),
+    DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  UserInfoIgnoreFail),
+    DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  UserInfoJSON),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoPrincipal),
     DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoTimeout),
-    DIRECTIVE(AP_INIT_FLAG,    cfg_flag,  UserInfoIgnoreFail),
+    DIRECTIVE(AP_INIT_TAKE1,   cfg_str,   UserInfoURL),
     { NULL, { NULL }, NULL, OR_NONE, RAW_ARGS, NULL }
 };
