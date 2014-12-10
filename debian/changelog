@@ -1,3 +1,43 @@
+webauth (4.7.0-1~bpo70+1) wheezy-backports; urgency=medium
+
+  * Backport to stable.
+  * Revert the migration to Apache 2.4 and restore Apache 2.2 handling of
+    module installation and enabling, but keep the new package names.
+
+ -- Jon C. Robertson <jonrober@stanford.edu>  Wed, 10 Dec 2014 13:05:37 -0800
+
+webauth (4.7.0-1) unstable; urgency=medium
+
+  * New upstream release.
+    - Recognize KRB5_BAD_ENCTYPE, KRB5_GET_IN_TKT_LOOP, 
+      KRB5_PREAUTH_FAILED, and KRB5KRB_AP_ERR_MODIFIED as additional 
+      synonyms for a failed login error code.  Various combinations of 
+      recent MIT and Heimdal with different KDCs return these error 
+      codes if the password is incorrect.
+    - Added new fields to the userinfo service parsing and the WebLogin
+      handling.  These allow for a more complicated multifactor
+      configuration to be passed along from the user information 
+      service, with multiple possible multifactor devices and one 
+      default.
+    - Give a validation remctl command its own timeout error, so that a 
+      failure to respond to validation is handled differently than any
+      other timeout failure.  This is done so that we can handle
+      out-of-band multifactor methods, such as a phone call.  Previously
+      that would show up in WebLogin as a generic
+      WK_ERR_UNRECOVERABLE_ERROR.
+    - Ability to use JSON rather than XML for the user information 
+      service's return values.  This is activated with the 
+      WebKdcUserInfoJSON configuration directive.
+    - Refactored the userinfo code to separate remctl support, XML 
+      parsing, and JSON parsing into separate source files for 
+      readability.
+  * Added build-depends for libjansson-dev (>= 2.6), pkg-config, 
+    libfreezethaw-perl, libauthen-oath-perl, libcrypt-generatepassword-perl, 
+    libgetopt-long-descriptive-perl, libjson-perl, libmime-base32-perl, 
+    libnet-remctl-perl, and libwww-mechanize-perl.
+
+ -- Jon C. Robertson <jonrober@stanford.edu>  Wed, 10 Dec 2014 12:57:40 -0800
+
 webauth (4.6.1-1~bpo70+1) wheezy-backports; urgency=medium
 
   * Backport to stable.
