@@ -37,7 +37,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0601';
+    $VERSION = '4.0700';
 }
 
 # Export the error codes.  This list MUST be kept in sync and follow the same
@@ -60,7 +60,8 @@ BEGIN {
                  WK_ERR_LOA_UNAVAILABLE
                  WK_ERR_AUTH_REJECTED
                  WK_ERR_AUTH_REPLAY
-                 WK_ERR_AUTH_LOCKOUT);
+                 WK_ERR_AUTH_LOCKOUT
+                 WK_ERR_LOGIN_TIMEOUT);
 }
 
 # This hash maps the error codes to names, used when stringifying.
@@ -91,6 +92,7 @@ sub WK_ERR_LOA_UNAVAILABLE         () { 12 }
 sub WK_ERR_AUTH_REJECTED           () { 13 }
 sub WK_ERR_AUTH_REPLAY             () { 14 }
 sub WK_ERR_AUTH_LOCKOUT            () { 15 }
+sub WK_ERR_LOGIN_TIMEOUT           () { 16 }
 
 # Create a new WebKDC::WebKDCException object and initialize the status,
 # message, protocol error, and data.
@@ -283,6 +285,11 @@ cache.
 
 This account has been locked out due to too many unsuccessful login
 attempts.  The login should be retried later.
+
+=item WK_ERR_LOGIN_TIMEOUT
+
+There was a timeout while attempting to log in.  The login should be
+retried, though multiple errors could mean a problem outside of WebAuth.
 
 =back
 

@@ -9,7 +9,7 @@
  * decode function to convert between those two representations.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -143,6 +143,7 @@ struct webauth_token_login {
     const char *password;               /* encode: p, optional */
     const char *otp;                    /* encode: otp, optional */
     const char *otp_type;               /* encode: ott, optional */
+    const char *device_id;              /* encode: did, optional */
     time_t creation;                    /* encode: ct, creation */
 };
 

@@ -1,0 +1,285 @@
+#!/usr/bin/perl
+#
+# run-tests-multifactor - Run mod_webkdc test pages via WWW::Mechanize
+#
+# Written by Jon Robertson <jonrober@stanford.edu>
+# Copyright 2014
+#     The Board of Trustees of the Leland Stanford Junior University
+
+#############################################################################
+# Modules and declarations
+#############################################################################
+
+use 5.006;
+use autodie;
+use strict;
+use warnings;
+
+use lib 'tests/mod_webauth/lib';
+
+use Authen::OATH;
+use Crypt::GeneratePassword qw(chars);
+use Getopt::Long::Descriptive;
+use IO::Handle;
+use JSON;
+use MIME::Base32;
+use Net::Remctl;
+use Test::More;
+use WWW::Mechanize;
+
+use WebLogin::Tests qw(setup_users teardown_users logout login_success
+    login_insufficient_loa login_insufficient_factor nologin);
+
+use Data::Dumper;
+
+# Our option descriptions, for both defining options and their usage.
+our @OPTIONS = (
+    ['help|h',     'print usage (this text) and exit'],
+    ['manual|man', 'print perldoc and exit'],
+    ['onlytest=i', 'Run only a specific test'],
+);
+
+my $URL_ROOT   = 'https://weblogin-test.stanford.edu/tests/';
+my %TEST_USERS = (
+                  low_multifactor  => {
+                      username    => 'wa0low',
+                      password    => '',
+                      type        => 'HOTP',
+                      key         => '',
+                      otps        => undef,
+                  },
+                  high_multifactor => {
+                      username    => 'wa0high',
+                      password    => '',
+                      type        => 'TOTP',
+                      key         => '',
+                      otps        => undef,
+                  },
+                 );
+
+#############################################################################
+# Main routine
+#############################################################################
+
+# Get errors and output in the same order.
+STDOUT->autoflush;
+
+# Clean up the path name.
+my $fullpath = $0;
+$0 =~ s{ ^ .* / }{}xms;
+
+# Parse command-line options.
+my ($options, $usage) = describe_options("$0 %o <args>", @OPTIONS);
+if ($options->manual) {
+    print "Feeding myself to perldoc, please wait....\n";
+    exec 'perldoc', '-t', $fullpath;
+} elsif ($options->help) {
+    print $usage->text;
+    exit 0;
+}
+
+setup_users(%TEST_USERS);
+
+my $mech = WWW::Mechanize->new;
+
+# Use the high-multifactor test user by default, since that one doesn't have
+# a limited list.
+my $username = $TEST_USERS{high_multifactor}{username};
+my $password = $TEST_USERS{high_multifactor}{password};
+
+my ($url, $finalurl, $match);
+
+# Test page one only needs to see if we logged in with multifactor.
+if (!$options->onlytest || $options->onlytest == 1) {
+    $url  = $URL_ROOT . 'multifactor/test1';
+    my $mf = login_success($mech, $url, 'high_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $mech = logout();
+}
+
+# Test page two wants an OTP in specific.
+# TODO: Add a non-OTP for negative testing.
+if (!$options->onlytest || $options->onlytest == 2) {
+    $url  = $URL_ROOT . 'multifactor/test2';
+    my $mf = login_success($mech, $url, 'low_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $mech = logout();
+}
+
+# Test page three wants an OTP plus password.
+# TODO: Add in a negative test of using SPNEGO?
+# TODO: Add a non-OTP for negative testing.
+if (!$options->onlytest || $options->onlytest == 3) {
+    $url  = $URL_ROOT . 'multifactor/test3';
+    my $mf = login_success($mech, $url, 'low_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $mech = logout();
+}
+
+# Test page four has random multifactor.  Hit it until we get both a
+# multifactor required page and a multifactor not required page.  If this
+# doesn't happen in 30 attempts, error.
+# FIXME: This won't work with high multifactor unless we sleep for 30s between
+#       each login attempt.
+# FIXME: This always requires multifactor due to not saving device token from
+#       earlier login.
+if (!$options->onlytest || $options->onlytest == 4) {
+    $url  = $URL_ROOT . 'multifactor/test4';
+    my ($no_multifactor, $yes_multifactor);
+    for (my $i = 0; $i < 30; $i++) {
+
+        # Attempt a login.
+        my $mf = login_success($mech, $url, 'high_multifactor');
+        #is($mf, 1, '... and multifactor was required');
+        $mech = logout();
+
+        # Increase our counts of having had multifactor required or not.
+        if ($mf) {
+            $yes_multifactor++;
+        } else {
+            $no_multifactor++;
+        }
+
+        last if $no_multifactor && $yes_multifactor;
+        sleep 5;
+    }
+    $mech = logout();
+}
+
+# Require stronger OTP method.  Test with low, then with high again.
+# FIXME: Will require more work on template specifics.
+if (!$options->onlytest || $options->onlytest == 5) {
+    $url  = $URL_ROOT . 'multifactor/test5';
+    login_insufficient_factor($mech, $url, 'low_multifactor');
+    $mech = logout();
+    my $mf = login_success($mech, $url, 'high_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $mech = logout();
+}
+
+# LoA at a level any user can meet.
+# FIXME: Will require more work on template specifics.
+if (!$options->onlytest || $options->onlytest == 6) {
+    $url  = $URL_ROOT . 'multifactor/test6';
+    my $mf = login_success($mech, $url, 'low_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $mech = logout();
+    $mf = login_success($mech, $url, 'high_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $mech = logout();
+}
+
+# LoA at a level any non-affiliated user can meet.
+# FIXME: Will require more work on template specifics.
+if (!$options->onlytest || $options->onlytest == 7) {
+    $url  = $URL_ROOT . 'multifactor/test7';
+    my $mf = login_success($mech, $url, 'low_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $mech = logout();
+}
+
+# LoA at a level only a non-affiliated user with strong factor can meet.
+# FIXME: Will require more work on template specifics.
+if (!$options->onlytest || $options->onlytest == 8) {
+    $url  = $URL_ROOT . 'multifactor/test8';
+    my $mf = login_success($mech, $url, 'high_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $mech = logout();
+}
+
+# LoA at a level no one should be able to meet, getting an access denied
+# message.
+if (!$options->onlytest || $options->onlytest == 9) {
+    $url  = $URL_ROOT . 'multifactor/test9';
+    login_insufficient_loa($mech, $url, 'high_multifactor');
+    $mech = logout();
+}
+
+# LoA at a level any non-affiliated user can meet, plus o50, plus force login
+# for multifactor.  Test the last by first hitting the first page again.
+# TODO: Need a user with higher LoA.
+if (!$options->onlytest || $options->onlytest == 10) {
+    $url  = $URL_ROOT . 'multifactor/test1';
+    my $mf = login_success($mech, $url, 'low_multifactor');
+    is($mf, 1, '... and multifactor was required');
+    $url  = $URL_ROOT . 'multifactor/test10';
+    is($mf, 1, '... and multifactor was required');
+    $mf = login_success($mech, $url, 'low_multifactor');
+    $mech = logout();
+}
+
+# Force session with password.
+# FIXME
+
+# Force session with multifactor.
+# FIXME: Need device token as we're forced to use multifactor for first test.
+if (!$options->onlytest || $options->onlytest == 12) {
+    $url  = $URL_ROOT . 'auth/test1';
+    my $mf = login_success($mech, $url, 'high_multifactor');
+    is($mf, 0, '... and multifactor was not required');
+    $url  = $URL_ROOT . 'multifactor/test12';
+    $mf = login_success($mech, $url, 'high_multifactor');
+    is($mf, 1, '... and multifactor was required');
+}
+
+# Force session with negotiate auth
+# FIXME
+
+# Force session with random multifactor.
+# FIXME
+
+teardown_users();
+done_testing();
+
+exit 0;
+
+__END__
+
+##############################################################################
+# Documentation
+##############################################################################
+
+=head1 NAME
+
+run-tests-multifactor - Run mod_webkdc test pages via WWW::Mechanize
+
+=head1 SYNOPSIS
+
+B<run-tests-multifactor> [B<-h>] [B<--manual>]
+
+=head1 DESCRIPTION
+
+Run the mod_webkdc multifactor tests.  These require a weblogin server
+to already be set up and working, and will try to set up new users with
+multifactor configurations in order to do the testing.
+
+These tests rely on Stanford-specific infrastructure for setting up
+users and multifactor, and do assume the Stanford templates.  The
+WebLogin::Test module would need to be modified for other places.
+
+This is currently only mildly working.  It will be fleshed out further
+as time permits and other pieces are firmed up.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-h>, B<--help>
+
+Prints a short command summary for the script.
+
+=item B<--manual>, B<--man>
+
+Prints the perldoc information (this document) for the script.
+
+=item B<--onlytest>=<num>
+
+Only run a specific numbered test rather than running all at once.
+
+=back
+
+=head1 AUTHORS
+
+Jon Robertson <jonrober@stanford.edu>
+
+=cut

@@ -367,7 +367,7 @@ WEBAUTH_USER=schemers</pre></div>
         <td>Session or initial authentication via traditional password</td>
       </tr>
       <tr>
-        <td><code>rm</code></td><td>random multifactor</td><td>No</td>
+        <td><code>rm</code></td><td>random multifactor</td>
         <td>
           User has a random chance of being challenged for a second
           factor; frequency of challenges is site-defined

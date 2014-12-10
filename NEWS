@@ -1,5 +1,31 @@
                        User-Visible WebAuth Changes
 
+WebAuth 4.7.0 (2014-12-10)
+
+    Recognize KRB5_BAD_ENCTYPE, KRB5_GET_IN_TKT_LOOP, KRB5_PREAUTH_FAILED,
+    and KRB5KRB_AP_ERR_MODIFIED as additional synonyms for a failed login
+    error code.  Various combinations of recent MIT and Heimdal with
+    different KDCs return these error codes if the password is incorrect.
+
+    Added new fields to the userinfo service parsing and the WebLogin
+    handling.  These allow for a more complicated multifactor
+    configuration to be passed along from the user information service,
+    with multiple possible multifactor devices and one default.
+
+    Give a validation remctl command its own timeout error, so that a
+    failure to respond to validation is handled differently than any
+    other timeout failure.  This is done so that we can handle
+    out-of-band multifactor methods, such as a phone call.  Previously
+    that would show up in WebLogin as a generic
+    WK_ERR_UNRECOVERABLE_ERROR.
+
+    Ability to use JSON rather than XML for the user information service's
+    return values.  This is activated with the WebKdcUserInfoJSON
+    configuration directive.
+
+    Refactored the userinfo code to separate remctl support, XML parsing,
+    and JSON parsing into separate source files for readability.
+
 WebAuth 4.6.1 (2014-07-23)
 
     Support for AuthType StanfordAuth (for backward compatibility with
@@ -2088,7 +2114,7 @@ WebAuth 3.2.1 (2003-09-10)
     When AuthType is StanfordAuth, don't default to WebAuthDontCache.
     This appears to break IE 6.0 downloads.
 
-    Add WebAuthPostReturnURL directive to allow an app to deal with 
+    Add WebAuthPostReturnURL directive to allow an app to deal with
     handling a POST that didn't have authentication.
 
     When operating in legacy mode, only check LDAP for a group if it

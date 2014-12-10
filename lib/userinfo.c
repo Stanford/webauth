@@ -15,30 +15,14 @@
 #include <portable/apr.h>
 #include <portable/system.h>
 
-#include <apr_xml.h>
-#include <errno.h>
-#include <limits.h>
-#ifdef HAVE_REMCTL
-# include <remctl.h>
+#ifdef HAVE_JANSSON
+# include <jansson.h>
 #endif
-#include <time.h>
 
 #include <lib/internal.h>
 #include <webauth/basic.h>
-#include <webauth/krb5.h>
-#include <webauth/factors.h>
 #include <webauth/webkdc.h>
 #include <util/macros.h>
-
-/* If remctl_set_ccache isn't available, pretend it always fails. */
-#ifndef HAVE_REMCTL_SET_CCACHE
-# define remctl_set_ccache(r, c) 0
-#endif
-
-/* If remctl_set_timeout isn't available, quietly do nothing. */
-#ifndef HAVE_REMCTL_SET_TIMEOUT
-# define remctl_set_timeout(r, t) /* empty */
-#endif
 
 
 /*
@@ -87,6 +71,15 @@ webauth_user_config(struct webauth_context *ctx,
         goto done;
     }
 
+    /* If JSON is requested, verify that we were built with JSON support. */
+#ifndef HAVE_JANSSON
+    if (user->json) {
+        s = WA_ERR_UNIMPLEMENTED;
+        wai_error_set(ctx, s, "not built with JSON support");
+        goto done;
+    }
+#endif
+
     /* Copy the configuration into the context. */
     ctx->user = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_config));
     ctx->user->protocol       = user->protocol;
@@ -98,490 +91,10 @@ webauth_user_config(struct webauth_context *ctx,
     ctx->user->principal      = pstrdup_null(ctx->pool, user->principal);
     ctx->user->timeout        = user->timeout;
     ctx->user->ignore_failure = user->ignore_failure;
+    ctx->user->json           = user->json;
 
 done:
     return s;
-}
-
-
-/*
- * Convert a number in an XML document from a string to a number, storing it
- * in the provided variable.  Returns a status code.
- */
-static int UNUSED
-convert_number(struct webauth_context *ctx, const char *string,
-               unsigned long *value)
-{
-    int s;
-    char *end;
-
-    errno = 0;
-    *value = strtoul(string, &end, 10);
-    if (*end != '\0' || (*value == ULONG_MAX && errno != 0)) {
-        s = WA_ERR_REMOTE_FAILURE;
-        return wai_error_set(ctx, s, "invalid number %s in XML", string);
-    }
-    return WA_ERR_NONE;
-}
-
-
-/*
- * Parse the factors or persistent-factors sections of a userinfo XML
- * document.  Stores the results in the provided factors struct.  If
- * expiration is non-NULL, accept and parse a user expiration time into that
- * time_t pointer.  If valid_threshold is non-NULL, accept and parse a cutoff
- * time into that time_t pointer.  Returns a status code.
- */
-static int UNUSED
-parse_factors(struct webauth_context *ctx, apr_xml_elem *root,
-              const struct webauth_factors **result, time_t *expiration,
-              time_t *valid_threshold)
-{
-    apr_xml_elem *child;
-    apr_array_header_t *factors = NULL;
-    const char **type, *content;
-    unsigned long value;
-    int s;
-
-    /* Ensure the output variables are initialized in case of error. */
-    if (result != NULL)
-        *result = NULL;
-    if (expiration != NULL)
-        *expiration = 0;
-    if (valid_threshold != NULL)
-        *valid_threshold = 0;
-
-    /* Parse the XML element and store the results. */
-    for (child = root->first_child; child != NULL; child = child->next) {
-        if (strcmp(child->name, "factor") == 0) {
-            if (result == NULL)
-                continue;
-            if (factors == NULL)
-                factors = apr_array_make(ctx->pool, 2, sizeof(const char *));
-            type = apr_array_push(factors);
-            s = wai_xml_content(ctx, child, type);
-            if (s != WA_ERR_NONE)
-                return s;
-        } else if (strcmp(child->name, "expiration") == 0) {
-            if (expiration == NULL)
-                continue;
-            s = wai_xml_content(ctx, child, &content);
-            if (s == WA_ERR_NONE) {
-                s = convert_number(ctx, content, &value);
-                *expiration = value;
-            }
-            if (s != WA_ERR_NONE)
-                return s;
-        } else if (strcmp(child->name, "valid-threshold") == 0) {
-            if (valid_threshold == NULL)
-                continue;
-            s = wai_xml_content(ctx, child, &content);
-            if (s == WA_ERR_NONE) {
-                s = convert_number(ctx, content, &value);
-                *valid_threshold = value;
-            }
-            if (s != WA_ERR_NONE)
-                return s;
-        }
-    }
-
-    /* Save the factors if we found any and the caller wants them. */
-    if (factors != NULL && result != NULL)
-        *result = webauth_factors_new(ctx, factors);
-
-    /* FIXME: Warn if expiration != NULL but no expiration was found. */
-    return WA_ERR_NONE;
-}
-
-
-/*
- * Parse the login history section of a userinfo XML document.  Stores the
- * results in the provided webauth_user_info struct.  Returns a status code.
- */
-static int UNUSED
-parse_history(struct webauth_context *ctx, apr_xml_elem *root,
-              const apr_array_header_t **result)
-{
-    apr_xml_elem *child;
-    apr_xml_attr *attr;
-    apr_array_header_t *logins = NULL;
-    struct webauth_login *login;
-    int s;
-    size_t size;
-    unsigned long timestamp;
-
-    for (child = root->first_child; child != NULL; child = child->next) {
-        if (strcmp(child->name, "host") != 0)
-            continue;
-        if (logins == NULL) {
-            size = sizeof(struct webauth_login);
-            logins = apr_array_make(ctx->pool, 5, size);
-        }
-        login = apr_array_push(logins);
-        s = wai_xml_content(ctx, child, &login->ip);
-        if (s != WA_ERR_NONE)
-            return s;
-        for (attr = child->attr; attr != NULL; attr = attr->next)
-            if (strcmp(attr->name, "name") == 0)
-                login->hostname = attr->value;
-            else if (strcmp(attr->name, "timestamp") == 0) {
-                s = convert_number(ctx, attr->value, &timestamp);
-                if (s != WA_ERR_NONE)
-                    return s;
-                login->timestamp = timestamp;
-            }
-    }
-    *result = logins;
-    return WA_ERR_NONE;
-}
-
-
-/*
- * Given an XML document returned by the webkdc-userinfo call, however
- * obtained, finish parsing it into a newly-allocated webauth_user_info
- * struct.  This function and all of the functions it calls intentionally
- * ignores unknown XML elements or attributes.  Returns a status code.
- */
-static int UNUSED
-parse_user_info(struct webauth_context *ctx, apr_xml_doc *doc,
-                struct webauth_user_info **result)
-{
-    apr_xml_elem *child;
-    int s = WA_ERR_REMOTE_FAILURE;
-    struct webauth_user_info *info;
-    unsigned long value;
-    const char *content;
-    bool multifactor_required = false;
-
-    /* We currently don't check that the user parameter is correct. */
-    if (strcmp(doc->root->name, "authdata") != 0)
-        return wai_error_set(ctx, s, "root element is %s, not authdata",
-                             doc->root->name);
-
-    /* Parse the XML. */
-    info = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_info));
-    for (child = doc->root->first_child; child != NULL; child = child->next) {
-        s = WA_ERR_NONE;
-        if (strcmp(child->name, "error") == 0)
-            s = wai_xml_content(ctx, child, &info->error);
-        else if (strcmp(child->name, "factors") == 0)
-            s = parse_factors(ctx, child, &info->factors, NULL, NULL);
-        else if (strcmp(child->name, "additional-factors") == 0)
-            s = parse_factors(ctx, child, &info->additional, NULL, NULL);
-        else if (strcmp(child->name, "multifactor-required") == 0)
-            multifactor_required = true;
-        else if (strcmp(child->name, "required-factors") == 0)
-            s = parse_factors(ctx, child, &info->required, NULL, NULL);
-        else if (strcmp(child->name, "persistent-factors") == 0)
-            s = parse_factors(ctx, child, NULL, NULL, &info->valid_threshold);
-        else if (strcmp(child->name, "login-history") == 0)
-            s = parse_history(ctx, child, &info->logins);
-        else if (strcmp(child->name, "max-loa") == 0) {
-            s = wai_xml_content(ctx, child, &content);
-            if (s == WA_ERR_NONE)
-                s = convert_number(ctx, content, &info->max_loa);
-        } else if (strcmp(child->name, "password-expires") == 0) {
-            s = wai_xml_content(ctx, child, &content);
-            if (s == WA_ERR_NONE) {
-                s = convert_number(ctx, content, &value);
-                info->password_expires = value;
-            }
-        } else if (strcmp(child->name, "user-message") == 0)
-            s = wai_xml_content(ctx, child, &info->user_message);
-        else if (strcmp(child->name, "login-state") == 0)
-            s = wai_xml_content(ctx, child, &info->login_state);
-        if (s != WA_ERR_NONE)
-            return s;
-    }
-
-    /*
-     * For backwards compatibility, if <multifactor-required /> was present
-     * but not <required-factors>, add m as a required factor.
-     */
-    if (info->required == NULL && multifactor_required)
-        info->required = webauth_factors_parse(ctx, WA_FA_MULTIFACTOR);
-
-    /* Return the results. */
-    *result = info;
-    return WA_ERR_NONE;
-}
-
-
-/*
- * Given an XML document returned by the webkdc-validate call, however
- * obtained, finish parsing it into a newly-allocated webauth_user_validate
- * struct.  This function and all of the functions it calls intentionally
- * ignores unknown XML elements or attributes.  Returns a status code.
- */
-static int UNUSED
-parse_user_validate(struct webauth_context *ctx, apr_xml_doc *doc,
-                    struct webauth_user_validate **result)
-{
-    apr_xml_elem *child;
-    int s = WA_ERR_REMOTE_FAILURE;
-    struct webauth_user_validate *validate;
-    const char *content;
-
-    if (strcmp(doc->root->name, "authdata") != 0)
-        return wai_error_set(ctx, s, "root element is %s, not authdata",
-                             doc->root->name);
-    validate = apr_pcalloc(ctx->pool, sizeof(struct webauth_user_validate));
-    for (child = doc->root->first_child; child != NULL; child = child->next) {
-        if (strcmp(child->name, "success") == 0) {
-            s = wai_xml_content(ctx, child, &content);
-            if (s == WA_ERR_NONE)
-                validate->success = (strcmp(content, "yes") == 0);
-        } else if (strcmp(child->name, "factors") == 0)
-            s = parse_factors(ctx, child, &validate->factors,
-                                   &validate->factors_expiration, NULL);
-        else if (strcmp(child->name, "persistent-factors") == 0)
-            s = parse_factors(ctx, child, &validate->persistent,
-                              &validate->persistent_expiration,
-                              &validate->valid_threshold);
-        else if (strcmp(child->name, "loa") == 0) {
-            s = wai_xml_content(ctx, child, &content);
-            if (s == WA_ERR_NONE)
-                s = convert_number(ctx, content, &validate->loa);
-        } else if (strcmp(child->name, "user-message") == 0)
-            s = wai_xml_content(ctx, child, &validate->user_message);
-        else if (strcmp(child->name, "login-state") == 0)
-            s = wai_xml_content(ctx, child, &validate->login_state);
-        if (s != WA_ERR_NONE)
-            return s;
-    }
-    *result = validate;
-    return WA_ERR_NONE;
-}
-
-
-/*
- * Issue a remctl command to the user information service.  Takes the
- * argv-style vector of the command to execute and a timeout (which may be 0
- * to use no timeout), and stores the resulting XML document in the provided
- * argument.  On any error, including remote failure to execute the command,
- * sets the WebAuth error and returns a status code.
- */
-#ifdef HAVE_REMCTL
-static int
-remctl_generic(struct webauth_context *ctx, const char **command,
-               apr_xml_doc **doc)
-{
-    struct remctl *r = NULL;
-    struct remctl_output *out;
-    apr_xml_parser *parser = NULL;
-    apr_status_t code;
-    size_t offset;
-    char errbuf[BUFSIZ] = "";
-    struct wai_buffer *errors;
-    struct webauth_user_config *c = ctx->user;
-    struct webauth_krb5 *kc = NULL;
-    char *cache;
-    int s;
-
-    /* Initialize the remctl context. */
-    r = remctl_new();
-    if (r == NULL) {
-        s = WA_ERR_NO_MEM;
-        return wai_error_set_system(ctx, s, errno, "initializing remctl");
-    }
-
-    /*
-     * Obtain authentication credentials from the configured keytab and
-     * principal.
-     *
-     * This changes the global GSS-API state to point to our ticket cache.
-     * Unfortunately, the GSS-API doesn't currently provide any way to avoid
-     * this.  When there is some way, it will be implemented in remctl.
-     *
-     * If remctl_set_ccache fails or doesn't exist, we fall back on just
-     * whacking the global KRB5CCNAME variable.
-     */
-    s = webauth_krb5_new(ctx, &kc);
-    if (s != WA_ERR_NONE)
-        goto fail;
-    s = webauth_krb5_init_via_keytab(ctx, kc, c->keytab, c->principal, NULL);
-    if (s != WA_ERR_NONE)
-        goto fail;
-    s = webauth_krb5_get_cache(ctx, kc, &cache);
-    if (s != WA_ERR_NONE)
-        goto fail;
-    if (!remctl_set_ccache(r, cache)) {
-        if (setenv("KRB5CCNAME", cache, 1) < 0) {
-            s = WA_ERR_NO_MEM;
-            wai_error_set_system(ctx, s, errno,
-                                 "setting KRB5CCNAME for remctl");
-            goto fail;
-        }
-    }
-
-    /* Set a timeout if one was given. */
-    if (c->timeout > 0)
-        remctl_set_timeout(r, c->timeout);
-
-    /* Set up and execute the command. */
-    if (c->command == NULL) {
-        s = WA_ERR_INVALID;
-        wai_error_set(ctx, s, "no remctl command specified");
-        goto fail;
-    }
-    if (!remctl_open(r, c->host, c->port, c->identity)) {
-        s = WA_ERR_REMOTE_FAILURE;
-        wai_error_set(ctx, s, "%s", remctl_error(r));
-        goto fail;
-    }
-    if (!remctl_command(r, command)) {
-        s = WA_ERR_REMOTE_FAILURE;
-        wai_error_set(ctx, s, "%s", remctl_error(r));
-        goto fail;
-    }
-
-    /*
-     * Retrieve the results.  Accumulate errors in the errors variable,
-     * although we ignore that stream unless the exit status is non-zero.
-     */
-    parser = apr_xml_parser_create(ctx->pool);
-    errors = wai_buffer_new(ctx->pool);
-    do {
-        out = remctl_output(r);
-        if (out == NULL) {
-            s = WA_ERR_REMOTE_FAILURE;
-            wai_error_set(ctx, s, "%s", remctl_error(r));
-            goto fail;
-        }
-        switch (out->type) {
-        case REMCTL_OUT_OUTPUT:
-            switch (out->stream) {
-            case 1:
-                code = apr_xml_parser_feed(parser, out->data, out->length);
-                if (code != APR_SUCCESS) {
-                    apr_xml_parser_geterror(parser, errbuf, sizeof(errbuf));
-                    s = WA_ERR_REMOTE_FAILURE;
-                    wai_error_set(ctx, s, "XML error: %s", errbuf);
-                    goto fail;
-                }
-                break;
-            default:
-                wai_buffer_append(errors, out->data, out->length);
-                break;
-            }
-            break;
-        case REMCTL_OUT_ERROR:
-            s = WA_ERR_REMOTE_FAILURE;
-            wai_buffer_set(errors, out->data, out->length);
-            wai_error_set(ctx, s, "%s", errors->data);
-            goto fail;
-        case REMCTL_OUT_STATUS:
-            if (out->status != 0) {
-                if (errors->data == NULL)
-                    wai_buffer_append_sprintf(errors,
-                                              "program exited with status %d",
-                                              out->status);
-                if (wai_buffer_find_string(errors, "\n", 0, &offset))
-                    errors->data[offset] = '\0';
-                s = WA_ERR_REMOTE_FAILURE;
-                wai_error_set(ctx, s, "%s", errors->data);
-                goto fail;
-            }
-        case REMCTL_OUT_DONE:
-        default:
-            break;
-        }
-    } while (out->type == REMCTL_OUT_OUTPUT);
-    remctl_close(r);
-    r = NULL;
-
-    /*
-     * We have an accumulated XML document in the parser and don't think we've
-     * seen any errors.  Finish the parsing and then hand off to document
-     * analysis.
-     */
-    code = apr_xml_parser_done(parser, doc);
-    if (code != APR_SUCCESS) {
-        apr_xml_parser_geterror(parser, errbuf, sizeof(errbuf));
-        wai_error_set(ctx, WA_ERR_REMOTE_FAILURE, "XML error: %s", errbuf);
-        return WA_ERR_REMOTE_FAILURE;
-    }
-    return WA_ERR_NONE;
-
-fail:
-    if (parser != NULL)
-        apr_xml_parser_done(parser, NULL);
-    if (r != NULL)
-        remctl_close(r);
-    return s;
-}
-#else /* !HAVE_REMCTL */
-static int
-remctl_generic(struct webauth_context *ctx, const char **command UNUSED,
-               apr_xml_doc **doc UNUSED)
-{
-    return wai_error_set(ctx, WA_ERR_UNIMPLEMENTED,
-                         "not built with remctl support");
-}
-#endif /* !HAVE_REMCTL */
-
-
-/*
- * Call the user information service via remctl and parse the results into a
- * webauth_user_info struct.
- */
-static int
-remctl_info(struct webauth_context *ctx, const char *user, const char *ip,
-            int random_mf, const char *url, const char *factors,
-            struct webauth_user_info **info)
-{
-    int s;
-    const char *argv[9];
-    apr_xml_doc *doc = NULL;
-    struct webauth_user_config *c = ctx->user;
-
-    /* A URL is required if we have factors. */
-    if (url == NULL && factors != NULL)
-        url = "";
-
-    /* Build the command. */
-    argv[0] = c->command;
-    argv[1] = "webkdc-userinfo";
-    argv[2] = user;
-    argv[3] = ip;
-    argv[4] = apr_psprintf(ctx->pool, "%lu", (unsigned long) time(NULL));
-    argv[5] = apr_psprintf(ctx->pool, "%d", random_mf ? 1 : 0);
-    argv[6] = url;
-    argv[7] = factors;
-    argv[8] = NULL;
-    s = remctl_generic(ctx, argv, &doc);
-    if (s != WA_ERR_NONE)
-        return s;
-    return parse_user_info(ctx, doc, info);
-}
-
-
-/*
- * Call the user validation service via remctl and parse the results into a
- * webauth_user_validate struct.
- */
-static int
-remctl_validate(struct webauth_context *ctx, const char *user, const char *ip,
-                const char *code, const char *type, const char *state,
-                struct webauth_user_validate **validate)
-{
-    int s;
-    const char *argv[8];
-    apr_xml_doc *doc = NULL;
-    struct webauth_user_config *c = ctx->user;
-
-    argv[0] = c->command;
-    argv[1] = "webkdc-validate";
-    argv[2] = user;
-    argv[3] = ip;
-    argv[4] = code;
-    argv[5] = type;
-    argv[6] = state;
-    argv[7] = NULL;
-    s = remctl_generic(ctx, argv, &doc);
-    if (s != WA_ERR_NONE)
-        return s;
-    return parse_user_validate(ctx, doc, validate);
 }
 
 
@@ -599,6 +112,10 @@ check_config(struct webauth_context *ctx)
         wai_error_set(ctx, s, "user information service not configured");
         return s;
     }
+    if (ctx->user->command == NULL) {
+        s = WA_ERR_INVALID;
+        return wai_error_set(ctx, s, "no remctl command specified");
+    }
     if (ctx->user->protocol == WA_PROTOCOL_REMCTL) {
         if (ctx->user->keytab == NULL) {
             wai_error_set(ctx, WA_ERR_INVALID,
@@ -609,7 +126,16 @@ check_config(struct webauth_context *ctx)
         s = WA_ERR_UNIMPLEMENTED;
         return wai_error_set(ctx, s, "not built with remctl support");
 #endif
+    } else {
+        wai_error_set(ctx, WA_ERR_INVALID, "invalid user info protocol");
+        return WA_ERR_INVALID;
     }
+#ifndef HAVE_JANSSON
+    if (ctx->user->json) {
+        s = WA_ERR_UNIMPLEMENTED;
+        return wai_error_set(ctx, s, "not built with JSON support");
+    }
+#endif
     return WA_ERR_NONE;
 }
 
@@ -635,22 +161,23 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
 {
     int s;
 
+    /* Ensure the output variable is cleared on error. */
     *info = NULL;
+
+    /* Check the configuration for sanity. */
     s = check_config(ctx);
     if (s != WA_ERR_NONE)
         return s;
-    if (ip == NULL)
-        ip = "127.0.0.1";
-    switch (ctx->user->protocol) {
-    case WA_PROTOCOL_REMCTL:
-        s = remctl_info(ctx, user, ip, random_mf, url, factors, info);
-        break;
-    case WA_PROTOCOL_NONE:
-    default:
-        /* This should be impossible due to webauth_user_config checks. */
-        wai_error_set(ctx, WA_ERR_INVALID, "invalid user info protocol");
-        return WA_ERR_INVALID;
-    }
+
+    /* Call the appropriate implementation for JSON or XML. */
+    if (ctx->user->json)
+        s = wai_user_info_json(ctx, user, ip, random_mf, url, factors, info);
+    else
+        s = wai_user_info_xml(ctx, user, ip, random_mf, url, factors, info);
+
+    /* Map a timeout to a general failure for userinfo. */
+    if (s == WA_ERR_REMOTE_TIMEOUT)
+        s = WA_ERR_REMOTE_FAILURE;
 
     /*
      * If the call succeeded and random_multifactor was set, say that the
@@ -683,24 +210,29 @@ webauth_user_info(struct webauth_context *ctx, const char *user,
 int
 webauth_user_validate(struct webauth_context *ctx, const char *user,
                       const char *ip, const char *code, const char *type,
-                      const char *state,
+                      const char *device, const char *state,
                       struct webauth_user_validate **result)
 {
     int s;
 
+    /* Ensure the output variable is cleared on error. */
     *result = NULL;
+
+    /* Check the configuration for sanity. */
     s = check_config(ctx);
     if (s != WA_ERR_NONE)
         return s;
-    if (ip == NULL)
-        ip = "127.0.0.1";
-    switch (ctx->user->protocol) {
-    case WA_PROTOCOL_REMCTL:
-        return remctl_validate(ctx, user, ip, code, type, state, result);
-    case WA_PROTOCOL_NONE:
-    default:
-        /* This should be impossible due to webauth_user_config checks. */
-        wai_error_set(ctx, WA_ERR_INVALID, "invalid user info protocol");
-        return WA_ERR_INVALID;
-    }
+
+    /* Call the appropriate implementation for JSON or XML. */
+    if (ctx->user->json)
+        s = wai_user_validate_json(ctx, user, ip, code, type, device, state,
+                                   result);
+    else
+        s = wai_user_validate_xml(ctx, user, ip, code, type, state, result);
+
+    /* Map a timeout to a protocol error for validation. */
+    if (s == WA_ERR_REMOTE_TIMEOUT)
+        s = WA_PEC_LOGIN_TIMEOUT;
+
+    return s;
 }

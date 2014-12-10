@@ -22,7 +22,7 @@ my @extended = (
 # Set information for the tests.
 my %settings = (
     test_number   => 5,
-    test_desc     => 'o3 multifactor',
+    test_desc     => 'o50 multifactor',
     extended_desc => \@extended,
     multifactor   => 1,
 );

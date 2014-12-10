@@ -61,6 +61,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define if Jansson is available. */
+#undef HAVE_JANSSON
+
 /* Define to enable Kerberos features. */
 #undef HAVE_KRB5
 

@@ -1,4 +1,4 @@
-WEBAUTH_4_6 {
+WEBAUTH_4_7 {
     global:
         webauth_context_free;
         webauth_context_init;
