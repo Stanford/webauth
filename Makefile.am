@@ -106,8 +106,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	lib/libwebauth.pc.in lib/libwebauth.sym perl/MANIFEST		    \
 	perl/MANIFEST.SKIP tests/TESTS tests/config/README		    \
 	tests/data/cmd-password tests/data/cmd-webkdc tests/data/creds	    \
-	tests/data/generate-krb5-conf tests/data/id.acl tests/data/keyring  \
-	tests/data/make-krb5-cred tests/data/make-tokens		    \
+	tests/data/generate-krb5-conf tests/data/id.acl tests/data/json	    \
+	tests/data/keyring tests/data/make-krb5-cred tests/data/make-tokens \
 	tests/data/perl.conf tests/data/perlcriticrc tests/data/perltidyrc  \
 	tests/data/service-token tests/data/tokens tests/data/tokens.conf   \
 	tests/data/valgrind.supp tests/data/xml tests/docs/pod-spelling-t   \
@@ -148,23 +148,25 @@ webauthinclude_HEADERS = include/webauth/basic.h include/webauth/factors.h \
 	include/webauth/tokens.h include/webauth/util.h			   \
 	include/webauth/was.h include/webauth/webkdc.h
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
-	lib/attr-encode.c lib/context.c lib/errors.c lib/factors.c	  \
-	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	  \
-	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c \
-	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	  \
-	lib/token-merge.c lib/userinfo.c lib/util.c lib/was-cache.c	  \
-	lib/webkdc-config.c lib/webkdc-logging.c lib/webkdc-login.c	  \
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		    \
+	lib/attr-encode.c lib/context.c lib/errors.c lib/factors.c	    \
+	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	    \
+	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c   \
+	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	    \
+	lib/token-merge.c lib/userinfo.c lib/userinfo-json.c		    \
+	lib/userinfo-remctl.c lib/userinfo-xml.c lib/util.c lib/was-cache.c \
+	lib/webkdc-config.c lib/webkdc-logging.c lib/webkdc-login.c	    \
 	lib/xml.c
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
-lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
-	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
-	$(CRYPTO_CPPFLAGS)
-lib_libwebauth_la_LDFLAGS = -version-info 11:0:0 $(VERSION_LDFLAGS)	    \
-	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
-	$(CRYPTO_LDFLAGS)
+lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)		\
+	$(APRUTIL_CPPFLAGS) $(JANSSON_CPPFLAGS) $(REMCTL_CPPFLAGS)	\
+	$(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
+lib_libwebauth_la_LDFLAGS = -version-info 12:0:0 $(VERSION_LDFLAGS)	\
+	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(JANSSON_LDFLAGS)		\
+	$(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) $(CRYPTO_LDFLAGS)
 lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)		\
-	$(APRUTIL_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS) $(CRYPTO_LIBS)
+	$(APRUTIL_LIBS) $(JANSSON_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS)	\
+	$(CRYPTO_LIBS)
 
 apachedir = $(libexecdir)/apache2/modules
 apache_LTLIBRARIES =

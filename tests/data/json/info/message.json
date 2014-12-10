@@ -1,0 +1,8 @@
+{
+    "success": true,
+    "response": {
+        "available_factors": ["p", "m", "o", "o3"],
+        "required_factors": ["o3"],
+        "message": "Hi <strong>you</strong>. &lt;_&lt;;"
+    }
+}

@@ -126,14 +126,14 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
 	$(srcdir)/config.h.in $(srcdir)/config-mod.h.in \
 	$(top_srcdir)/tests/data/conf-webkdc.in \
-	$(top_srcdir)/portable/setenv.c \
-	$(top_srcdir)/portable/strlcpy.c \
-	$(top_srcdir)/portable/asprintf.c \
 	$(top_srcdir)/portable/strlcat.c \
+	$(top_srcdir)/portable/mkstemp.c \
+	$(top_srcdir)/portable/asprintf.c \
+	$(top_srcdir)/portable/setenv.c \
+	$(top_srcdir)/portable/reallocarray.c \
+	$(top_srcdir)/portable/strlcpy.c \
 	$(top_srcdir)/portable/snprintf.c \
 	$(top_srcdir)/portable/strndup.c \
-	$(top_srcdir)/portable/reallocarray.c \
-	$(top_srcdir)/portable/mkstemp.c \
 	$(am__dist_weblogin_SCRIPTS_DIST) \
 	$(top_srcdir)/build-aux/depcomp $(dist_man_MANS) \
 	$(am__dist_image_DATA_DIST) $(am__dist_template_DATA_DIST) \
@@ -151,9 +151,10 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/apache.m4 \
 	$(top_srcdir)/m4/apr.m4 $(top_srcdir)/m4/aprutil.m4 \
 	$(top_srcdir)/m4/curl.m4 $(top_srcdir)/m4/gssapi.m4 \
-	$(top_srcdir)/m4/krb5-config.m4 $(top_srcdir)/m4/krb5.m4 \
-	$(top_srcdir)/m4/ld-version.m4 $(top_srcdir)/m4/ldap.m4 \
-	$(top_srcdir)/m4/lib-depends.m4 $(top_srcdir)/m4/lib-helper.m4 \
+	$(top_srcdir)/m4/jansson.m4 $(top_srcdir)/m4/krb5-config.m4 \
+	$(top_srcdir)/m4/krb5.m4 $(top_srcdir)/m4/ld-version.m4 \
+	$(top_srcdir)/m4/ldap.m4 $(top_srcdir)/m4/lib-depends.m4 \
+	$(top_srcdir)/m4/lib-helper.m4 \
 	$(top_srcdir)/m4/lib-pathname.m4 $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
 	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
@@ -230,7 +231,7 @@ am__DEPENDENCIES_1 =
 lib_libwebauth_la_DEPENDENCIES = portable/libportable.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_lib_libwebauth_la_OBJECTS = lib/lib_libwebauth_la-apr-buffer.lo \
 	lib/lib_libwebauth_la-attr-decode.lo \
 	lib/lib_libwebauth_la-attr-encode.lo \
@@ -248,6 +249,9 @@ am_lib_libwebauth_la_OBJECTS = lib/lib_libwebauth_la-apr-buffer.lo \
 	lib/lib_libwebauth_la-token-encode.lo \
 	lib/lib_libwebauth_la-token-merge.lo \
 	lib/lib_libwebauth_la-userinfo.lo \
+	lib/lib_libwebauth_la-userinfo-json.lo \
+	lib/lib_libwebauth_la-userinfo-remctl.lo \
+	lib/lib_libwebauth_la-userinfo-xml.lo \
 	lib/lib_libwebauth_la-util.lo \
 	lib/lib_libwebauth_la-was-cache.lo \
 	lib/lib_libwebauth_la-webkdc-config.lo \
@@ -727,6 +731,10 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+JANSSON_CFLAGS = @JANSSON_CFLAGS@
+JANSSON_CPPFLAGS = @JANSSON_CPPFLAGS@
+JANSSON_LDFLAGS = @JANSSON_LDFLAGS@
+JANSSON_LIBS = @JANSSON_LIBS@
 KRB5_CPPFLAGS = @KRB5_CPPFLAGS@
 KRB5_CPPFLAGS_GCC = @KRB5_CPPFLAGS_GCC@
 KRB5_LDFLAGS = @KRB5_LDFLAGS@
@@ -767,6 +775,9 @@ PATH_REMCTLD = @PATH_REMCTLD@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PERL_LDFLAGS = @PERL_LDFLAGS@
+PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 REMCTL_CPPFLAGS = @REMCTL_CPPFLAGS@
 REMCTL_LDFLAGS = @REMCTL_LDFLAGS@
@@ -923,8 +934,8 @@ EXTRA_DIST = .gitignore HACKING LICENSE autogen conf/README		    \
 	lib/libwebauth.pc.in lib/libwebauth.sym perl/MANIFEST		    \
 	perl/MANIFEST.SKIP tests/TESTS tests/config/README		    \
 	tests/data/cmd-password tests/data/cmd-webkdc tests/data/creds	    \
-	tests/data/generate-krb5-conf tests/data/id.acl tests/data/keyring  \
-	tests/data/make-krb5-cred tests/data/make-tokens		    \
+	tests/data/generate-krb5-conf tests/data/id.acl tests/data/json	    \
+	tests/data/keyring tests/data/make-krb5-cred tests/data/make-tokens \
 	tests/data/perl.conf tests/data/perlcriticrc tests/data/perltidyrc  \
 	tests/data/service-token tests/data/tokens tests/data/tokens.conf   \
 	tests/data/valgrind.supp tests/data/xml tests/docs/pod-spelling-t   \
@@ -963,26 +974,28 @@ webauthinclude_HEADERS = include/webauth/basic.h include/webauth/factors.h \
 	include/webauth/was.h include/webauth/webkdc.h
 
 nodist_webauthinclude_HEADERS = include/webauth/defines.h
-lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		  \
-	lib/attr-encode.c lib/context.c lib/errors.c lib/factors.c	  \
-	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	  \
-	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c \
-	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	  \
-	lib/token-merge.c lib/userinfo.c lib/util.c lib/was-cache.c	  \
-	lib/webkdc-config.c lib/webkdc-logging.c lib/webkdc-login.c	  \
+lib_libwebauth_la_SOURCES = lib/apr-buffer.c lib/attr-decode.c		    \
+	lib/attr-encode.c lib/context.c lib/errors.c lib/factors.c	    \
+	lib/file-io.c lib/hex.c lib/internal.h lib/keyring.c lib/keys.c	    \
+	lib/krb5.c lib/rules-cache.c lib/rules-keyring.c lib/rules-krb5.c   \
+	lib/rules-tokens.c lib/token-crypto.c lib/token-encode.c	    \
+	lib/token-merge.c lib/userinfo.c lib/userinfo-json.c		    \
+	lib/userinfo-remctl.c lib/userinfo-xml.c lib/util.c lib/was-cache.c \
+	lib/webkdc-config.c lib/webkdc-logging.c lib/webkdc-login.c	    \
 	lib/xml.c
 
 EXTRA_lib_libwebauth_la_SOURCES = lib/krb5-heimdal.c lib/krb5-mit.c
-lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)	\
-	$(APRUTIL_CPPFLAGS) $(REMCTL_CPPFLAGS) $(KRB5_CPPFLAGS)	\
-	$(CRYPTO_CPPFLAGS)
+lib_libwebauth_la_CPPFLAGS = $(AM_CPPFLAGS) $(APR_CPPFLAGS)		\
+	$(APRUTIL_CPPFLAGS) $(JANSSON_CPPFLAGS) $(REMCTL_CPPFLAGS)	\
+	$(KRB5_CPPFLAGS) $(CRYPTO_CPPFLAGS)
 
-lib_libwebauth_la_LDFLAGS = -version-info 11:0:0 $(VERSION_LDFLAGS)	    \
-	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) \
-	$(CRYPTO_LDFLAGS)
+lib_libwebauth_la_LDFLAGS = -version-info 12:0:0 $(VERSION_LDFLAGS)	\
+	$(APR_LDFLAGS) $(APRUTIL_LDFLAGS) $(JANSSON_LDFLAGS)		\
+	$(REMCTL_LDFLAGS) $(KRB5_LDFLAGS) $(CRYPTO_LDFLAGS)
 
 lib_libwebauth_la_LIBADD = portable/libportable.la $(APR_LIBS)		\
-	$(APRUTIL_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS) $(CRYPTO_LIBS)
+	$(APRUTIL_LIBS) $(JANSSON_LIBS) $(REMCTL_LIBS) $(KRB5_LIBS)	\
+	$(CRYPTO_LIBS)
 
 apachedir = $(libexecdir)/apache2/modules
 apache_LTLIBRARIES = $(am__append_1) $(am__append_2) $(am__append_3)
@@ -1468,6 +1481,12 @@ lib/lib_libwebauth_la-token-merge.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-userinfo.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-userinfo-json.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-userinfo-remctl.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/lib_libwebauth_la-userinfo-xml.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-util.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/lib_libwebauth_la-was-cache.lo: lib/$(am__dirstamp) \
@@ -1942,6 +1961,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-token-crypto.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-token-encode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-token-merge.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-userinfo-json.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-userinfo-remctl.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-userinfo-xml.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-userinfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/lib_libwebauth_la-was-cache.Plo@am__quote@
@@ -2279,6 +2301,27 @@ lib/lib_libwebauth_la-userinfo.lo: lib/userinfo.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/userinfo.c' object='lib/lib_libwebauth_la-userinfo.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-userinfo.lo `test -f 'lib/userinfo.c' || echo '$(srcdir)/'`lib/userinfo.c
+
+lib/lib_libwebauth_la-userinfo-json.lo: lib/userinfo-json.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-userinfo-json.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-userinfo-json.Tpo -c -o lib/lib_libwebauth_la-userinfo-json.lo `test -f 'lib/userinfo-json.c' || echo '$(srcdir)/'`lib/userinfo-json.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-userinfo-json.Tpo lib/$(DEPDIR)/lib_libwebauth_la-userinfo-json.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/userinfo-json.c' object='lib/lib_libwebauth_la-userinfo-json.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-userinfo-json.lo `test -f 'lib/userinfo-json.c' || echo '$(srcdir)/'`lib/userinfo-json.c
+
+lib/lib_libwebauth_la-userinfo-remctl.lo: lib/userinfo-remctl.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-userinfo-remctl.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-userinfo-remctl.Tpo -c -o lib/lib_libwebauth_la-userinfo-remctl.lo `test -f 'lib/userinfo-remctl.c' || echo '$(srcdir)/'`lib/userinfo-remctl.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-userinfo-remctl.Tpo lib/$(DEPDIR)/lib_libwebauth_la-userinfo-remctl.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/userinfo-remctl.c' object='lib/lib_libwebauth_la-userinfo-remctl.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-userinfo-remctl.lo `test -f 'lib/userinfo-remctl.c' || echo '$(srcdir)/'`lib/userinfo-remctl.c
+
+lib/lib_libwebauth_la-userinfo-xml.lo: lib/userinfo-xml.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-userinfo-xml.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-userinfo-xml.Tpo -c -o lib/lib_libwebauth_la-userinfo-xml.lo `test -f 'lib/userinfo-xml.c' || echo '$(srcdir)/'`lib/userinfo-xml.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/lib_libwebauth_la-userinfo-xml.Tpo lib/$(DEPDIR)/lib_libwebauth_la-userinfo-xml.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/userinfo-xml.c' object='lib/lib_libwebauth_la-userinfo-xml.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lib/lib_libwebauth_la-userinfo-xml.lo `test -f 'lib/userinfo-xml.c' || echo '$(srcdir)/'`lib/userinfo-xml.c
 
 lib/lib_libwebauth_la-util.lo: lib/util.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lib_libwebauth_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lib/lib_libwebauth_la-util.lo -MD -MP -MF lib/$(DEPDIR)/lib_libwebauth_la-util.Tpo -c -o lib/lib_libwebauth_la-util.lo `test -f 'lib/util.c' || echo '$(srcdir)/'`lib/util.c

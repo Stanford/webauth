@@ -1,0 +1,37 @@
+{
+    "success": true,
+    "response": {
+        "available_factors": ["p", "m", "o", "o3"],
+        "required_factors": ["p", "m", "o", "o3"],
+        "persistent_threshold": 1365630519,
+        "logins": [
+            {
+                "hostname": "example.com",
+                "ip": "127.0.0.2",
+                "timestamp": 1335373919
+            },
+            {
+                "hostname": "www.example.com",
+                "ip": "127.0.0.3"
+            }
+        ],
+        "max_level_of_assurance": 3,
+        "password_expires": 1310675733,
+        "default": {
+            "id": "VAERQ235F5QFA561",
+            "factor": "v"
+        },
+        "devices": [
+            {
+                "name": "Name of a phone",
+                "factors": [ "o30", "v" ],
+                "id": "VAERQ235F5QFA561"
+            },
+            {
+                "name": "Name of a token",
+                "factors": [ "o50" ],
+                "id": "15FQER515114QFQFABG"
+            }
+        ]
+    }
+}

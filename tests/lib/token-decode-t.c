@@ -2,7 +2,7 @@
  * Test token decoding.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2011, 2012, 2013
+ * Copyright 2011, 2012, 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -404,6 +404,7 @@ main(void)
         is_string("testuser", login->username, "...username");
         is_string("some;s=password", login->password, "...password");
         is_string(NULL, login->otp, "...otp");
+        is_string(NULL, login->device_id, "...device ID");
         is_int(1308777900, login->creation, "...creation");
     }
     result = check_decode(ctx, WA_TOKEN_LOGIN, "login-otp", ring, 4);
@@ -424,6 +425,16 @@ main(void)
         is_string(NULL, login->otp_type, "...otp type");
         is_int(1308777900, login->creation, "...creation");
     }
+    result = check_decode(ctx, WA_TOKEN_LOGIN, "login-dev-minimal", ring, 4);
+    if (result != NULL) {
+        login = &result->token.login;
+        is_string("testuser", login->username, "...username");
+        is_string(NULL, login->password, "...password");
+        is_string(NULL, login->otp, "...otp");
+        is_string(NULL, login->otp_type, "...otp type");
+        is_string("DEVICEID", login->device_id, "...device ID");
+        is_int(1308777900, login->creation, "...creation");
+    }
 
     /* Test decoding error cases for login tokens. */
     check_error(ctx, WA_TOKEN_LOGIN, "login-both", ring, WA_ERR_CORRUPT,
@@ -431,9 +442,11 @@ main(void)
     check_error(ctx, WA_TOKEN_LOGIN, "login-missing", ring, WA_ERR_CORRUPT,
                 "decoding creation", "login");
     check_error(ctx, WA_TOKEN_LOGIN, "login-neither", ring, WA_ERR_CORRUPT,
-                "either password or otp required", "login");
+                "password, otp, or device_id required", "login");
     check_error(ctx, WA_TOKEN_LOGIN, "login-otp-type", ring, WA_ERR_CORRUPT,
                 "otp_type not valid with password", "login");
+    check_error(ctx, WA_TOKEN_LOGIN, "login-pass-device", ring, WA_ERR_CORRUPT,
+                "device_id not valid with password", "login");
     check_error(ctx, WA_TOKEN_LOGIN, "proxy-ok", ring, WA_ERR_CORRUPT,
                 "wrong token type proxy", "login");
 

@@ -8,7 +8,7 @@
  * more helpful to the developer.
  *
  * Written by Russ Allbery <eagle@eyrie.org>
- * Copyright 2013
+ * Copyright 2013, 2014
  *     The Board of Trustees of the Leland Stanford Junior University
  *
  * See LICENSE for licensing terms.
@@ -371,11 +371,12 @@ build_token_login(struct webauth_context *ctx,
     token = apr_pcalloc(ctx->pool, sizeof(struct webauth_token));
     token->type = WA_TOKEN_LOGIN;
     login = &token->token.login;
-    login->username = subst(ctx, template->username, krbconf);
-    login->password = subst(ctx, template->password, krbconf);
-    login->otp      = template->otp;
-    login->otp_type = template->otp_type;
-    login->creation = template->creation;
+    login->username  = subst(ctx, template->username, krbconf);
+    login->password  = subst(ctx, template->password, krbconf);
+    login->otp       = template->otp;
+    login->otp_type  = template->otp_type;
+    login->device_id = template->device_id;
+    login->creation  = template->creation;
     if (login->creation < 10000 && login->creation > 0)
         login->creation = now - login->creation;
     return token;

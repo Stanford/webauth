@@ -1,0 +1,8 @@
+{
+    "success": true,
+    "response": {
+        "username": "factor",
+        "available_factors": ["p", "m", "o", "o2"],
+        "max_level_of_assurance": 1
+    }
+}

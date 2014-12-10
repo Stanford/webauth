@@ -403,6 +403,18 @@ const struct wai_encoding wai_token_login_encoding[] = {
         NULL
     },
     {
+        "did",
+        "device id",
+        WA_TYPE_STRING,
+        true,  /* optional */
+        false, /* ascii    */
+        false, /* creation */
+        offsetof(struct webauth_token_login, device_id),
+        0,
+        0,
+        NULL
+    },
+    {
         "ct",
         "creation",
         WA_TYPE_TIME,

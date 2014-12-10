@@ -37,7 +37,7 @@ static const struct wat_login_test tests_no_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -77,7 +77,7 @@ static const struct wat_login_test tests_no_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "BAD<password>", NULL, NULL, 0 },
+                { "<userprinc>", "BAD<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -113,7 +113,7 @@ static const struct wat_login_test tests_no_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -152,7 +152,7 @@ static const struct wat_login_test tests_no_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -194,7 +194,7 @@ static const struct wat_login_test tests_no_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -244,7 +244,7 @@ static const struct wat_login_test tests_no_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -292,7 +292,7 @@ static const struct wat_login_test tests_permitted[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -334,7 +334,7 @@ static const struct wat_login_test tests_not_permitted[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -370,7 +370,7 @@ static const struct wat_login_test tests_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -409,7 +409,7 @@ static const struct wat_login_test tests_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<username>", "<password>", NULL, NULL, 0 },
+                { "<username>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -452,7 +452,7 @@ static const struct wat_login_test tests_local[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },
@@ -505,7 +505,7 @@ static const struct wat_login_test tests_id_acl[] = {
         {
             { "<krb5-principal>", 0, 0 },
             {
-                { "<userprinc>", "<password>", NULL, NULL, 0 },
+                { "<userprinc>", "<password>", NULL, NULL, NULL, 0 },
                 EMPTY_TOKEN_LOGIN,
                 EMPTY_TOKEN_LOGIN
             },

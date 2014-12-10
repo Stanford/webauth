@@ -41,6 +41,7 @@ use strict;
 use warnings;
 
 use CGI::Cookie ();
+use FreezeThaw qw(freeze thaw);
 use MIME::Base64 qw(encode_base64 decode_base64);
 use POSIX qw(strftime);
 use Template ();
@@ -68,7 +69,7 @@ our $VERSION;
 # This version matches the version of WebAuth with which this module was
 # released, but with two digits for the minor and patch versions.
 BEGIN {
-    $VERSION = '4.0601';
+    $VERSION = '4.0700';
 }
 
 # The CGI::Application parameters that must be cleared for each query.
@@ -1008,16 +1009,17 @@ sub print_pwchange_confirm_page {
 # or on an unsuccessful attempt to use multifactor.
 sub print_multifactor_page {
     my ($self, $RT, $ST) = @_;
-    my $q = $self->query;
-    my $pagename = $self->get_pagename ('multifactor');
-    my $params = $self->template_params;
 
-    $params->{script_name} = $self->param ('script_name');
-    $params->{username} = $q->param ('username');
+    my $q                     = $self->query;
+    my $pagename              = $self->get_pagename ('multifactor');
+
+    my $params                = $self->template_params;
+    $params->{script_name}    = $self->param ('script_name');
+    $params->{username}       = $q->param ('username');
     $params->{remember_login} = $self->remember_login;
-    $params->{user_message} = $self->{response}->user_message;
-    $params->{RT} = $RT;
-    $params->{ST} = $ST;
+    $params->{user_message}   = $self->{response}->user_message;
+    $params->{RT}             = $RT;
+    $params->{ST}             = $ST;
 
     # Default the factor type to anything saved from the previous page.
     $params->{factor_type} = $q->param ('factor_type');
@@ -1039,6 +1041,22 @@ sub print_multifactor_page {
         }
     }
 
+    # Add the devices, or restore from an earlier send.  Since the devices
+    # are a complicated datastructure, we save a string version for future
+    # iterations of this page.
+    $params->{default_device} = $self->{response}->default_device
+        || $q->param('default_device');
+    $params->{default_factor} = $self->{response}->default_factor
+        || $q->param('default_factor');
+    if ($q->param('devices_cache')) {
+        ($params->{devices}) = thaw($q->param('devices_cache'));
+        $params->{devices_cache} = $q->param('devices_cache');
+    } else {
+        my $devices              = $self->{response}->devices;
+        $params->{devices}       = $devices;
+        $params->{devices_cache} = freeze($devices);
+    }
+
     # Create the login_state object for use in templates
     if ($self->{response}->login_state) {
         my $login_state = $self->{response}->login_state;
@@ -1048,6 +1066,7 @@ sub print_multifactor_page {
 
     $params->{error} = 1 if $params->{'err_multifactor_missing'};
     $params->{error} = 1 if $params->{'err_multifactor_invalid'};
+    $params->{error} = 1 if $params->{'err_multifactor_timeout'};
 
     my %args = (cookies => $self->{response}->cookies);
     $self->print_headers (\%args);
@@ -1616,6 +1635,8 @@ sub setup_kdc_request {
         if $q->param ('password');
     $self->{request}->otp ($q->param ('otp'))
         if $q->param ('otp');
+    $self->{request}->device_id ($q->param ('device_id'))
+        if $q->param ('device_id');
     $self->{request}->otp_type ($q->param ('factor_type'))
         if $q->param ('factor_type');
     $self->{request}->authz_subject ($q->param ('authz_subject'))
@@ -2170,7 +2191,8 @@ sub multifactor : Runmode {
     my %cart = CGI::Cookie->fetch;
     my $status = $self->setup_kdc_request (%cart);
 
-    if ($q->param ('otp')) {
+    # Either we have a non-OTP factor type, or the OTP is set.
+    if (defined $q->param('otp') && $q->param('otp') ne '') {
         my $req = $self->{request};
         my $resp = $self->{response};
         $req->user ($q->param ('username'));
@@ -2198,6 +2220,11 @@ sub multifactor : Runmode {
             print STDERR "multifactor rejected: $error ($status): $message\n"
                 if $self->param ('logging');
             $self->register_auth_fail ($req->user);
+        } elsif ($status == WK_ERR_LOGIN_TIMEOUT) {
+            print STDERR "multifactor timeout: $error ($status)\n"
+                if $self->param ('logging');
+            $self->template_params ({err_multifactor_timeout => 1});
+
         } else {
             # Hopefully this is close enough that we can just use the default
             # error handling code.
@@ -2260,12 +2287,13 @@ sub multifactor_sendauth : Runmode {
 
         # Send the remctl command, switching tgts out beforehand.
         my $username = $q->param ('username');
+        my $device   = $q->param ('device_id');
         my @cmd = split (' ', $WebKDC::Config::MULTIFACTOR_COMMAND);
         local $ENV{KRB5CCNAME} = $WebKDC::Config::MULTIFACTOR_TGT;
         my $result = Net::Remctl::remctl ($WebKDC::Config::MULTIFACTOR_SERVER,
                                           $WebKDC::Config::MULTIFACTOR_PORT,
                                           $WebKDC::Config::MULTIFACTOR_PRINC,
-                                          @cmd, $username);
+                                          @cmd, $username, $device);
 
         if ($result->error) {
             print STDERR "multifactor_sendauth failed to run program: " .

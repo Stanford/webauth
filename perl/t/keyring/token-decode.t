@@ -3,7 +3,7 @@
 # Test token decoding via the Perl API.
 #
 # Written by Russ Allbery <eagle@eyrie.org>
-# Copyright 2012, 2013
+# Copyright 2012, 2013, 2014
 #     The Board of Trustees of the Leland Stanford Junior University
 #
 # See LICENSE for licensing terms.
@@ -14,7 +14,7 @@ use warnings;
 use lib ('t/lib', 'lib', 'blib/arch');
 use Util qw(contents);
 
-use Test::More tests => 229;
+use Test::More tests => 236;
 
 use MIME::Base64 qw(encode_base64);
 use WebAuth 3.07;
