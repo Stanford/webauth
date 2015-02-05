@@ -26,6 +26,7 @@
 #include <webauth/basic.h>
 #include <webauth/factors.h>
 #include <webauth/webkdc.h>
+#include <util/macros.h>
 
 /*
  * Parsing macros that include error checking.  Each of these macros assume
