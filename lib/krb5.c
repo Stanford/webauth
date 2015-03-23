@@ -587,15 +587,13 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
     /* Verify the credentials if possible. */
     if (get_principal == NULL && keytab != NULL) {
         krb5_principal princ = NULL;
-        krb5_keytab kt = NULL;
         char *name;
 
-        s = open_keytab(ctx, kc, keytab, server_principal, &princ, &kt);
-        if (s != WA_ERR_NONE) {
-            krb5_free_cred_contents(kc->ctx, &creds);
-            return s;
-        }
-        code = krb5_verify_init_creds(kc->ctx, &creds, princ, kt, NULL, NULL);
+        /* Iterate over keytab in verify_creds_iterate_keytab to find the
+         * first princ that will verify our creds. This enables one-way cross-
+         * realm trusts.
+         */
+        code = verify_creds_iterate_keytab(ctx, kc, &princ, keytab, server_principal, creds);
         if (code != 0)
             error_set(ctx, kc, code, "credential verification failed for %s",
                       username);
@@ -608,7 +606,6 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
                 error_set(ctx, kc, code, "cannot unparse server principal");
             }
         }
-        krb5_kt_close(kc->ctx, kt);
         krb5_free_principal(kc->ctx, princ);
         if (code != 0) {
             krb5_free_cred_contents(kc->ctx, &creds);
@@ -624,6 +621,89 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
     return WA_ERR_NONE;
 }
 
+/*
+ * Attempt to verify creds against all principals in the supplied keytab.
+ * Though we only attempt to verify credentials that match the realm of the
+ * principal in *princ so we don't waste time verifying creds that will fail.
+ */
+
+int
+verify_creds_iterate_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc,
+            krb5_principal *princ, const char *keytab,
+            const char *server_principal, krb5_creds creds)
+{
+    krb5_error_code code;
+    krb5_keytab kt;
+    krb5_kt_cursor cursor;
+    krb5_keytab_entry entry;
+    bool cursor_valid = false;
+
+    code = krb5_kt_resolve(kc->ctx, keytab, &kt);
+    if (code != 0)
+        return error_set(ctx, kc, code, "cannot open keytab %s", keytab);
+
+    code = krb5_kt_start_seq_get(kc->ctx, kt, &cursor);
+    if (code != 0)
+        return error_set(ctx, kc, code, "cannot start sequential get on keytab %s", keytab);
+
+    cursor_valid = true;
+    /*
+     * If server_principal is given attempt to verify with that first.
+     * If verification fails or if server_principal is NULL, step through
+     * the keytab and attempt to verify with each principal if realms match
+     */
+    if (server_principal != NULL) {
+        code = krb5_parse_name(kc->ctx, server_principal, princ);
+        if (code != 0) {
+            error_set(ctx, kc, code, "cannot parse principal %s", server_principal);
+            goto fail;
+        }
+        code = krb5_verify_init_creds(kc->ctx, &creds, *princ, kt, NULL, NULL);
+    }
+
+    if (server_principal == NULL || code != 0) {
+        do {
+            code = krb5_kt_next_entry(kc->ctx, kt, &entry, &cursor);
+            if (code != 0) {
+                break;
+            }
+
+            code = krb5_copy_principal(kc->ctx, entry.principal, princ);
+            if (code != 0)
+                error_set(ctx, kc, code, "cannot copy principal");
+
+            krb5_free_keytab_entry_contents(kc->ctx, &entry);
+            if (code != 0)
+                goto fail;
+
+            if (krb5_realm_compare(kc->ctx, kc->princ, *princ)) {
+                code = krb5_verify_init_creds(kc->ctx, &creds, *princ, kt, NULL, NULL);
+                if (code == 0)
+                    break;
+            }
+        } while (1);
+    }
+
+    krb5_kt_end_seq_get(kc->ctx, kt, &cursor);
+
+    krb5_kt_close(kc->ctx, kt);
+    if (code == KRB5_KT_END) {
+        return error_set(ctx, kc, code, "reached end of keytab without verifying principal");
+    } else if (code != 0) {
+        return code;
+    }
+
+    return WA_ERR_NONE;
+
+fail:
+    if (cursor_valid)
+        krb5_kt_end_seq_get(kc->ctx, kt, &cursor);
+
+    if (kt != NULL)
+        krb5_kt_close(kc->ctx, kt);
+
+    return WA_ERR_KRB5;
+}
 
 /*
  * Prepare a context from obtained credentials.  This uses existing
