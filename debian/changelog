@@ -2,6 +2,7 @@ webauth (4.7.0-1) experimental; urgency=medium
 
   [ Russ Allbery ]
   * Upload to experimental due to release freeze.
+  * Rename libwebauth11 to libwebauth12 for upstream SONAME change.
 
   [ Jon C. Robertson ]
   * New upstream release.
