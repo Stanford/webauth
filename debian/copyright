@@ -28,20 +28,16 @@ Files: HACKING INSTALL conf/README conf/sample-webauth.conf
 Copyright: 2002-2014
     The Board of Trustees of the Leland Stanford Junior University
 License: all-permissive
- Copying and distribution of this file, with or without modification, are
- permitted in any medium without royalty provided the copyright notice and
- this notice are preserved.  This file is offered as-is, without any
- warranty.
 
 Files: Makefile.in
 Copyright: 1994-2013 Free Software Foundation, Inc.
   2009-2014 The Board of Trustees of the Leland Stanford Junior University
 License: FSF-unlimited and Expat
 
-Files: aclocal.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4
- m4/lt~obsolete.m4
+Files: aclocal.m4
 Copyright: 1996-2013 Free Software Foundation, Inc.
-License: FSF-unlimited
+  2004 Scott James Remnant <scott@netsplit.com>
+License: FSF-unlimited, and GPL-2+ with Autoconf exception or Expat
 
 Files: build-aux/ar-lib build-aux/compile build-aux/depcomp
  build-aux/missing
@@ -88,10 +84,10 @@ Copyright: 1992-2012 Free Software Foundation, Inc.
 License: FSF-configure, and GPL-2+ with Libtool exception or Expat
 
 Files: m4/apache.m4 m4/apr.m4 m4/aprutil.m4 m4/curl.m4 m4/gssapi.m4
- m4/krb5-config.m4 m4/krb5.m4 m4/ld-version.m4 m4/ldap.m4 m4/lib-depends.m4
- m4/lib-helper.m4 m4/lib-pathname.m4 m4/openssl.m4 m4/remctl.m4
- m4/snprintf.m4 m4/vamacros.m4
-Copyright: 2005-2013
+ m4/jansson.m4 m4/krb5-config.m4 m4/krb5.m4 m4/ld-version.m4 m4/ldap.m4
+ m4/lib-depends.m4 m4/lib-helper.m4 m4/lib-pathname.m4 m4/openssl.m4
+ m4/remctl.m4 m4/snprintf.m4 m4/vamacros.m4
+Copyright: 2005-2014
     The Board of Trustees of the Leland Stanford Junior University
   2008-2010 Free Software Foundation, Inc.
 License: unlimited
@@ -103,17 +99,21 @@ Files: m4/libtool.m4
 Copyright: 1996-2001, 2003-2011 Free Software Foundation, Inc.
 License: FSF-unlimited, and GPL-2+ with Libtool exception or Expat
 
+Files: m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4
+Copyright: 2004-2005, 2007-2009 Free Software Foundation, Inc.
+License: FSF-unlimited
+
 Files: portable/apache.h portable/apr.h portable/asprintf.c
  portable/dummy.c portable/krb5-extra.c portable/krb5.h portable/macros.h
- portable/mkstemp.c portable/setenv.c portable/stdbool.h portable/strlcat.c
- portable/strlcpy.c portable/strndup.c portable/system.h
- tests/portable/asprintf-t.c tests/portable/mkstemp-t.c
- tests/portable/setenv-t.c tests/portable/strlcat-t.c
- tests/portable/strlcpy-t.c tests/portable/strndup-t.c util/macros.h
- weblogin/templates/confirm.tmpl weblogin/templates/error.tmpl
- weblogin/templates/help.html weblogin/templates/login.tmpl
- weblogin/templates/logout.tmpl weblogin/templates/multifactor.tmpl
- weblogin/templates/pwchange.tmpl
+ portable/mkstemp.c portable/reallocarray.c portable/setenv.c
+ portable/stdbool.h portable/strlcat.c portable/strlcpy.c
+ portable/strndup.c portable/system.h tests/portable/asprintf-t.c
+ tests/portable/mkstemp-t.c tests/portable/setenv-t.c
+ tests/portable/strlcat-t.c tests/portable/strlcpy-t.c
+ tests/portable/strndup-t.c util/macros.h weblogin/templates/confirm.tmpl
+ weblogin/templates/error.tmpl weblogin/templates/help.html
+ weblogin/templates/login.tmpl weblogin/templates/logout.tmpl
+ weblogin/templates/multifactor.tmpl weblogin/templates/pwchange.tmpl
 Copyright: no copyright notice, see License
 License: rra-public-domain
  The authors hereby relinquish any claim to any copyright that they may
@@ -254,4 +254,10 @@ Comment: The option described in the license has been accepted and these
  files are distributed under the same terms as the package as a whole, as
  described at the top of this file.  You can find the GPL version 3 in
  /usr/share/common-licenses/GPL-3 on Debian systems.
+
+License: all-permissive
+ Copying and distribution of this file, with or without modification, are
+ permitted in any medium without royalty provided the copyright notice and
+ this notice are preserved.  This file is offered as-is, without any
+ warranty.
 
