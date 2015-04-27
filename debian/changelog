@@ -1,4 +1,4 @@
-webauth (4.7.0-2) UNRELEASED; urgency=medium
+webauth (4.7.0-2) unstable; urgency=medium
 
   * Upload to unstable.
   * Moved libtime-duration-perl to Depends from Suggests.  This is now
@@ -7,7 +7,7 @@ webauth (4.7.0-2) UNRELEASED; urgency=medium
     packaging repository.
   * Fix upstream distribution signing key.
 
- -- Russ Allbery <rra@debian.org>  Sun, 26 Apr 2015 18:31:24 -0700
+ -- Russ Allbery <rra@debian.org>  Sun, 26 Apr 2015 18:53:16 -0700
 
 webauth (4.7.0-1) experimental; urgency=medium
 
