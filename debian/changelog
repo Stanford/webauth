@@ -1,34 +1,52 @@
-webauth (4.7.0-1) unstable; urgency=medium
+webauth (4.7.0-2) unstable; urgency=medium
 
+  * Upload to unstable.
+  * Moved libtime-duration-perl to Depends from Suggests.  This is now
+    used unconditionally upstream.  (Closes: #783288)
+  * Add debian/gbp.conf reflecting the branch layout of the default
+    packaging repository.
+  * Fix upstream distribution signing key.
+
+ -- Russ Allbery <rra@debian.org>  Sun, 26 Apr 2015 18:53:16 -0700
+
+webauth (4.7.0-1) experimental; urgency=medium
+
+  [ Russ Allbery ]
+  * Upload to experimental due to release freeze.
+  * Rename libwebauth11 to libwebauth12 for upstream SONAME change.
+  * Update standards version to 3.9.6.
+
+  [ Jon C. Robertson ]
   * New upstream release.
-    - Recognize KRB5_BAD_ENCTYPE, KRB5_GET_IN_TKT_LOOP, 
-      KRB5_PREAUTH_FAILED, and KRB5KRB_AP_ERR_MODIFIED as additional 
-      synonyms for a failed login error code.  Various combinations of 
-      recent MIT and Heimdal with different KDCs return these error 
+    - Recognize KRB5_BAD_ENCTYPE, KRB5_GET_IN_TKT_LOOP,
+      KRB5_PREAUTH_FAILED, and KRB5KRB_AP_ERR_MODIFIED as additional
+      synonyms for a failed login error code.  Various combinations of
+      recent MIT and Heimdal with different KDCs return these error
       codes if the password is incorrect.
     - Added new fields to the userinfo service parsing and the WebLogin
       handling.  These allow for a more complicated multifactor
-      configuration to be passed along from the user information 
-      service, with multiple possible multifactor devices and one 
+      configuration to be passed along from the user information
+      service, with multiple possible multifactor devices and one
       default.
-    - Give a validation remctl command its own timeout error, so that a 
+    - Give a validation remctl command its own timeout error, so that a
       failure to respond to validation is handled differently than any
       other timeout failure.  This is done so that we can handle
       out-of-band multifactor methods, such as a phone call.  Previously
       that would show up in WebLogin as a generic
       WK_ERR_UNRECOVERABLE_ERROR.
-    - Ability to use JSON rather than XML for the user information 
-      service's return values.  This is activated with the 
+    - Ability to use JSON rather than XML for the user information
+      service's return values.  This is activated with the
       WebKdcUserInfoJSON configuration directive.
-    - Refactored the userinfo code to separate remctl support, XML 
-      parsing, and JSON parsing into separate source files for 
+    - Refactored the userinfo code to separate remctl support, XML
+      parsing, and JSON parsing into separate source files for
       readability.
-  * Added build-depends for libjansson-dev (>= 2.6), pkg-config, 
-    libfreezethaw-perl, libauthen-oath-perl, libcrypt-generatepassword-perl, 
-    libgetopt-long-descriptive-perl, libjson-perl, libmime-base32-perl, 
-    libnet-remctl-perl, and libwww-mechanize-perl.
+  * Added build-depends for libjansson-dev (>= 2.6), pkg-config,
+    libfreezethaw-perl, libauthen-oath-perl,
+    libcrypt-generatepassword-perl, libgetopt-long-descriptive-perl,
+    libjson-perl, libmime-base32-perl, libnet-remctl-perl, and
+    libwww-mechanize-perl.
 
- -- Jon C. Robertson <jonrober@stanford.edu>  Wed, 10 Dec 2014 12:57:40 -0800
+ -- Russ Allbery <rra@debian.org>  Sun, 05 Apr 2015 17:17:38 -0700
 
 webauth (4.6.1-1) unstable; urgency=medium
 

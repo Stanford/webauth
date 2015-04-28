@@ -15,7 +15,7 @@ Build-Depends: debhelper (>= 9), apache2-dev (>> 2.4.4-3~), dh-apache2,
  libfreezethaw-perl, libauthen-oath-perl, libcrypt-generatepassword-perl, 
  libgetopt-long-descriptive-perl, libjson-perl, libmime-base32-perl, 
  libnet-remctl-perl, libwww-mechanize-perl, perl
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Homepage: http://webauth.stanford.edu/
 Vcs-Git: git://git.eyrie.org/kerberos/webauth.git -b debian
 Vcs-Browser: http://git.eyrie.org/?p=kerberos/webauth.git
@@ -121,7 +121,7 @@ Description: Perl library for WebAuth authentication
  does token encoding and decoding and other lower-level parts of the
  WebAuth protocol.
 
-Package: libwebauth11
+Package: libwebauth12
 Section: libs
 Architecture: any
 Multi-Arch: same
@@ -142,7 +142,7 @@ Section: libdevel
 Priority: extra
 Architecture: any
 Multi-Arch: same
-Depends: ${misc:Depends}, libwebauth11 (= ${binary:Version})
+Depends: ${misc:Depends}, libwebauth12 (= ${binary:Version})
 Suggests: libkrb5-dev, libapr1-dev
 Description: Development files for WebAuth authentication
  WebAuth is a cookie-based web authentication system built on top of
@@ -160,10 +160,9 @@ Depends: ${misc:Depends}, ${perl:Depends}, libwebauth-perl (>= 4.6.0),
  libcgi-application-perl, libcgi-application-plugin-autorunmode-perl,
  libcgi-application-plugin-forward-perl,
  libcgi-application-plugin-tt-perl, libcgi-fast-perl,
- libio-socket-ssl-perl, libtemplate-perl, liburi-perl, libwww-perl,
- libxml-parser-perl
-Suggests: libcache-memcached-perl, libnet-remctl-perl,
- libtime-duration-perl, libtimedate-perl
+ libio-socket-ssl-perl, libtemplate-perl, libtime-duration-perl,
+ liburi-perl, libwww-perl, libxml-parser-perl
+Suggests: libcache-memcached-perl, libnet-remctl-perl, libtimedate-perl
 Breaks: webauth-weblogin (<< 4.5.0)
 Description: Perl libraries for WebAuth central login server
  WebAuth is a cookie-based web authentication system built on top of
