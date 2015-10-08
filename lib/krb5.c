@@ -587,9 +587,10 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
     /* Verify the credentials if possible. */
     if (get_principal == NULL && keytab != NULL) {
         krb5_principal princ = NULL;
+        krb5_keytab kt = NULL;
         char *name;
 
-        /* Iterate over keytab in verify_creds_iterate_keytab to find the
+        /* Iterate over open_keytab in verify_creds_iterate_keytab to find the
          * first princ that will verify our creds. This enables one-way cross-
          * realm trusts.
          */
@@ -605,8 +606,8 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
             } else {
                 error_set(ctx, kc, code, "cannot unparse server principal");
             }
+            krb5_free_principal(kc->ctx, princ);
         }
-        krb5_free_principal(kc->ctx, princ);
         if (code != 0) {
             krb5_free_cred_contents(kc->ctx, &creds);
             return WA_ERR_KRB5;
@@ -624,7 +625,7 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
 /*
  * Attempt to verify creds against all principals in the supplied keytab.
  * Though we only attempt to verify credentials that match the realm of the
- * principal in *princ so we don't waste time verifying creds that will fail.
+ * principal in *princ so we don't needlessly try to verify creds.
  */
 
 int
@@ -633,6 +634,7 @@ verify_creds_iterate_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc
             const char *server_principal, krb5_creds creds)
 {
     krb5_error_code code;
+    krb5_error_code last_verify_code;
     krb5_keytab kt;
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
@@ -663,24 +665,31 @@ verify_creds_iterate_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc
 
     if (server_principal == NULL || code != 0) {
         do {
+            krb5_free_principal(kc->ctx, *princ);
             code = krb5_kt_next_entry(kc->ctx, kt, &entry, &cursor);
             if (code != 0) {
+                error_set(ctx, kc, code, "cannot get next keytab entry");
                 break;
             }
 
             code = krb5_copy_principal(kc->ctx, entry.principal, princ);
-            if (code != 0)
+            if (code != 0) {
                 error_set(ctx, kc, code, "cannot copy principal");
+                goto fail;
+            }
 
             krb5_free_keytab_entry_contents(kc->ctx, &entry);
-            if (code != 0)
+            if (code != 0) {
                 goto fail;
-
-            if (krb5_realm_compare(kc->ctx, kc->princ, *princ)) {
-                code = krb5_verify_init_creds(kc->ctx, &creds, *princ, kt, NULL, NULL);
-                if (code == 0)
-                    break;
             }
+
+            last_verify_code = krb5_verify_init_creds(kc->ctx, &creds, *princ, kt, NULL, NULL);
+            if (last_verify_code == 0) {
+                break;
+            }
+
+            wai_log_info(ctx, "failed to verify credentials; attempting next keytab entry");
+            error_set(ctx, kc, code, "failed to verify credentials");
         } while (1);
     }
 
@@ -688,9 +697,7 @@ verify_creds_iterate_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc
 
     krb5_kt_close(kc->ctx, kt);
     if (code == KRB5_KT_END) {
-        return error_set(ctx, kc, code, "reached end of keytab without verifying principal");
-    } else if (code != 0) {
-        return code;
+        return error_set(ctx, kc, last_verify_code, "reached end of keytab without verifying principal");
     }
 
     return WA_ERR_NONE;
@@ -701,6 +708,9 @@ fail:
 
     if (kt != NULL)
         krb5_kt_close(kc->ctx, kt);
+
+    if (princ != NULL)
+        krb5_free_principal(kc->ctx, *princ);
 
     return WA_ERR_KRB5;
 }
