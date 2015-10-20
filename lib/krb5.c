@@ -587,7 +587,6 @@ webauth_krb5_init_via_password(struct webauth_context *ctx,
     /* Verify the credentials if possible. */
     if (get_principal == NULL && keytab != NULL) {
         krb5_principal princ = NULL;
-        krb5_keytab kt = NULL;
         char *name;
 
         /* Iterate over open_keytab in verify_creds_iterate_keytab to find the
