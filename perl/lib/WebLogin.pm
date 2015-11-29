@@ -195,7 +195,7 @@ sub cgiapp_prerun {
 
     # Store the CPT if one was already generated, so that we have one place to
     # check.
-    $self->param ('CPT', $self->query->param ('CPT'));
+    $self->param ('CPT', scalar $self->query->param ('CPT'));
 
     # Work around a bug in CGI that doesn't always set the script name.
     $self->query->{'.script_name'} = $ENV{SCRIPT_NAME};
@@ -433,7 +433,7 @@ sub print_headers {
 
     # Set the test cookie unless it's already set.
     unless ($q->cookie ($self->param ('test_cookie'))) {
-        my $cookie = $q->cookie (-name     => $self->param ('test_cookie'),
+        my $cookie = $q->cookie (-name     => scalar $self->param ('test_cookie'),
                                  -value    => 'True',
                                  -secure   => $secure,
                                  -httponly => 1);
@@ -1096,8 +1096,8 @@ sub print_remuser_redirect {
         $self->template_params ({err_msg => $errmsg});
         return $self->print_error_page;
     } else {
-        $uri .= "?RT=" . $self->fix_token ($q->param ('RT')) .
-                ";ST=" . $self->fix_token ($q->param ('ST'));
+        $uri .= "?RT=" . $self->fix_token (scalar $q->param ('RT')) .
+                ";ST=" . $self->fix_token (scalar $q->param ('ST'));
         print STDERR "redirecting to $uri\n" if $self->param ('debug');
         return $self->redirect ($uri);
     }
@@ -1627,21 +1627,21 @@ sub setup_kdc_request {
     my $q      = $self->query;
 
     # Set up the parameters to the WebKDC request.
-    $self->{request}->service_token ($self->fix_token ($q->param ('ST')))
+    $self->{request}->service_token ($self->fix_token (scalar $q->param ('ST')))
         if $q->param ('ST');
-    $self->{request}->request_token ($self->fix_token ($q->param ('RT')))
+    $self->{request}->request_token ($self->fix_token (scalar $q->param ('RT')))
         if $q->param ('RT');
-    $self->{request}->pass ($q->param ('password'))
+    $self->{request}->pass (scalar $q->param ('password'))
         if $q->param ('password');
-    $self->{request}->otp ($q->param ('otp'))
+    $self->{request}->otp (scalar $q->param ('otp'))
         if $q->param ('otp');
-    $self->{request}->device_id ($q->param ('device_id'))
+    $self->{request}->device_id (scalar $q->param ('device_id'))
         if $q->param ('device_id');
-    $self->{request}->otp_type ($q->param ('factor_type'))
+    $self->{request}->otp_type (scalar $q->param ('factor_type'))
         if $q->param ('factor_type');
-    $self->{request}->authz_subject ($q->param ('authz_subject'))
+    $self->{request}->authz_subject (scalar $q->param ('authz_subject'))
         if $q->param ('authz_subject');
-    $self->{request}->login_state ($q->param ('LS'))
+    $self->{request}->login_state (scalar $q->param ('LS'))
         if $q->param ('LS');
 
     # For the initial login page and password change page, we may need to map
@@ -1662,7 +1662,7 @@ sub setup_kdc_request {
         }
         $q->param ('username', $username);
     }
-    $self->{request}->user ($q->param ('username')) if $q->param ('username');
+    $self->{request}->user (scalar $q->param ('username')) if $q->param ('username');
 
     # Check for replays or rate limiting of failed authentications for the
     # initial login page, the multifactor login page, and the multifactor_send
