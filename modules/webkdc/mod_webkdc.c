@@ -990,9 +990,11 @@ parse_request_token(MWK_REQ_CTXT *rc, const char *token,
     /* Copy the token and do some additional checks. */
     *rt = &data->token.request;
     expiration = (*rt)->creation + rc->sconf->token_max_ttl;
-    if (expiration < time(NULL))
+    if (expiration < time(NULL)) {
         set_errorResponse(rc, WA_PEC_REQUEST_TOKEN_STALE,
                           "request token was stale", mwk_func, false);
+        return MWK_ERROR;
+    }
     return MWK_OK;
 }
 
