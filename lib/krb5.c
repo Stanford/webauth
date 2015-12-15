@@ -687,8 +687,15 @@ verify_creds_iterate_keytab(struct webauth_context *ctx, struct webauth_krb5 *kc
                 break;
             }
 
-            wai_log_info(ctx, "failed to verify credentials; attempting next keytab entry");
+            const char *err_str = krb5_get_error_message(kc->ctx, last_verify_code);
+
+            char * princ_name;
+            krb5_unparse_name(kc->ctx, *princ, &princ_name);
+
+            wai_log_info(ctx, "failed to verify credentials with %s (%s); attempting next keytab entry", princ_name, err_str);
             error_set(ctx, kc, code, "failed to verify credentials");
+            krb5_free_unparsed_name(kc->ctx, princ_name);
+            krb5_free_error_message(kc->ctx, err_str);
         } while (1);
     }
 
