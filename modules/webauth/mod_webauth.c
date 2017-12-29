@@ -306,7 +306,7 @@ static void
 fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value,
                 const char *path)
 {
-    bool is_secure = is_https(rc->r) || rc->dconf->ssl_return
+    bool is_secure = is_https(rc->r) || rc->dconf->ssl_return;
 
     if (path == NULL)
         path = "/";
