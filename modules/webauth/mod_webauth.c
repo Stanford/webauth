@@ -234,6 +234,7 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
 {
     char *cookie;
     const char *path = "/";
+    bool is_secure = is_https(rc->r) || rc->dconf->ssl_return;
 
     if (if_set && find_cookie(rc, name) == NULL)
         return;
@@ -244,7 +245,7 @@ nuke_cookie(MWA_REQ_CTXT *rc, const char *name, int if_set)
                           "%s=; path=%s; expires=%s;%s",
                           name, path,
                           "Thu, 26-Mar-1998 00:00:01 GMT",
-                          is_https(rc->r) ? "secure" : "");
+                          is_secure ? "secure" : "");
     if (rc->sconf->debug)
         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
                      "mod_webauth: nuking cookie(%s): (%s)",
@@ -305,6 +306,8 @@ static void
 fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value,
                 const char *path)
 {
+    bool is_secure = is_https(rc->r) || rc->dconf->ssl_return;
+
     if (path == NULL)
         path = "/";
     ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, rc->r->server,
@@ -317,7 +320,7 @@ fixup_setcookie(MWA_REQ_CTXT *rc, const char *name, const char *value,
                   name,
                   value,
                   path,
-                  is_https(rc->r) ? "; secure" : "",
+                  is_secure ? "; secure" : "",
                   rc->sconf->httponly ? "; HttpOnly" : "");
 }
 
