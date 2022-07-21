@@ -64,7 +64,7 @@ AC_DEFUN([_RRA_LIB_OPENSSL_INTERNAL],
     [AC_SEARCH_LIBS([dlopen], [dl])])
  rra_openssl_extra="$LIBS"
  LIBS="$rra_OPENSSL_save_LIBS"
- AC_CHECK_LIB([crypto], [AES_cbc_encrypt],
+ AC_CHECK_LIB([crypto, wpcap, pcap_open_live], [AES_cbc_encrypt],
     [CRYPTO_LIBS="-lcrypto $rra_openssl_extra"],
     [AS_IF([test x"$1" = xtrue],
         [AC_MSG_ERROR([cannot find usable OpenSSL crypto library])])],
